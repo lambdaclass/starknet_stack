@@ -13,6 +13,7 @@ node:
 install-cairo-native:
 	git clone https://github.com/lambdaclass/cairo_native.git
 	brew install llvm@16
+	brew install tmux
 	cd cairo_native && scripts/fetch-corelibs.sh && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo build --release
 
 run-fibonacci:
