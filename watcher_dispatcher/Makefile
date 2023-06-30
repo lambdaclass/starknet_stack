@@ -1,4 +1,5 @@
 run:
+	mix deps.get
 	mix assets.build
 	iex -S mix phx.server
 rust:
