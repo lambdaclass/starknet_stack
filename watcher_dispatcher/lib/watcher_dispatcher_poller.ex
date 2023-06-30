@@ -2,8 +2,8 @@ defmodule WatcherDispatcher.Poller do
   use GenServer
   use Tesla
   alias WatcherDispatcher.NIF
-  plug Tesla.Middleware.BaseUrl, "http://localhost"
-  plug Tesla.Middleware.JSON
+  plug(Tesla.Middleware.BaseUrl, "http://localhost")
+  plug(Tesla.Middleware.JSON)
 
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)
@@ -78,6 +78,6 @@ defmodule WatcherDispatcher.Poller do
   # TODO: Complete this
   # For now, just call the dummy function
   def run_proofs(block) do
-    NIF.run_program_and_get_proof_from_path("./programs/fibonacci_cairo1.casm")
+    NIF.run_program_and_get_proof(block)
   end
 end
