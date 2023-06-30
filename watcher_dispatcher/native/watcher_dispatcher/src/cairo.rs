@@ -7,7 +7,7 @@ const GRINDING_FACTOR: u8 = 10;
 
 #[rustler::nif]
 /// Loads the program in path, runs it with the Cairo VM, and makes a proof of it
-pub fn run_program_and_get_proof_from_path(program_content_binary: Binary) -> Vec<u8> {
+pub fn run_program_and_get_proof(program_content_binary: Binary) -> Vec<u8> {
     let program_content: &[u8] = &*program_content_binary;
     run_program_and_get_proof_internal(program_content)
 }
