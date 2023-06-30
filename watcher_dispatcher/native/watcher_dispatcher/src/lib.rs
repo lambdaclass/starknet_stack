@@ -1,6 +1,6 @@
 pub mod cairo;
 
-pub use cairo::run_program_and_get_proof_from_path;
+pub use cairo::run_program_and_get_proof;
 
 #[rustler::nif]
 fn add(a: i64, b: i64) -> i64 {
@@ -10,5 +10,5 @@ fn add(a: i64, b: i64) -> i64 {
 
 rustler::init!(
     "Elixir.WatcherDispatcher.NIF",
-    [add, run_program_and_get_proof_from_path]
+    [add, run_program_and_get_proof]
 );
