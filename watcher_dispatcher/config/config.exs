@@ -7,8 +7,8 @@
 # General application configuration
 import Config
 
-config :watcher_dispatcher,
-  ecto_repos: [WatcherDispatcher.Repo]
+# config :watcher_dispatcher,
+#  ecto_repos: [WatcherDispatcher.Repo]
 
 # Configures the endpoint
 config :watcher_dispatcher, WatcherDispatcherWeb.Endpoint,
