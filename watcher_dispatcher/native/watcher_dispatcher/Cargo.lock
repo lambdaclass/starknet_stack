@@ -1334,7 +1334,7 @@ dependencies = [
 [[package]]
 name = "lambdaworks-stark"
 version = "0.1.0"
-source = "git+https://github.com/lambdaclass/lambdaworks_cairo_prover.git#5c015b1642630c0def08a19f691adaec6a402409"
+source = "git+https://github.com/lambdaclass/lambdaworks_cairo_prover.git?rev=b325e9a#b325e9a88df2421a6af67ef9c9051019b5bfa844"
 dependencies = [
  "bincode 2.0.0-rc.2",
  "cairo-lang-starknet",

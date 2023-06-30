@@ -11,5 +11,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rustler = "0.29.0"
-lambdaworks-stark = { git = "https://github.com/lambdaclass/lambdaworks_cairo_prover.git" }
+lambdaworks-stark = { git = "https://github.com/lambdaclass/lambdaworks_cairo_prover.git", rev = "b325e9a" }
 lambdaworks-math = { git = "https://github.com/lambdaclass/lambdaworks", rev = "a21d2c5" }
