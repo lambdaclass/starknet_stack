@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "rpc_endpoint",
+    "store", 
+    "crypto", 
+    "network", 
+    "mempool", 
+    "consensus", 
+    "node"
+]
