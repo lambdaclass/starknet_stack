@@ -1,7 +1,11 @@
 use lambdaworks_math::field::fields::fft_friendly::stark_252_prime_field::Stark252PrimeField;
+use lambdaworks_math::field::traits::IsFFTField;
+use lambdaworks_math::traits::ByteConversion;
 use lambdaworks_math::traits::{Deserializable, Serializable};
 use lambdaworks_stark::cairo::runner::run::{generate_prover_args, CairoVersion};
+use lambdaworks_stark::starks::fri::FieldElement;
 use lambdaworks_stark::starks::proof::StarkProof;
+use lambdaworks_stark::starks::traits::AIR;
 use lambdaworks_stark::starks::{prover::prove, verifier::verify};
 use rustler::Binary;
 
@@ -23,13 +27,11 @@ pub fn run_program_and_get_proof_internal(program_content: &[u8]) -> Vec<u8> {
     ret
 }
 
-pub fn verify_internal<F, A>(
-    proof_bytes: &[u8], /*, air: &A, public_input: &A::PublicInput*/
-) -> bool
-//where
-//    F: IsFFTField,
-//    A: AIR<Field = F>,
-//    FieldElement<F>: ByteConversion,
+pub fn verify_internal<F, A>(proof_bytes: &[u8], air: &A, public_input: &A::PublicInput) -> bool
+where
+    F: IsFFTField,
+    A: AIR<Field = F>,
+    FieldElement<F>: ByteConversion,
 {
     // At this point, the verifier only knows about the serialized proof, the proof options
     // and the public inputs.
