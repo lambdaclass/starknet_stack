@@ -1,11 +1,13 @@
 defmodule WatcherDispatcher.Poller do
   use GenServer
   use Tesla
+  alias Phoenix.Endpoint.Watcher
   alias WatcherDispatcher.NIF
   plug(Tesla.Middleware.BaseUrl, "http://localhost")
   plug(Tesla.Middleware.JSON)
 
   require Logger
+  alias WatcherDispatcher.S3
 
   @polling_frequency_ms 10_000
 
@@ -38,6 +40,10 @@ defmodule WatcherDispatcher.Poller do
     {:ok, block}
   end
 
+  @doc """
+  This handler will first poll the chain for the latest block number, check which blocks are confirmed but have not
+  been proved yet, then run a proof for them and upload it to S3.
+  """
   @impl true
   def handle_info(
         :poll,
@@ -82,7 +88,10 @@ defmodule WatcherDispatcher.Poller do
 
     Logger.info("Generated block proof #{inspect(proof)}")
 
-    # Upload proof to S3
+    proof_id = UUID.uuid4()
+    # TODO: Uncomment this when we are ready
+    # :ok = S3.upload_object!(:erlang.list_to_binary(proof), proof_id)
+    Logger.info("Uploaded proof of block with id #{proof_id}")
 
     Process.send_after(self(), :poll, @polling_frequency_ms)
 
