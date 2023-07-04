@@ -6,8 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+log = "0.4.0"
 jsonrpsee = { version="0.18.2", features = ["server", "macros"] }
 mempool = { path = "../mempool" }
+sequencer = { path = "../sequencer" }
 serde_json = { version = "1.0.96", default-features = false }
 serde = "1.0.164"
 cairo-felt = "0.5.2"

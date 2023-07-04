@@ -3,6 +3,7 @@ use anyhow::Result;
 use sled::Db;
 use std::fmt::Debug;
 
+#[derive(Clone)]
 pub struct Store {
     programs: Db,
     transactions: Db,

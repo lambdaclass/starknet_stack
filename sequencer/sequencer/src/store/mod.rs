@@ -3,24 +3,26 @@ use self::rocksdb::Store as RocksDBStore;
 use self::sled::Store as SledStore;
 use anyhow::Result;
 use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 
 pub mod in_memory;
 pub mod rocksdb;
 pub mod sled;
+//pub mod store;
 
 pub(crate) type Key = Vec<u8>;
 pub(crate) type Value = Vec<u8>;
 
-pub trait StoreEngine: Debug {
+pub trait StoreEngine: Debug + Send {
     fn add_program(&mut self, program_id: Key, program: Value) -> Result<()>;
     fn get_program(&self, program_id: Key) -> Option<Value>;
     fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()>;
     fn get_transaction(&self, transaction_id: Key) -> Option<Value>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Store {
-    engine: Box<dyn StoreEngine>,
+    engine: Arc<Mutex<dyn StoreEngine>>,
 }
 
 #[allow(dead_code)]
@@ -36,32 +38,44 @@ impl Store {
     pub fn new(engine_type: EngineType) -> Self {
         match engine_type {
             EngineType::RocksDB => Self {
-                engine: Box::new(
+                engine: Arc::new(Mutex::new(
                     RocksDBStore::new("rocks").expect("could not create rocksdb store"),
-                ),
+                )),
             },
             EngineType::Sled => Self {
-                engine: Box::new(SledStore::new("sled")),
+                engine: Arc::new(Mutex::new(SledStore::new("sled"))),
             },
             EngineType::InMemory => Self {
-                engine: Box::new(InMemoryStore::new()),
+                engine: Arc::new(Mutex::new(InMemoryStore::new())),
             },
         }
     }
 
     pub fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
-        self.engine.add_program(program_id, program)
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .add_program(program_id, program)
     }
 
     pub fn get_program(&self, program_id: Key) -> Option<Value> {
-        self.engine.get_program(program_id)
+        self.engine.clone().lock().unwrap().get_program(program_id)
     }
 
     pub fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
-        self.engine.add_transaction(transaction_id, transaction)
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .add_transaction(transaction_id, transaction)
     }
 
     pub fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
-        self.engine.get_transaction(transaction_id)
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .get_transaction(transaction_id)
     }
 }

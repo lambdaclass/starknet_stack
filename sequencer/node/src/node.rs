@@ -21,6 +21,7 @@ const RPC_PORT_OFFSET: u16 = 1000;
 pub struct Node {
     pub commit: Receiver<Block>,
     pub store: Store,
+    pub external_store: sequencer::store::Store,
 }
 
 impl Node {
@@ -48,6 +49,10 @@ impl Node {
 
         // Make the data store.
         let store = Store::new(store_path).expect("Failed to create store");
+        let external_store = sequencer::store::Store::new(sequencer::store::EngineType::Sled);
+        let _ = external_store
+            .clone()
+            .add_transaction("id_1".as_bytes().to_vec(), "tx_1".as_bytes().to_vec());
 
         // Run the signature service.
         let signature_service = SignatureService::new(secret_key);
@@ -74,6 +79,7 @@ impl Node {
             tx_commit,
         );
 
+        let external_store_clone = external_store.clone();
         tokio::spawn(async move {
             let port = committee
                 .mempool
@@ -82,7 +88,7 @@ impl Node {
                 .port()
                 + RPC_PORT_OFFSET;
 
-            let handle = new_server(port).await;
+            let handle = new_server(port, external_store_clone).await;
 
             match handle {
                 Ok(handle) => {
@@ -97,6 +103,7 @@ impl Node {
         Ok(Self {
             commit: rx_commit,
             store,
+            external_store,
         })
     }
 

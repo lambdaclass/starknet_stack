@@ -6,5 +6,6 @@ members = [
     "network", 
     "mempool", 
     "consensus", 
-    "node"
+    "node",
+    "sequencer",
 ]
