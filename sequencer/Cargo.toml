@@ -8,3 +8,4 @@ members = [
     "consensus", 
     "node"
 ]
+resolver = "2"
