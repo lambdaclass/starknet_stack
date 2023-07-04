@@ -12,6 +12,8 @@ node:
 
 install-cairo-native:
 	git clone https://github.com/lambdaclass/cairo_native.git
+#	temporary solution until refactor to new version of cairo_native is done
+	cd cairo_native && git checkout 289eddc05e84b99ae37c2889a31abc69f1fedfd1
 	brew install llvm@16
 	brew install tmux
 	cd cairo_native && scripts/fetch-corelibs.sh && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo build --release
