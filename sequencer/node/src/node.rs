@@ -10,6 +10,7 @@ use rpc_endpoint::new_server;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
+use std::convert::TryInto;
 use std::process::Command;
 
 /// The default channel capacity for this module.
@@ -51,9 +52,6 @@ impl Node {
         let store = Store::new(store_path).expect("Failed to create store");
         let external_store =
             sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
-        // let _ = external_store
-        //     .clone()
-        //     .add_transaction("id_1".as_bytes().to_vec(), "tx_1".as_bytes().to_vec());
 
         // Run the signature service.
         let signature_service = SignatureService::new(secret_key);
@@ -150,6 +148,7 @@ impl Node {
                                         .output()
                                         .expect("Failed to execute process");
                                     info!("Output: {}", String::from_utf8_lossy(&res.stdout));
+                                    let _ = self.external_store.add_transaction(vec!(i.try_into().unwrap()), m);
                                 }
                             }
                         }

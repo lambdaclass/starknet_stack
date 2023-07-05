@@ -238,7 +238,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         let serialized_tx = String::from_utf8_lossy(
             &self
                 .store
-                .get_transaction("id_1".as_bytes().to_vec())
+                .get_transaction(transaction_hash.to_le_bytes().to_vec())
                 .unwrap(),
         )
         .into_owned();

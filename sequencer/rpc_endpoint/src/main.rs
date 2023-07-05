@@ -1,4 +1,5 @@
 use rpc_endpoint::new_server;
+use sequencer::store::{Store, EngineType};
 use tracing::log::info;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -11,7 +12,8 @@ async fn main() {
         .finish()
         .init();
 
-    let handle = new_server(5000).await;
+    let store = Store::new("store", EngineType::Sled);
+    let handle = new_server(5000, store).await;
 
     match handle {
         Ok(handle) => {
