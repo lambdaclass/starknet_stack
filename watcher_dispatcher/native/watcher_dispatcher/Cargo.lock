@@ -100,7 +100,7 @@ dependencies = [
  "ark-std 0.4.0",
  "derivative",
  "digest",
- "itertools",
+ "itertools 0.10.5",
  "num-bigint",
  "num-traits 0.2.15",
  "paste",
@@ -368,7 +368,7 @@ dependencies = [
  "cairo-lang-syntax",
  "cairo-lang-utils",
  "indexmap",
- "itertools",
+ "itertools 0.10.5",
  "salsa",
  "smol_str",
 ]
@@ -381,7 +381,7 @@ checksum = "28403df8c2a71b4a6843ebdb4dc5638f83f33502ac582ee0aa2cda6159ff6fe3"
 dependencies = [
  "cairo-lang-filesystem",
  "cairo-lang-utils",
- "itertools",
+ "itertools 0.10.5",
  "salsa",
 ]
 
@@ -394,7 +394,7 @@ dependencies = [
  "cairo-lang-utils",
  "good_lp",
  "indexmap",
- "itertools",
+ "itertools 0.10.5",
 ]
 
 [[package]]
@@ -428,7 +428,7 @@ dependencies = [
  "cairo-lang-utils",
  "id-arena",
  "indexmap",
- "itertools",
+ "itertools 0.10.5",
  "log",
  "num-bigint",
  "num-traits 0.2.15",
@@ -448,7 +448,7 @@ dependencies = [
  "cairo-lang-syntax-codegen",
  "cairo-lang-utils",
  "colored",
- "itertools",
+ "itertools 0.10.5",
  "log",
  "num-bigint",
  "num-traits 0.2.15",
@@ -471,7 +471,7 @@ dependencies = [
  "cairo-lang-syntax",
  "cairo-lang-utils",
  "indoc",
- "itertools",
+ "itertools 0.10.5",
  "salsa",
  "smol_str",
 ]
@@ -515,7 +515,7 @@ dependencies = [
  "cairo-lang-syntax",
  "cairo-lang-utils",
  "id-arena",
- "itertools",
+ "itertools 0.10.5",
  "log",
  "num-bigint",
  "num-traits 0.2.15",
@@ -533,7 +533,7 @@ dependencies = [
  "const-fnv1a-hash",
  "convert_case",
  "derivative",
- "itertools",
+ "itertools 0.10.5",
  "lalrpop",
  "lalrpop-util",
  "num-bigint",
@@ -555,7 +555,7 @@ dependencies = [
  "cairo-lang-eq-solver",
  "cairo-lang-sierra",
  "cairo-lang-utils",
- "itertools",
+ "itertools 0.10.5",
  "thiserror",
 ]
 
@@ -568,7 +568,7 @@ dependencies = [
  "cairo-lang-eq-solver",
  "cairo-lang-sierra",
  "cairo-lang-utils",
- "itertools",
+ "itertools 0.10.5",
  "thiserror",
 ]
 
@@ -592,7 +592,7 @@ dependencies = [
  "cairo-lang-utils",
  "id-arena",
  "indexmap",
- "itertools",
+ "itertools 0.10.5",
  "num-bigint",
  "salsa",
  "smol_str",
@@ -614,7 +614,7 @@ dependencies = [
  "cairo-lang-utils",
  "clap",
  "indoc",
- "itertools",
+ "itertools 0.10.5",
  "log",
  "num-bigint",
  "num-traits 0.2.15",
@@ -649,7 +649,7 @@ dependencies = [
  "convert_case",
  "genco",
  "indoc",
- "itertools",
+ "itertools 0.10.5",
  "log",
  "num-bigint",
  "num-integer",
@@ -699,7 +699,7 @@ checksum = "af180baa613acd5b03179f8766a50087d44702b78c0b49a887fdb06d40226064"
 dependencies = [
  "env_logger",
  "indexmap",
- "itertools",
+ "itertools 0.10.5",
  "log",
  "num-bigint",
  "num-integer",
@@ -1254,6 +1254,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1288,7 +1297,7 @@ dependencies = [
  "diff",
  "ena",
  "is-terminal",
- "itertools",
+ "itertools 0.10.5",
  "lalrpop-util",
  "petgraph",
  "regex",
@@ -1334,11 +1343,12 @@ dependencies = [
 [[package]]
 name = "lambdaworks-stark"
 version = "0.1.0"
-source = "git+https://github.com/lambdaclass/lambdaworks_cairo_prover.git?rev=b325e9a#b325e9a88df2421a6af67ef9c9051019b5bfa844"
+source = "git+https://github.com/lambdaclass/lambdaworks_cairo_prover.git?rev=ebc36fa#ebc36fa0dcd0eecf732560ef5aecf3425403d8f8"
 dependencies = [
  "bincode 2.0.0-rc.2",
  "cairo-lang-starknet",
  "cairo-vm",
+ "itertools 0.11.0",
  "lambdaworks-crypto",
  "lambdaworks-math",
  "log",
