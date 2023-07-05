@@ -49,10 +49,11 @@ impl Node {
 
         // Make the data store.
         let store = Store::new(store_path).expect("Failed to create store");
-        let external_store = sequencer::store::Store::new(sequencer::store::EngineType::Sled);
-        let _ = external_store
-            .clone()
-            .add_transaction("id_1".as_bytes().to_vec(), "tx_1".as_bytes().to_vec());
+        let external_store =
+            sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
+        // let _ = external_store
+        //     .clone()
+        //     .add_transaction("id_1".as_bytes().to_vec(), "tx_1".as_bytes().to_vec());
 
         // Run the signature service.
         let signature_service = SignatureService::new(secret_key);

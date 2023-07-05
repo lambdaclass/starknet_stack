@@ -35,7 +35,7 @@ pub enum EngineType {
 // TODO remove once it's being used
 #[allow(dead_code)]
 impl Store {
-    pub fn new(engine_type: EngineType) -> Self {
+    pub fn new(path: &str, engine_type: EngineType) -> Self {
         match engine_type {
             EngineType::RocksDB => Self {
                 engine: Arc::new(Mutex::new(
@@ -43,7 +43,7 @@ impl Store {
                 )),
             },
             EngineType::Sled => Self {
-                engine: Arc::new(Mutex::new(SledStore::new("sled"))),
+                engine: Arc::new(Mutex::new(SledStore::new(&format!("{path}.sled")))),
             },
             EngineType::InMemory => Self {
                 engine: Arc::new(Mutex::new(InMemoryStore::new())),

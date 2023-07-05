@@ -19,7 +19,7 @@ async fn _start_new_server() {
         // Build and init the subscriber
         .finish()
         .init();
-    let store = Store::new(EngineType::Sled);
+    let store = Store::new("store", EngineType::Sled);
     let handle = new_server(_RPC_PORT, store).await;
 
     match handle {

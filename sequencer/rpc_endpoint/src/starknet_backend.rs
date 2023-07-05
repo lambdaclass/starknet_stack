@@ -1,10 +1,11 @@
 use crate::rpc::{
-    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BroadcastedDeclareTransaction,
-    BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
-    ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
-    EventsPage, FeeEstimate, FunctionCall, InvokeTransactionResult, MaybePendingBlockWithTxHashes,
-    MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate,
-    SyncStatusType, Transaction,
+    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BlockWithTxs,
+    BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
+    BroadcastedInvokeTransaction, BroadcastedTransaction, ContractClass, DeclareTransactionResult,
+    DeployAccountTransactionResult, EventFilterWithPage, EventsPage, FeeEstimate, FunctionCall,
+    InvokeTransaction::V1, InvokeTransactionResult, InvokeTransactionV1,
+    MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingBlockWithTxs::Block,
+    MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -22,7 +23,8 @@ pub struct StarknetBackend {
 #[allow(unused_variables)]
 impl StarknetRpcApiServer for StarknetBackend {
     fn block_number(&self) -> RpcResult<u64> {
-        unimplemented!();
+        // TODO: Hardcoded for now, replace with actual query
+        Ok(1)
     }
 
     fn block_hash_and_number(&self) -> RpcResult<BlockHashAndNumber> {
@@ -101,7 +103,29 @@ impl StarknetRpcApiServer for StarknetBackend {
 
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
-        unimplemented!();
+        // TODO: Hardcoded for now, replace with actual query
+        let invoke_transaction = InvokeTransactionV1 {
+            transaction_hash: Felt252::new(1920310231),
+            max_fee: Felt252::new(89853483),
+            signature: vec![Felt252::new(183728913)],
+            nonce: Felt252::new(762716321),
+            sender_address: Felt252::new(91232018),
+            calldata: vec![Felt252::new(8126371)],
+        };
+
+        let v1_transaction = V1(invoke_transaction);
+
+        let block = BlockWithTxs {
+            status: crate::rpc::BlockStatus::AcceptedOnL2,
+            block_hash: Felt252::new(11239218),
+            parent_hash: Felt252::new(19203123),
+            block_number: 1,
+            new_root: Felt252::new(938938281),
+            timestamp: 1688498274,
+            sequencer_address: Felt252::new(12039102),
+            transactions: vec![crate::rpc::types::Transaction::Invoke(v1_transaction)],
+        };
+        Ok(Block(block))
     }
 
     /// Returns the chain id.

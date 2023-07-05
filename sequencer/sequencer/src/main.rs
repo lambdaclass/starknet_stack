@@ -25,7 +25,7 @@ async fn main() {
 
     //TODO remove once store is on use
     #[allow(unused_variables, unused_mut)]
-    let mut store = Store::new(EngineType::Sled);
+    let mut store = Store::new("store", EngineType::Sled);
 
     // Example usage:
     // Remove once it has its own tests
