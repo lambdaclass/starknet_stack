@@ -2,6 +2,8 @@
 
 init:
 	rustup toolchain install nightly-2023-06-19 --component rustc,cargo,rustfmt
+	python3.9 -m venv ~/sequencer_venv
+	source ~/sequencer_venv/bin/activate
 	cd benchmark &&	pip install -r requirements.txt
 
 bench:
