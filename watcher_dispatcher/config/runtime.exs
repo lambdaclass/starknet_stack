@@ -20,6 +20,13 @@ if System.get_env("PHX_SERVER") do
   config :watcher_dispatcher, WatcherDispatcherWeb.Endpoint, server: true
 end
 
+config :ex_aws,
+  access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
+  secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
+  region: System.get_env("AWS_REGION")
+
+config :watcher_dispatcher, s3_bucket_name: "kraken-proofs"
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

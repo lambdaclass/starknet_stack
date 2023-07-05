@@ -35,3 +35,4 @@ watcher_dispatcher-*.tar
 npm-debug.log
 /assets/node_modules/
 
+.envrc

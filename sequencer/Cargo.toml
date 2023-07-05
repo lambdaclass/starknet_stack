@@ -9,3 +9,4 @@ members = [
     "node",
     "sequencer",
 ]
+resolver = "2"
