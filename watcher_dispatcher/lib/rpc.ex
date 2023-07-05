@@ -20,7 +20,10 @@ defmodule WatcherDispatcher.Rpc do
   defp send_request(method, args) do
     payload = build_payload(method, args)
 
-    host = "http://localhost:5000"
+    port = Application.get_env(:watcher_dispatcher, :rpc_port)
+    hostname = Application.get_env(:watcher_dispatcher, :rpc_host)
+
+    host = "http://#{hostname}:#{port}"
 
     {:ok, rsp} = post(host, payload)
 
