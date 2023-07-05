@@ -1,24 +1,29 @@
-use crate::starknet_backend::MaybePendingBlockWithTxs::Block;
-use cairo_felt::Felt252;
-use jsonrpsee::core::{async_trait, RpcResult};
-
 use crate::rpc::{
-    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BlockWithTxHashes, BlockWithTxs,
+    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BlockWithTxs,
     BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
     BroadcastedInvokeTransaction, BroadcastedTransaction, ContractClass, DeclareTransactionResult,
     DeployAccountTransactionResult, EventFilterWithPage, EventsPage, FeeEstimate, FunctionCall,
-    InvokeTransaction, InvokeTransactionResult, InvokeTransactionV1, MaybePendingBlockWithTxHashes,
-    MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate,
-    SyncStatusType, Transaction,
+    InvokeTransaction::V1, InvokeTransactionResult, InvokeTransactionV1,
+    MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingBlockWithTxs::Block,
+    MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
 };
-use crate::starknet_backend::InvokeTransaction::V1;
+use cairo_felt::Felt252;
+use jsonrpsee::{
+    core::{async_trait, RpcResult},
+    types::{error::ErrorCode, ErrorObject},
+};
+use log::info;
+use sequencer::store::Store;
 
-pub struct StarknetBackend;
+pub struct StarknetBackend {
+    pub(crate) store: Store,
+}
 
 #[async_trait]
 #[allow(unused_variables)]
 impl StarknetRpcApiServer for StarknetBackend {
     fn block_number(&self) -> RpcResult<u64> {
+        // TODO: Hardcoded for now, replace with actual query
         Ok(1)
     }
 
@@ -97,7 +102,8 @@ impl StarknetRpcApiServer for StarknetBackend {
     }
 
     /// Get block information with full transactions given the block id
-    fn get_block_with_txs(&self, _block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
+    fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
+        // TODO: Hardcoded for now, replace with actual query
         let invoke_transaction = InvokeTransactionV1 {
             transaction_hash: Felt252::new(1920310231),
             max_fee: Felt252::new(89853483),
@@ -228,7 +234,19 @@ impl StarknetRpcApiServer for StarknetBackend {
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction> {
-        unimplemented!();
+        info!("request {}", transaction_hash);
+        let serialized_tx = String::from_utf8_lossy(
+            &self
+                .store
+                .get_transaction("id_1".as_bytes().to_vec())
+                .unwrap(),
+        )
+        .into_owned();
+        info!("result {}", serialized_tx);
+        serde_json::from_str::<Transaction>(&serialized_tx).map_err(|e| {
+            info!("error {}", e);
+            ErrorObject::from(ErrorCode::ParseError)
+        })
     }
 
     /// Returns the receipt of a transaction by transaction hash.
