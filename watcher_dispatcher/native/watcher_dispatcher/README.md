@@ -1,10 +1,10 @@
 # NIF for Elixir.WatcherDispatcherNIF
 
-## To build the NIF module:
+## To build the NIF module
 
 - Your NIF will now build along with your project.
 
-## To load the NIF:
+## To load the NIF module
 
 ```elixir
 defmodule WatcherDispatcherNIF do
