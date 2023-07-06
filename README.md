@@ -1,4 +1,4 @@
-# kraken_lambda_stack
+# Kraken ZK Stack
 
 First diagram of the architecture:
 
