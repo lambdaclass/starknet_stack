@@ -1,3 +1,5 @@
+import subprocess
+
 from fabric import task
 
 from benchmark.local import LocalBench
@@ -6,6 +8,9 @@ from benchmark.utils import Print
 from benchmark.plot import Ploter, PlotError
 from benchmark.instance import InstanceManager
 from benchmark.remote import Bench, BenchError
+from benchmark.config import RemoteCommittee, Key
+from benchmark.commands import CommandMaker
+from benchmark.utils import PathMaker
 
 
 @task
@@ -153,3 +158,20 @@ def logs(ctx):
         print(LogParser.process('./logs', faults='?').result())
     except ParseError as e:
         Print.error(BenchError('Failed to parse logs', e))
+
+@task
+def config(ctx, ips):
+    ''' '''
+    # Generate configuration files.
+    keys = []
+    ips = [ip.strip() for ip in ips.split(',')]
+    base_port = 9000
+    key_files = [PathMaker.key_file(i) for i in range(len(ips))]
+    for filename in key_files:
+        cmd = CommandMaker.generate_key(filename).split()
+        subprocess.run(cmd, check=True)
+        keys += [Key.from_file(filename)]
+
+    names = [x.name for x in keys]
+    committee = RemoteCommittee(names, base_port, ips)
+    committee.print(PathMaker.committee_file())
