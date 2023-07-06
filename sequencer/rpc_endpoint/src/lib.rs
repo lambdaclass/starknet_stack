@@ -1,6 +1,7 @@
 use anyhow::Result;
 use jsonrpsee::server::{ServerBuilder, ServerHandle};
 use rpc::StarknetRpcApiServer;
+use sequencer::store::{EngineType, Store};
 use starknet_backend::StarknetBackend;
 use tracing::info;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -18,8 +19,8 @@ async fn _start_new_server() {
         // Build and init the subscriber
         .finish()
         .init();
-
-    let handle = new_server(_RPC_PORT).await;
+    let store = Store::new("store", EngineType::Sled);
+    let handle = new_server(_RPC_PORT, store).await;
 
     match handle {
         Ok(handle) => {
@@ -30,11 +31,11 @@ async fn _start_new_server() {
     };
 }
 
-pub async fn new_server(port: u16) -> Result<ServerHandle> {
+pub async fn new_server(port: u16, store: Store) -> Result<ServerHandle> {
     let server = ServerBuilder::default()
         .build(format!("127.0.0.1:{}", port))
         .await?;
-    let server_handle = server.start(StarknetBackend {}.into_rpc())?;
+    let server_handle = server.start(StarknetBackend { store }.into_rpc())?;
 
     Ok(server_handle)
 }

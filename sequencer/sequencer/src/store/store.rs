@@ -1,5 +1,6 @@
 use super::{Key, StoreEngine, Value};
 use anyhow::{anyhow, Result};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
 use std::thread;
@@ -23,7 +24,7 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn new(path: &str) -> Result<Self> {
+    pub fn new_rocks(path: &str) -> Result<Self> {
         let programs = rocksdb::DB::open_default(format!("{path}.programs.db"))?;
         let transactions = rocksdb::DB::open_default(format!("{path}.transactions.db"))?;
         let (command_sender, command_receiver): (Sender<StoreCommand>, Receiver<StoreCommand>) =
@@ -55,6 +56,49 @@ impl Store {
                             DbSelector::Transactions => &transactions,
                         };
                         let result = db.get(id).unwrap_or(None);
+
+                        reply_to
+                            .send(Ok(result))
+                            .unwrap_or_else(|e| error!("{}", e));
+                    }
+                };
+            }
+        });
+        Ok(Self { command_sender })
+    }
+
+    pub fn new_in_memory(path: &str) -> Result<Self> {
+        let programs: HashMap<Key, Value> = HashMap::new();
+        let transactions: HashMap<Key, Value> = HashMap::new();
+        let (command_sender, command_receiver): (Sender<StoreCommand>, Receiver<StoreCommand>) =
+            channel();
+        thread::spawn(move || {
+            while let Ok(command) = command_receiver.recv() {
+                match command {
+                    StoreCommand::Put(db_selector, id, value, reply_to) => {
+                        let db = match db_selector {
+                            DbSelector::Programs => &programs,
+                            DbSelector::Transactions => &transactions,
+                        };
+                        let result = if db.get(&id.clone()).is_some() {
+                            Err(anyhow!(
+                                "Id {} already exists in the store",
+                                String::from_utf8_lossy(&id),
+                            ))
+                        } else {
+                            Ok(db
+                                .insert(id, value)
+                                .unwrap())
+                        };
+
+                        reply_to.send(result).unwrap_or_else(|e| error!("{}", e));
+                    }
+                    StoreCommand::Get(db_selector, id, reply_to) => {
+                        let db = match db_selector {
+                            DbSelector::Programs => &programs,
+                            DbSelector::Transactions => &transactions,
+                        };
+                        let result = db.get(&id).unwrap_or(None);
 
                         reply_to
                             .send(Ok(result))

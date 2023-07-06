@@ -12,21 +12,23 @@ At the beggining, this operations will be done sequentially. But in the future, 
 
 By running provers in parallel, throughput of the proving system will be as high as the throughput of the blockchain. However, there is a latency of the prover and the inclusion of the proofs in blocks.
 
-## Installation and usage
+## Configuration and environment variables
 
-To start your Phoenix server:
+The following environment variables are required:
 
-  * Run `mix setup` to install and setup dependencies
-  * Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+For AWS S3 bucket (used to upload the generated proofs):
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+- `AWS_ACCESS_KEY_ID`: AWS access key id
+- `AWS_SECRET_ACCESS_KEY`: AWS secret access key
+- `AWS_REGION`: AWS region
 
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+For the blockchain connection:
 
-## Learn more
+- `RPC_HOST`: RPC hostname of the node to connect to
+- `RPC_PORT`: RPC port of the node to connect to
 
-  * Official website: https://www.phoenixframework.org/
-  * Guides: https://hexdocs.pm/phoenix/overview.html
-  * Docs: https://hexdocs.pm/phoenix
-  * Forum: https://elixirforum.com/c/phoenix-forum
-  * Source: https://github.com/phoenixframework/phoenix
+For example:
+
+``` bash
+RPC_HOST=localhost RPC_PORT=10009 make run
+```
