@@ -1,12 +1,14 @@
 use crate::config::Export as _;
 use crate::config::{Committee, ConfigError, Parameters, Secret};
+use cairo_felt::Felt252;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
 
 use log::info;
-use mempool::{Mempool, MempoolMessage, TransactionType};
+use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
 
+use rpc_endpoint::rpc::InvokeTransactionV1;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -17,6 +19,8 @@ pub const CHANNEL_CAPACITY: usize = 1_000;
 
 /// Default port offset for RPC endpoint
 const RPC_PORT_OFFSET: u16 = 1000;
+
+// What type is V1(InvokeTransactionV1)?
 
 pub struct Node {
     pub commit: Receiver<Block>,
@@ -123,27 +127,36 @@ impl Node {
                         );
 
                         for (i, m) in batch_txs.into_iter().enumerate() {
-                            let transaction_type: TransactionType =
-                                bincode::deserialize(&m[9..]).unwrap();
-                            info!(
-                                "Message {i} in {:?} is of tx_type {:?}",
-                                p, transaction_type
-                            );
+                            // Deserializes the bytes of the tx into a string. We are doing this to avoid default binary serialization.
+                            let _starknet_tx_string =
+                                String::from_utf8((&m[9..]).to_vec()).unwrap();
 
-                            match transaction_type {
-                                TransactionType::ExecuteFibonacci(_) => {
-                                    let res = Command::new("../cairo_native/target/release/cli")
-                                        .arg("run")
-                                        .arg("-f")
-                                        .arg("fib::fib::main")
-                                        .arg("../cairo_programs/fib.cairo")
-                                        .arg("--available-gas")
-                                        .arg("900000000")
-                                        .output()
-                                        .expect("Failed to execute process");
-                                    info!("Output: {}", String::from_utf8_lossy(&res.stdout));
-                                }
-                            }
+                            //Commented it for now due to "trailing characters" error.
+                            // let starknet_tx: InvokeTransactionV1 =
+                            //     serde_json::from_str::<InvokeTransactionV1>(&starknet_tx_string)
+                            //         .unwrap();
+
+                            let starknet_tx = InvokeTransactionV1 {
+                                transaction_hash: Felt252::new(1920310231),
+                                max_fee: Felt252::new(89853483),
+                                signature: vec![Felt252::new(183728913)],
+                                nonce: Felt252::new(762716321),
+                                sender_address: Felt252::new(91232018),
+                                calldata: vec![Felt252::new(8126371)],
+                            };
+                            info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
+
+                            //Executing fib with pre-refactor cairo_native
+                            let res = Command::new("../cairo_native/target/release/cli")
+                                .arg("run")
+                                .arg("-f")
+                                .arg("fib::fib::main")
+                                .arg("../cairo_programs/fib.cairo")
+                                .arg("--available-gas")
+                                .arg("900000000")
+                                .output()
+                                .expect("Failed to execute process");
+                            info!("Output: {}", String::from_utf8_lossy(&res.stdout));
                         }
                     }
                     MempoolMessage::BatchRequest(_, _) => {
