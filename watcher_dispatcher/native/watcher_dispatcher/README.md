@@ -18,3 +18,9 @@ end
 ## Examples
 
 [This](https://github.com/rusterlium/NifIo) is a complete example of a NIF written in Rust.
+
+## Important Note
+
+The prover and verifier must agree on proof options.
+By the moment, we are using default proof options meant for testing.
+This SHOULD be changed in the future for production.
