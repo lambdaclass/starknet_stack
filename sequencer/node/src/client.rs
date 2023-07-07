@@ -1,18 +1,13 @@
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
-use cairo_felt::Felt252;
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
 use futures::sink::SinkExt as _;
 use log::{info, warn};
-use mempool::TransactionType;
 use rand::Rng;
-use rpc_endpoint::rpc::types::Transaction::Invoke;
-use rpc_endpoint::rpc::InvokeTransaction::{self, V1};
 use rpc_endpoint::rpc::InvokeTransactionV1;
-use rpc_endpoint::rpc::Transaction;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use tokio::time::{interval, sleep, Duration, Instant};
@@ -117,46 +112,16 @@ impl Client {
 
                     tx.put_u8(0u8); // Sample txs start with 0.
                     tx.put_u64(counter); // This counter identifies the tx.
-
-                    // let transaction_type = TransactionType::ExecuteFibonacci(200 + counter);
-                    let starknet_transaction = InvokeTransactionV1 {
-                        transaction_hash: Felt252::new(1920310231),
-                        max_fee: Felt252::new(89853483),
-                        signature: vec![Felt252::new(183728913)],
-                        nonce: Felt252::new(762716321),
-                        sender_address: Felt252::new(91232018),
-                        calldata: vec![Felt252::new(8126371)],
-                    };
-
-                    let starknet_transaction_str =
-                        serde_json::to_string(&starknet_transaction).unwrap();
-                    let bytes = starknet_transaction_str.as_bytes().to_owned();
-                    for b in bytes {
-                        tx.put_u8(b);
-                    }
                 } else {
                     r += 1;
 
                     tx.put_u8(1u8); // Standard txs start with 1.
                     tx.put_u64(r); // Ensures all clients send different txs.
-
-                    let starknet_transaction = InvokeTransactionV1 {
-                        transaction_hash: Felt252::new(1920310231),
-                        max_fee: Felt252::new(89853483),
-                        signature: vec![Felt252::new(183728913)],
-                        nonce: Felt252::new(762716321),
-                        sender_address: Felt252::new(91232018),
-                        calldata: vec![Felt252::new(8126371)],
-                    };
-
-                    let starknet_transaction_str =
-                        serde_json::to_string(&starknet_transaction).unwrap();
-                    let bytes = starknet_transaction_str.as_bytes().to_owned();
-
-                    for b in bytes {
-                        tx.put_u8(b);
-                    }
                 };
+                let bytes = InvokeTransactionV1::new_as_bytes();
+                for b in bytes {
+                    tx.put_u8(b);
+                }
                 if self.size < tx.len() {
                     warn!("Transaction size too big");
                     break 'main;
@@ -193,5 +158,57 @@ impl Client {
         // Then wait for the nodes to be synchronized.
         info!("Waiting for all nodes to be synchronized...");
         sleep(Duration::from_millis(2 * self.timeout)).await;
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::InvokeTransactionV1;
+    use bytes::BufMut;
+    use bytes::BytesMut;
+    use rand::Rng;
+
+    #[test]
+    fn test_serialize_transaction() {
+        let burst = 12;
+        let size = 1000;
+        let mut tx = BytesMut::with_capacity(size);
+        let counter = 0;
+        let mut r: u64 = rand::thread_rng().gen();
+
+        for x in 0..burst {
+            if x == counter % burst {
+                // NOTE: This log entry is used to compute performance.
+                println!("Sending sample transaction {}", counter);
+
+                tx.put_u8(0u8); // Sample txs start with 0.
+                tx.put_u64(counter); // This counter identifies the tx.
+            } else {
+                println!("Sending standard transaction {}", r);
+                r += 1;
+
+                tx.put_u8(1u8); // Standard txs start with 1.
+                tx.put_u64(r); // Ensures all clients send different txs.
+            };
+            let bytes = InvokeTransactionV1::new_as_bytes();
+            for b in bytes {
+                tx.put_u8(b);
+            }
+            tx.resize(size, 0u8);
+            let bytes = tx.split().freeze();
+
+            let mut starknet_tx_string = String::from_utf8(
+                bytes
+                    .iter()
+                    .skip(9)
+                    .take_while(|v| *v != &0)
+                    .map(|v| *v)
+                    .collect(),
+            )
+            .unwrap();
+
+            let starknet_tx: InvokeTransactionV1 =
+                serde_json::from_str::<InvokeTransactionV1>(&starknet_tx_string).unwrap();
+        }
     }
 }

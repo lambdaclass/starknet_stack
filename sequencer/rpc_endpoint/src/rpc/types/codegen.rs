@@ -644,6 +644,29 @@ pub struct InvokeTransactionV1 {
     pub calldata: Vec<Felt252>,
 }
 
+impl InvokeTransactionV1 {
+    /// Creates a transaction and returns it as a vector of bytes.
+    /// The transaction is a InvokeTransactionV1 transaction.
+    ///
+    /// # Returns
+    ///
+    /// A vector of bytes representing the transaction.
+    pub fn new_as_bytes() -> Vec<u8> {
+        // let transaction_type = TransactionType::ExecuteFibonacci(200 + counter);
+        let starknet_transaction = InvokeTransactionV1 {
+            transaction_hash: Felt252::new(1920310231),
+            max_fee: Felt252::new(89853483),
+            signature: vec![Felt252::new(183728913)],
+            nonce: Felt252::new(762716321),
+            sender_address: Felt252::new(91232018),
+            calldata: vec![Felt252::new(8126371)],
+        };
+        let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
+        let ret = starknet_transaction_str.as_bytes().to_owned();
+        ret
+    }
+}
+
 /// L1 handler transaction.
 #[derive(Debug, Clone)]
 pub struct L1HandlerTransaction {
