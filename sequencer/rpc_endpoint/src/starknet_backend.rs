@@ -1,11 +1,10 @@
 use crate::rpc::{
-    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BlockWithTxs,
-    BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
-    BroadcastedInvokeTransaction, BroadcastedTransaction, ContractClass, DeclareTransactionResult,
-    DeployAccountTransactionResult, EventFilterWithPage, EventsPage, FeeEstimate, FunctionCall,
-    InvokeTransaction::V1, InvokeTransactionResult, InvokeTransactionV1,
-    MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingBlockWithTxs::Block,
-    MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
+    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BroadcastedDeclareTransaction,
+    BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
+    ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
+    EventsPage, FeeEstimate, FunctionCall, InvokeTransactionResult, MaybePendingBlockWithTxHashes,
+    MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate,
+    SyncStatusType, Transaction,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{

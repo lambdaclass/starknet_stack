@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
-use cairo_felt::Felt252;
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
