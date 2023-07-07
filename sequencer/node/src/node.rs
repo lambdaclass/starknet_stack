@@ -156,13 +156,14 @@ impl Node {
                                 sender_address: Felt252::new(91232018),
                                 calldata: vec![Felt252::new(8126371)],
                             };
+                            let n = 10_usize;
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
                             let program = include_bytes!("../../cairo_programs/fib_contract.casm");
                             let ret = run_cairo_1_entrypoint(
                                 program.as_slice(),
                                 0,
-                                &[1_usize.into(), 1_usize.into(), 1_usize.into()],
-                                &[1_usize.into()],
+                                &[0_usize.into(), 1_usize.into(), n.into()],
+                                &[55_usize.into()],
                             );
                             info!("Output: ret is {:?}", ret);
                         }
