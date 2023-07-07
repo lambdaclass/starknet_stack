@@ -6,12 +6,9 @@ publish = false
 
 [dependencies]
 cairo-felt = "0.5.2"
-tokio = { version = "1.1.0", features = [
-    "time",
-    "macros",
-    "net",
-    "rt-multi-thread",
-] }
+cairo-vm = { version = "0.8.1", features = ["cairo-1-hints"]}
+cairo-lang-starknet = { version = "2.0.0", default-features = false }
+tokio = { version = "1.1.0", features = ["time", "macros", "net", "rt-multi-thread"] }
 tokio-util = { version = "0.7.3", features = ["codec"] }
 log = "0.4.0"
 bytes = "1.0.1"
@@ -24,9 +21,8 @@ serde_json = "1.0.61"
 rand = "0.7.3"
 thiserror = "1.0.21"
 anyhow = "1.0.38"
-rpc_endpoint = { path = "../rpc_endpoint" }
-jsonrpsee = { version = "0.18.2", features = ["server", "macros"] }
-
+rpc_endpoint = {path = "../rpc_endpoint" }
+jsonrpsee = { version="0.18.2", features = ["server", "macros"] }
 crypto = { path = "../crypto" }
 store = { path = "../store" }
 consensus = { path = "../consensus" }
