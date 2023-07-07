@@ -163,7 +163,6 @@ impl Node {
                                 program.as_slice(),
                                 0,
                                 &[0_usize.into(), 1_usize.into(), n.into()],
-                                &[55_usize.into()],
                             );
                             info!("Output: ret is {:?}", ret);
                         }
@@ -177,11 +176,11 @@ impl Node {
     }
 }
 
+// TODO: Move this to a separate library file
 fn run_cairo_1_entrypoint(
     program_content: &[u8],
     entrypoint_offset: usize,
     args: &[MaybeRelocatable],
-    expected_retdata: &[cairo_vm::felt::Felt252],
 ) -> Vec<cairo_vm::felt::Felt252> {
     let contract_class: CasmContractClass = serde_json::from_slice(program_content).unwrap();
     let mut hint_processor =
@@ -276,7 +275,6 @@ fn run_cairo_1_entrypoint(
         .iter()
         .map(|c| c.clone().into_owned())
         .collect();
-    assert_eq!(expected_retdata, &retdata);
     retdata
 }
 
@@ -310,4 +308,32 @@ fn get_casm_contract_builtins(
             _ => panic!("Invalid builtin {}", s),
         })
         .collect()
+}
+
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn fib_1_cairovm() {
+        let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+        let n = 1_usize;
+        let ret = super::run_cairo_1_entrypoint(
+            program.as_slice(),
+            0,
+            &[1_usize.into(), 1_usize.into(), n.into()],
+        );
+        assert_eq!(ret, vec![1_usize.into()]);
+    }
+
+    #[test]
+    fn fib_10_cairovm() {
+        let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+        let n = 10_usize;
+        let ret = super::run_cairo_1_entrypoint(
+            program.as_slice(),
+            0,
+            &[1_usize.into(), 1_usize.into(), n.into()],
+        );
+        assert_eq!(ret, vec![55_usize.into()]);
+    }
 }
