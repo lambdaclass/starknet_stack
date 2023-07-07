@@ -197,18 +197,7 @@ mod test {
             tx.resize(size, 0u8);
             let bytes = tx.split().freeze();
 
-            let mut starknet_tx_string = String::from_utf8(
-                bytes
-                    .iter()
-                    .skip(9)
-                    .take_while(|v| *v != &0)
-                    .map(|v| *v)
-                    .collect(),
-            )
-            .unwrap();
-
-            let starknet_tx: InvokeTransactionV1 =
-                serde_json::from_str::<InvokeTransactionV1>(&starknet_tx_string).unwrap();
+            let _ret = InvokeTransactionV1::from_bytes(&bytes);
         }
     }
 }

@@ -1,6 +1,5 @@
 use crate::config::Export as _;
 use crate::config::{Committee, ConfigError, Parameters, Secret};
-use cairo_felt::Felt252;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
 use log::info;
@@ -129,23 +128,8 @@ impl Node {
                         );
 
                         for (i, m) in batch_txs.into_iter().enumerate() {
-                            // Deserializes the bytes of the tx into a string. We are doing this to avoid default binary serialization.
-                            let _starknet_tx_string =
-                                String::from_utf8((&m[9..]).to_vec()).unwrap();
+                            let starknet_tx = InvokeTransactionV1::from_bytes(&m);
 
-                            //Commented it for now due to "trailing characters" error.
-                            // let starknet_tx: InvokeTransactionV1 =
-                            //     serde_json::from_str::<InvokeTransactionV1>(&starknet_tx_string)
-                            //         .unwrap();
-
-                            let starknet_tx = InvokeTransactionV1 {
-                                transaction_hash: Felt252::new(1920310231),
-                                max_fee: Felt252::new(89853483),
-                                signature: vec![Felt252::new(183728913)],
-                                nonce: Felt252::new(762716321),
-                                sender_address: Felt252::new(91232018),
-                                calldata: vec![Felt252::new(8126371)],
-                            };
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
 
                             //Executing fib with pre-refactor cairo_native
