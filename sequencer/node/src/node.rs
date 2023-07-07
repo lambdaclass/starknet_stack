@@ -1,12 +1,13 @@
 use crate::config::Export as _;
 use crate::config::{Committee, ConfigError, Parameters, Secret};
+use cairo_felt::Felt252;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
-use rpc_endpoint::rpc::InvokeTransactionV1;
 use std::process::Command;
+use rpc_endpoint::rpc;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -127,9 +128,9 @@ impl Node {
                             batch_txs.len()
                         );
 
+                        let mut transactions = vec![];
                         for (i, m) in batch_txs.into_iter().enumerate() {
-                            let starknet_tx = InvokeTransactionV1::from_bytes(&m);
-
+                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&m);
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
 
                             //Executing fib with pre-refactor cairo_native
@@ -148,7 +149,30 @@ impl Node {
                                 starknet_tx.transaction_hash.to_le_bytes().to_vec(),
                                 starknet_tx_string.into_bytes(),
                             );
+                            transactions.push(rpc::types::Transaction::Invoke(
+                                rpc::InvokeTransaction::V1(starknet_tx),
+                            ));
                         }
+
+                        // TODO create a correct Block Structure instad of a hardcoded one
+                        let block = rpc::BlockWithTxs {
+                            status: rpc_endpoint::rpc::BlockStatus::AcceptedOnL2,
+                            block_hash: Felt252::new(11239218),
+                            parent_hash: Felt252::new(19203123),
+                            block_number: 1,
+                            new_root: Felt252::new(938938281),
+                            timestamp: 1688498274,
+                            sequencer_address: Felt252::new(12039102),
+                            transactions,
+                        };
+                        let block_id = block.block_number;
+                        let block_string =
+                            serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block))
+                                .unwrap();
+
+                        let _ = self
+                            .external_store
+                            .add_block(block_id.to_le_bytes().to_vec(), block_string.into_bytes());
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")

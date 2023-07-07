@@ -1,11 +1,10 @@
 use crate::rpc::{
-    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BlockWithTxs,
-    BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
-    BroadcastedInvokeTransaction, BroadcastedTransaction, ContractClass, DeclareTransactionResult,
-    DeployAccountTransactionResult, EventFilterWithPage, EventsPage, FeeEstimate, FunctionCall,
-    InvokeTransaction::V1, InvokeTransactionResult, InvokeTransactionV1,
-    MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingBlockWithTxs::Block,
-    MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
+    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BroadcastedDeclareTransaction,
+    BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
+    ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
+    EventsPage, FeeEstimate, FunctionCall, InvokeTransactionResult, MaybePendingBlockWithTxHashes,
+    MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate,
+    SyncStatusType, Transaction,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -103,29 +102,19 @@ impl StarknetRpcApiServer for StarknetBackend {
 
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
-        // TODO: Hardcoded for now, replace with actual query
-        let invoke_transaction = InvokeTransactionV1 {
-            transaction_hash: Felt252::new(1920310231),
-            max_fee: Felt252::new(89853483),
-            signature: vec![Felt252::new(183728913)],
-            nonce: Felt252::new(762716321),
-            sender_address: Felt252::new(91232018),
-            calldata: vec![Felt252::new(8126371)],
+        info!("request {:?}", block_id);
+        let id = match block_id {
+            BlockId::Number(number) => number.to_ne_bytes(),
+            BlockId::Hash(_) => todo!(),
+            BlockId::Tag(_) => todo!(),
         };
-
-        let v1_transaction = V1(invoke_transaction);
-
-        let block = BlockWithTxs {
-            status: crate::rpc::BlockStatus::AcceptedOnL2,
-            block_hash: Felt252::new(11239218),
-            parent_hash: Felt252::new(19203123),
-            block_number: 1,
-            new_root: Felt252::new(938938281),
-            timestamp: 1688498274,
-            sequencer_address: Felt252::new(12039102),
-            transactions: vec![crate::rpc::types::Transaction::Invoke(v1_transaction)],
-        };
-        Ok(Block(block))
+        let serialized_block =
+            String::from_utf8_lossy(&self.store.get_block(id.to_vec()).unwrap()).into_owned();
+        info!("result {}", serialized_block);
+        serde_json::from_str(&serialized_block).map_err(|e| {
+            info!("error {}", e);
+            ErrorObject::from(ErrorCode::ParseError)
+        })
     }
 
     /// Returns the chain id.
@@ -234,7 +223,6 @@ impl StarknetRpcApiServer for StarknetBackend {
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction> {
-        info!("request {}", transaction_hash);
         let serialized_tx = String::from_utf8_lossy(
             &self
                 .store
@@ -242,7 +230,6 @@ impl StarknetRpcApiServer for StarknetBackend {
                 .unwrap(),
         )
         .into_owned();
-        info!("result {}", serialized_tx);
         serde_json::from_str::<Transaction>(&serialized_tx).map_err(|e| {
             info!("error {}", e);
             ErrorObject::from(ErrorCode::ParseError)

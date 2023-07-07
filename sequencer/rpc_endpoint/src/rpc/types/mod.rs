@@ -37,7 +37,7 @@ pub enum MaybePendingBlockWithTxHashes {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[serde(tag = "type")]
 pub enum MaybePendingBlockWithTxs {
     Block(BlockWithTxs),
     PendingBlock(PendingBlockWithTxs),
@@ -138,7 +138,7 @@ pub enum ContractClass {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "tx_type")]
 pub enum Transaction {
     #[serde(rename = "INVOKE")]
     Invoke(InvokeTransaction),
@@ -164,7 +164,7 @@ pub enum BroadcastedTransaction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "version")]
+#[serde(tag = "tx_version")]
 pub enum InvokeTransaction {
     #[serde(rename = "0x0")]
     V0(InvokeTransactionV0),
