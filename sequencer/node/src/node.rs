@@ -134,8 +134,7 @@ impl Node {
 
                         for (i, m) in batch_txs.into_iter().enumerate() {
                             // Deserializes the bytes of the tx into a string. We are doing this to avoid default binary serialization.
-                            let _starknet_tx_string =
-                                String::from_utf8((&m[9..]).to_vec()).unwrap();
+                            let _starknet_tx_string = String::from_utf8((&m[9..]).to_vec()).unwrap();
 
                             //Commented it for now due to "trailing characters" error.
                             // let starknet_tx: InvokeTransactionV1 =
@@ -163,6 +162,12 @@ impl Node {
                                 .output()
                                 .expect("Failed to execute process");
                             info!("Output: {}", String::from_utf8_lossy(&res.stdout));
+                            let starknet_tx_string =
+                                serde_json::to_string(&starknet_tx).unwrap();
+                            let _ = self.external_store.add_transaction(
+                                starknet_tx.transaction_hash.to_le_bytes().to_vec(),
+                                starknet_tx_string.into_bytes(),
+                            );
                         }
                     }
                     MempoolMessage::BatchRequest(_, _) => {
