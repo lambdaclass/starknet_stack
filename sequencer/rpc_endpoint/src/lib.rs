@@ -1,7 +1,7 @@
 use anyhow::Result;
 use jsonrpsee::server::{ServerBuilder, ServerHandle};
 use rpc::StarknetRpcApiServer;
-use sequencer::store::{EngineType, Store};
+use sequencer::store::{store::EngineType, store::Store};
 use starknet_backend::StarknetBackend;
 use tracing::info;
 use tracing_subscriber::util::SubscriberInitExt;
