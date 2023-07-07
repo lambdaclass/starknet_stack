@@ -4,10 +4,10 @@ defmodule WatcherProver.Poller do
   alias WatcherProver.NIF
   plug(Tesla.Middleware.BaseUrl, "http://localhost:5000")
   plug(Tesla.Middleware.JSON)
-  alias WatcherDispatcher.Rpc
+  alias WatcherProver.Rpc
 
   require Logger
-  alias WatcherDispatcher.S3
+  alias WatcherProver.S3
 
   @polling_frequency_ms 10_000
   @number_of_blocks_for_confirmation 0

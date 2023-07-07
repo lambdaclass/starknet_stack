@@ -25,7 +25,7 @@ config :ex_aws,
   secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
   region: System.get_env("AWS_REGION")
 
-config :watcher_dispatcher,
+config :watcher_prover,
   s3_bucket_name: "kraken-proofs",
   rpc_port: System.get_env("RPC_PORT"),
   rpc_host: System.get_env("RPC_HOST")

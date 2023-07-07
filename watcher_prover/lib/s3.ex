@@ -1,4 +1,4 @@
-defmodule WatcherDispatcher.S3 do
+defmodule WatcherProver.S3 do
   def list_buckets() do
     ExAws.S3.list_buckets()
     |> ExAws.request!()
@@ -6,7 +6,7 @@ defmodule WatcherDispatcher.S3 do
   end
 
   def upload_object!(binary_element, path) do
-    bucket_name = Application.get_env(:watcher_dispatcher, :s3_bucket_name)
+    bucket_name = Application.get_env(:watcher_prover, :s3_bucket_name)
 
     ExAws.S3.put_object(bucket_name, path, binary_element)
     |> ExAws.request!()
@@ -15,7 +15,7 @@ defmodule WatcherDispatcher.S3 do
   end
 
   def list_objects do
-    bucket_name = Application.get_env(:watcher_dispatcher, :s3_bucket_name)
+    bucket_name = Application.get_env(:watcher_prover, :s3_bucket_name)
 
     ExAws.S3.list_objects(bucket_name)
     |> ExAws.request!()
@@ -23,7 +23,7 @@ defmodule WatcherDispatcher.S3 do
   end
 
   def list_objects(path) do
-    bucket_name = Application.get_env(:watcher_dispatcher, :s3_bucket_name)
+    bucket_name = Application.get_env(:watcher_prover, :s3_bucket_name)
 
     ExAws.S3.list_objects(bucket_name, prefix: path)
     |> ExAws.request!()
@@ -31,21 +31,21 @@ defmodule WatcherDispatcher.S3 do
   end
 
   def get_object!(key) do
-    bucket_name = Application.get_env(:watcher_dispatcher, :s3_bucket_name)
+    bucket_name = Application.get_env(:watcher_prover, :s3_bucket_name)
 
     ExAws.S3.get_object(bucket_name, key)
     |> ExAws.request!()
   end
 
   def delete_object!(key) do
-    bucket_name = Application.get_env(:watcher_dispatcher, :s3_bucket_name)
+    bucket_name = Application.get_env(:watcher_prover, :s3_bucket_name)
 
     ExAws.S3.delete_object(bucket_name, key)
     |> ExAws.request!()
   end
 
   def download_object!(key, filename) do
-    bucket_name = Application.get_env(:watcher_dispatcher, :s3_bucket_name)
+    bucket_name = Application.get_env(:watcher_prover, :s3_bucket_name)
 
     :done =
       ExAws.S3.download_file(bucket_name, key, filename)

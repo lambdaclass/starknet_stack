@@ -1,4 +1,4 @@
-defmodule WatcherDispatcher.Rpc do
+defmodule WatcherProver.Rpc do
   use Tesla
 
   plug(Tesla.Middleware.Headers, [{"content-type", "application/json"}])
@@ -20,8 +20,8 @@ defmodule WatcherDispatcher.Rpc do
   defp send_request(method, args) do
     payload = build_payload(method, args)
 
-    port = Application.get_env(:watcher_dispatcher, :rpc_port)
-    hostname = Application.get_env(:watcher_dispatcher, :rpc_host)
+    port = Application.get_env(:watcher_prover, :rpc_port)
+    hostname = Application.get_env(:watcher_prover, :rpc_host)
 
     host = "http://#{hostname}:#{port}"
 
