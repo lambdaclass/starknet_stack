@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 log = "0.4.0"
-jsonrpsee = { version="0.18.2", features = ["server", "macros"] }
+jsonrpsee = { version = "0.18.2", features = ["server", "macros"] }
 mempool = { path = "../mempool" }
 sequencer = { path = "../sequencer" }
 serde_json = { version = "1.0.96", default-features = false }
@@ -23,4 +23,9 @@ base64 = "0.21.2"
 tokio = "1.28.2"
 anyhow = "1.0.71"
 tracing = "0.1"
-tracing-subscriber = {version = "0.3", features = ["env-filter", "fmt", "std"]}
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "fmt",
+    "std",
+] }
+bytes = "1.0.1"
