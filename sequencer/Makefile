@@ -1,7 +1,8 @@
 .PHONY: init node install-cairo-native run-fibonacci
 
 init:
-	cd benchmark &&	pip install -r requirements.txt
+	rustup toolchain install nightly-2023-06-19 --component rustc,cargo,rustfmt
+	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
 
 bench:
 	cd benchmark && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && fab local
@@ -16,7 +17,7 @@ install-cairo-native:
 	cd cairo_native && git checkout 289eddc05e84b99ae37c2889a31abc69f1fedfd1
 	brew install llvm@16
 	brew install tmux
-	cd cairo_native && scripts/fetch-corelibs.sh && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo build --release
+	cd cairo_native && scripts/fetch-corelibs.sh && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo +nightly-2023-06-19 build --release
 
 run-fibonacci:
 	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && ./cairo_native/target/release/cli run -f fib::fib::main ./cairo_programs/fib.cairo --available-gas 900000000

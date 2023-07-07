@@ -35,3 +35,4 @@ watcher_prover-*.tar
 npm-debug.log
 /assets/node_modules/
 
+.envrc

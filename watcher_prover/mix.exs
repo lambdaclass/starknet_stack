@@ -51,7 +51,13 @@ defmodule WatcherProver.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:rustler, "~> 0.29.0"},
-      {:tesla, "~> 1.4"}
+      {:tesla, "~> 1.4"},
+      {:ex_aws, "~> 2.0"},
+      {:ex_aws_s3, "~> 2.0"},
+      {:poison, "~> 3.1"},
+      {:hackney, "~> 1.6"},
+      {:sweet_xml, "~> 0.7.0"},
+      {:uuid, "~> 1.1"}
     ]
   end
 

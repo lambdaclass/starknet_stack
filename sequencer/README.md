@@ -16,8 +16,6 @@ The sequencer can be broken down into (roughly) 3 interchangeable modules:
 By interchangeable modules we mean that the underlying algorithm implementation in the Mempool communication, the Consensus protocol or the Execution Engine can be changed and configured.
 
 Additionally, in order to maintain and persist state, there is a State module which implements [PhotonDB](https://github.com/photondb/photondb) in a first iteration.
-<<<<<<< HEAD
-
 
 ## Quick Start
 
@@ -80,11 +78,28 @@ To run a node, you need to have a valid committee file and valid parameters (`ma
 
 Consensus will start when nodes can communicate with each other, which means you need to run all nodes. This in turn means all nodes need to share the same config and no nodes can be added to the network afteward.
 
+### Querying a node
+
+A node prvides an RPC endpoint that can be used to query it's state.
+
+Examples:
+
+Return latest block number:
+```
+curl -H "Content-Type: application/json" http://localhost:10008 -d '{"jsonrpc": "2.0","method": "starknet_blockNumber","params": [],"id": 1}'
+{"jsonrpc":"2.0","result":1,"id":1}%
+```
+
+Return block with its transactions:
+```
+curl -H "Content-Type: application/json" http://localhost:10008 -d '{"jsonrpc": "2.0","method": "starknet_getBlockWithTxs","params": [{"Number": 1}],"id": 1}'
+{"jsonrpc":"2.0","result":{"status":"ACCEPTED_ON_L2","block_hash":"ab7f32","parent_hash":"1250433","block_number":1,"new_root":"37f70fa9","timestamp":1688498274,"sequencer_address":"b7b3be","transactions":[{"type":"INVOKE","version":"0x1","transaction_hash":"72759bd7","max_fee":"55b0e2b","version":"0x1","signature":["af37b11"],"nonce":"2d7620a1","type":"INVOKE","sender_address":"5701712","calldata":["7bffa3"]}]},"id":1}%
+```
+
+_please note that current results are hardcoded_. It will be upgraded soon
 ## Next steps
 
 To do
-=======
->>>>>>> main
 
 ## Reference links
 

@@ -17,10 +17,10 @@ defmodule WatcherProver.Application do
       # Start Finch
       {Finch, name: WatcherProver.Finch},
       # Start the Endpoint (http/https)
-      WatcherProverWeb.Endpoint
-      # Start a worker by calling: WatcherProver.Worker.start_link(arg)
-      # {WatcherProver.Worker, arg}
-      # WatcherProver.Poller
+      WatcherDispatcherWeb.Endpoint,
+      # Start a worker by calling: WatcherDispatcher.Worker.start_link(arg)
+      # {WatcherDispatcher.Worker, arg}
+      WatcherDispatcher.Poller
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

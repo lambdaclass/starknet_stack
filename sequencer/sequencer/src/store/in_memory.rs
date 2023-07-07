@@ -2,6 +2,7 @@ use super::{Key, StoreEngine, Value};
 use anyhow::Result;
 use std::{collections::HashMap, fmt::Debug};
 
+#[derive(Clone)]
 pub struct Store {
     programs: HashMap<Key, Value>,
     transactions: HashMap<Key, Value>,
