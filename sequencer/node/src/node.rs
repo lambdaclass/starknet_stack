@@ -13,6 +13,7 @@ use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
+use sequencer::store::StoreEngine;
 use std::convert::TryInto;
 use rpc_endpoint::rpc;
 use store::Store;
