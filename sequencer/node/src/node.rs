@@ -13,8 +13,8 @@ use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
-use rpc_endpoint::rpc;
 use std::convert::TryInto;
+use rpc_endpoint::rpc;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -29,7 +29,7 @@ const RPC_PORT_OFFSET: u16 = 1000;
 pub struct Node {
     pub commit: Receiver<Block>,
     pub store: Store,
-    pub external_store: sequencer::store::store::Store,
+    pub external_store: sequencer::store::Store,
 }
 
 impl Node {
@@ -58,7 +58,7 @@ impl Node {
         // Make the data store.
         let store = Store::new(store_path).expect("Failed to create store");
         let external_store =
-            sequencer::store::store::Store::new(store_path, sequencer::store::store::EngineType::Sled);
+            sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
 
         // Run the signature service.
         let signature_service = SignatureService::new(secret_key);
@@ -135,38 +135,33 @@ impl Node {
                             batch_txs.len()
                         );
 
-                        let transactions = batch_txs
-                            .into_iter()
-                            .enumerate()
-                            .map(|(i, m)| {
-                                let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&m);
-                                info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
+                        let mut transactions = vec![];
+                        for (i, m) in batch_txs.into_iter().enumerate() {
+                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&m);
+                            info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
 
-                                let n = 10_usize;
-                                let program =
-                                    include_bytes!("../../cairo_programs/fib_contract.casm");
-                                let ret = run_cairo_1_entrypoint(
-                                    program.as_slice(),
-                                    0,
-                                    &[0_usize.into(), 1_usize.into(), n.into()],
-                                );
-                                info!("Output: ret is {:?}", ret);
+                            let n = 10_usize;
+                            let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+                            let ret = run_cairo_1_entrypoint(
+                                program.as_slice(),
+                                0,
+                                &[0_usize.into(), 1_usize.into(), n.into()],
+                            );
+                            info!("Output: ret is {:?}", ret);
 
-                                let starknet_tx_string =
-                                    serde_json::to_string(&starknet_tx).unwrap();
-                                let _ = self.external_store.add_transaction(
-                                    starknet_tx.transaction_hash.to_le_bytes().to_vec(),
-                                    starknet_tx_string.into_bytes(),
-                                );
-                                rpc::types::Transaction::Invoke(rpc::InvokeTransaction::V1(
-                                    starknet_tx,
-                                ))
-                            })
-                            .collect();
+                            let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
+                            let _ = self.external_store.add_transaction(
+                                starknet_tx.transaction_hash.to_le_bytes().to_vec(),
+                                starknet_tx_string.into_bytes(),
+                            );
+                            transactions.push(rpc::types::Transaction::Invoke(
+                                rpc::InvokeTransaction::V1(starknet_tx),
+                            ));
+                        }
 
                         // TODO create a correct Block Structure instad of a hardcoded one
                         let block = rpc::BlockWithTxs {
-                            status: rpc::BlockStatus::AcceptedOnL2,
+                            status: rpc_endpoint::rpc::BlockStatus::AcceptedOnL2,
                             block_hash: Felt252::new(11239218),
                             parent_hash: Felt252::new(19203123),
                             block_number: 1,

@@ -1,4 +1,4 @@
-use super::{Key, store_engine::StoreEngine, Value};
+use super::{Key, StoreEngine, Value};
 use anyhow::Result;
 use sled::Db;
 use std::fmt::Debug;

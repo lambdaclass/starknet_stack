@@ -1,5 +1,5 @@
 use rpc_endpoint::new_server;
-use sequencer::store::{store::EngineType, store::Store};
+use sequencer::store::{EngineType, Store};
 use tracing::log::info;
 use tracing_subscriber::util::SubscriberInitExt;
 

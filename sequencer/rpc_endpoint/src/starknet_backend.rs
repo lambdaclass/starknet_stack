@@ -12,7 +12,7 @@ use jsonrpsee::{
     types::{error::ErrorCode, ErrorObject},
 };
 use log::info;
-use sequencer::store::{store::Store, store_engine::StoreEngine};
+use sequencer::store::Store;
 
 pub struct StarknetBackend {
     pub(crate) store: Store,
