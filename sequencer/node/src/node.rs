@@ -1,6 +1,13 @@
 use crate::config::Export as _;
 use crate::config::{Committee, ConfigError, Parameters, Secret};
 use cairo_felt::Felt252;
+use cairo_lang_starknet::casm_contract_class::CasmContractClass;
+use cairo_vm::hint_processor::cairo_1_hint_processor::hint_processor::Cairo1HintProcessor;
+use cairo_vm::serde::deserialize_program::BuiltinName;
+use cairo_vm::types::program::Program;
+use cairo_vm::types::relocatable::MaybeRelocatable;
+use cairo_vm::vm::runners::cairo_runner::{CairoArg, CairoRunner, RunResources};
+use cairo_vm::vm::vm_core::VirtualMachine;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
 
@@ -13,7 +20,6 @@ use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
 use std::convert::TryInto;
-use std::process::Command;
 
 /// The default channel capacity for this module.
 pub const CHANNEL_CAPACITY: usize = 1_000;
@@ -150,19 +156,15 @@ impl Node {
                                 sender_address: Felt252::new(91232018),
                                 calldata: vec![Felt252::new(8126371)],
                             };
+                            let n = 10_usize;
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
-
-                            //Executing fib with pre-refactor cairo_native
-                            let res = Command::new("../cairo_native/target/release/cli")
-                                .arg("run")
-                                .arg("-f")
-                                .arg("fib::fib::main")
-                                .arg("../cairo_programs/fib.cairo")
-                                .arg("--available-gas")
-                                .arg("900000000")
-                                .output()
-                                .expect("Failed to execute process");
-                            info!("Output: {}", String::from_utf8_lossy(&res.stdout));
+                            let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+                            let ret = run_cairo_1_entrypoint(
+                                program.as_slice(),
+                                0,
+                                &[0_usize.into(), 1_usize.into(), n.into()],
+                            );
+                            info!("Output: ret is {:?}", ret);
                         }
                     }
                     MempoolMessage::BatchRequest(_, _) => {
@@ -171,5 +173,167 @@ impl Node {
                 }
             }
         }
+    }
+}
+
+// TODO: Move this to a separate library file
+fn run_cairo_1_entrypoint(
+    program_content: &[u8],
+    entrypoint_offset: usize,
+    args: &[MaybeRelocatable],
+) -> Vec<cairo_vm::felt::Felt252> {
+    let contract_class: CasmContractClass = serde_json::from_slice(program_content).unwrap();
+    let mut hint_processor =
+        Cairo1HintProcessor::new(&contract_class.hints, RunResources::default());
+    let aux_program: Program = contract_class.clone().try_into().unwrap();
+    let mut runner = CairoRunner::new(
+        &(contract_class.clone().try_into().unwrap()),
+        "all_cairo",
+        false,
+    )
+    .unwrap();
+    let mut vm = VirtualMachine::new(false);
+
+    let program_builtins = get_casm_contract_builtins(&contract_class, entrypoint_offset);
+    runner
+        .initialize_function_runner_cairo_1(&mut vm, &program_builtins)
+        .unwrap();
+
+    // Implicit Args
+    let syscall_segment = MaybeRelocatable::from(vm.add_memory_segment());
+
+    let builtins: Vec<&'static str> = runner
+        .get_program_builtins()
+        .iter()
+        .map(|b| b.name())
+        .collect();
+
+    let builtin_segment: Vec<MaybeRelocatable> = vm
+        .get_builtin_runners()
+        .iter()
+        .filter(|b| builtins.contains(&b.name()))
+        .flat_map(|b| b.initial_stack())
+        .collect();
+
+    let initial_gas = MaybeRelocatable::from(usize::MAX);
+
+    let mut implicit_args = builtin_segment;
+    implicit_args.extend([initial_gas]);
+    implicit_args.extend([syscall_segment]);
+
+    // Other args
+
+    // Load builtin costs
+    let builtin_costs: Vec<MaybeRelocatable> =
+        vec![0.into(), 0.into(), 0.into(), 0.into(), 0.into()];
+    let builtin_costs_ptr = vm.add_memory_segment();
+    vm.load_data(builtin_costs_ptr, &builtin_costs).unwrap();
+
+    // Load extra data
+    let core_program_end_ptr = (runner.program_base.unwrap() + aux_program.data_len()).unwrap();
+    let program_extra_data: Vec<MaybeRelocatable> =
+        vec![0x208B7FFF7FFF7FFE.into(), builtin_costs_ptr.into()];
+    vm.load_data(core_program_end_ptr, &program_extra_data)
+        .unwrap();
+
+    // Load calldata
+    let calldata_start = vm.add_memory_segment();
+    let calldata_end = vm.load_data(calldata_start, &args.to_vec()).unwrap();
+
+    // Create entrypoint_args
+
+    let mut entrypoint_args: Vec<CairoArg> = implicit_args
+        .iter()
+        .map(|m| CairoArg::from(m.clone()))
+        .collect();
+    entrypoint_args.extend([
+        MaybeRelocatable::from(calldata_start).into(),
+        MaybeRelocatable::from(calldata_end).into(),
+    ]);
+    let entrypoint_args: Vec<&CairoArg> = entrypoint_args.iter().collect();
+
+    // Run contract entrypoint
+
+    runner
+        .run_from_entrypoint(
+            entrypoint_offset,
+            &entrypoint_args,
+            true,
+            Some(aux_program.data_len() + program_extra_data.len()),
+            &mut vm,
+            &mut hint_processor,
+        )
+        .unwrap();
+
+    // Check return values
+    let return_values = vm.get_return_values(5).unwrap();
+    let retdata_start = return_values[3].get_relocatable().unwrap();
+    let retdata_end = return_values[4].get_relocatable().unwrap();
+    let retdata: Vec<cairo_vm::felt::Felt252> = vm
+        .get_integer_range(retdata_start, (retdata_end - retdata_start).unwrap())
+        .unwrap()
+        .iter()
+        .map(|c| c.clone().into_owned())
+        .collect();
+    retdata
+}
+
+fn get_casm_contract_builtins(
+    contract_class: &CasmContractClass,
+    entrypoint_offset: usize,
+) -> Vec<BuiltinName> {
+    contract_class
+        .entry_points_by_type
+        .external
+        .iter()
+        .find(|e| e.offset == entrypoint_offset)
+        .unwrap()
+        .builtins
+        .iter()
+        .map(|n| format!("{}_builtin", n))
+        .map(|s| match &*s {
+            cairo_vm::vm::runners::builtin_runner::OUTPUT_BUILTIN_NAME => BuiltinName::output,
+            cairo_vm::vm::runners::builtin_runner::RANGE_CHECK_BUILTIN_NAME => {
+                BuiltinName::range_check
+            }
+            cairo_vm::vm::runners::builtin_runner::HASH_BUILTIN_NAME => BuiltinName::pedersen,
+            cairo_vm::vm::runners::builtin_runner::SIGNATURE_BUILTIN_NAME => BuiltinName::ecdsa,
+            cairo_vm::vm::runners::builtin_runner::KECCAK_BUILTIN_NAME => BuiltinName::keccak,
+            cairo_vm::vm::runners::builtin_runner::BITWISE_BUILTIN_NAME => BuiltinName::bitwise,
+            cairo_vm::vm::runners::builtin_runner::EC_OP_BUILTIN_NAME => BuiltinName::ec_op,
+            cairo_vm::vm::runners::builtin_runner::POSEIDON_BUILTIN_NAME => BuiltinName::poseidon,
+            cairo_vm::vm::runners::builtin_runner::SEGMENT_ARENA_BUILTIN_NAME => {
+                BuiltinName::segment_arena
+            }
+            _ => panic!("Invalid builtin {}", s),
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn fib_1_cairovm() {
+        let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+        let n = 1_usize;
+        let ret = super::run_cairo_1_entrypoint(
+            program.as_slice(),
+            0,
+            &[1_usize.into(), 1_usize.into(), n.into()],
+        );
+        assert_eq!(ret, vec![1_usize.into()]);
+    }
+
+    #[test]
+    fn fib_10_cairovm() {
+        let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+        let n = 10_usize;
+        let ret = super::run_cairo_1_entrypoint(
+            program.as_slice(),
+            0,
+            &[1_usize.into(), 1_usize.into(), n.into()],
+        );
+        assert_eq!(ret, vec![55_usize.into()]);
     }
 }
