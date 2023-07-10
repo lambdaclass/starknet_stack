@@ -1,0 +1,15 @@
+[package]
+name = "watcher_prover"
+version = "0.1.0"
+authors = []
+edition = "2021"
+
+[lib]
+name = "watcher_prover"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.29.1"
+lambdaworks-stark = { git = "https://github.com/lambdaclass/lambdaworks_cairo_prover.git", rev = "d0c5348" }
+lambdaworks-math = { git = "https://github.com/lambdaclass/lambdaworks", rev = "a21d2c5" }
