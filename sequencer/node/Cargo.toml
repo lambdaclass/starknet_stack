@@ -1,6 +1,7 @@
 [package]
 name = "node"
 version = "0.1.0"
+authors = ["Alberto Sonnino <alberto@sonnino.com>", "LambdaClass <hello@lambdaclass.com>"]
 edition = "2018"
 publish = false
 

@@ -3,7 +3,7 @@ A Starknet decentralized sequencer implementation.
 
 ## Getting started
 
-> **Note to readers:** This codebase is useful to get started with fast BFT consensus and as baseline when designing your own protocols. The consensus code was based heavily on [asonnino's implementation](https://github.com/asonnino/hotstuff/) which was research focused instead of application focused. 
+> **Note:** The current consensus code is based heavily on [Albert Sonnino's (asonnino)  implementation](https://github.com/asonnino/hotstuff/) which was research focused instead of application focused. Modifications were made by Lambda Class mainly on the `node` crate to allow for proccessing of transactions for committed blocks. 
 
 The objective of this project is easily deploy an L2 decentralized sequencer for Starknet. This will be one of the multiple implementations that will follow the decentralized sequencer.
 
