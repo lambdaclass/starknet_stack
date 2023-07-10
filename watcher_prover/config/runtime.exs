@@ -28,7 +28,7 @@ config :ex_aws,
 config :watcher_prover,
   s3_bucket_name: "kraken-proofs",
   rpc_port: System.get_env("RPC_PORT"),
-  rpc_host: System.get_env("RPC_HOST")
+  rpc_host: System.get_env("RPC_HOST"),
   prover_storage: System.get_env("PROVER_STORAGE")
 
 if config_env() == :prod do
