@@ -123,6 +123,14 @@ impl StoreEngine for Store {
         // TODO: properly handle errors
         reply_receiver.recv().expect("error").expect("Other error")
     }
+
+    fn add_block(&mut self, _block_id: Key, _block: Value) -> Result<()> {
+        todo!()
+    }
+
+    fn get_block(&self, _block_id: Key) -> Option<Value> {
+        todo!()
+    }
 }
 
 impl Debug for Store {

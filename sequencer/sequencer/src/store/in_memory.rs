@@ -35,6 +35,14 @@ impl StoreEngine for Store {
     fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
         self.transactions.get(&transaction_id).cloned()
     }
+
+    fn add_block(&mut self, _block_id: Key, _block: Value) -> Result<()> {
+        todo!()
+    }
+
+    fn get_block(&self, _block_id: Key) -> Option<Value> {
+        todo!()
+    }
 }
 
 impl Debug for Store {

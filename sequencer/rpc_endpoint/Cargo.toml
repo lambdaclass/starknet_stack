@@ -24,4 +24,9 @@ base64 = "0.21.2"
 tokio = "1.28.2"
 anyhow = "1.0.71"
 tracing = "0.1"
-tracing-subscriber = {version = "0.3", features = ["env-filter", "fmt", "std"]}
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "fmt",
+    "std",
+] }
+bytes = "1.0.1"

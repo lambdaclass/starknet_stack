@@ -18,6 +18,8 @@ pub trait StoreEngine: Debug + Send {
     fn get_program(&self, program_id: Key) -> Option<Value>;
     fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()>;
     fn get_transaction(&self, transaction_id: Key) -> Option<Value>;
+    fn add_block(&mut self, block_id: Key, block: Value) -> Result<()>;
+    fn get_block(&self, block_id: Key) -> Option<Value>;
 }
 
 #[derive(Debug, Clone)]
@@ -32,8 +34,6 @@ pub enum EngineType {
     InMemory,
 }
 
-// TODO remove once it's being used
-#[allow(dead_code)]
 impl Store {
     pub fn new(path: &str, engine_type: EngineType) -> Self {
         match engine_type {
@@ -50,8 +50,10 @@ impl Store {
             },
         }
     }
+}
 
-    pub fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
+impl StoreEngine for Store {
+    fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
         self.engine
             .clone()
             .lock()
@@ -59,11 +61,11 @@ impl Store {
             .add_program(program_id, program)
     }
 
-    pub fn get_program(&self, program_id: Key) -> Option<Value> {
+    fn get_program(&self, program_id: Key) -> Option<Value> {
         self.engine.clone().lock().unwrap().get_program(program_id)
     }
 
-    pub fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
+    fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
         self.engine
             .clone()
             .lock()
@@ -71,11 +73,23 @@ impl Store {
             .add_transaction(transaction_id, transaction)
     }
 
-    pub fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
+    fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
         self.engine
             .clone()
             .lock()
             .unwrap()
             .get_transaction(transaction_id)
+    }
+
+    fn add_block(&mut self, block_id: Key, block: Value) -> Result<()> {
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .add_block(block_id, block)
+    }
+
+    fn get_block(&self, block_id: Key) -> Option<Value> {
+        self.engine.clone().lock().unwrap().get_block(block_id)
     }
 }

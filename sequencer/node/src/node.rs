@@ -10,16 +10,14 @@ use cairo_vm::vm::runners::cairo_runner::{CairoArg, CairoRunner, RunResources};
 use cairo_vm::vm::vm_core::VirtualMachine;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
-
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
-
-use rpc_endpoint::rpc::InvokeTransactionV1;
+use sequencer::store::StoreEngine;
+use std::convert::TryInto;
+use rpc_endpoint::rpc;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
-
-use std::convert::TryInto;
 
 /// The default channel capacity for this module.
 pub const CHANNEL_CAPACITY: usize = 1_000;
@@ -138,26 +136,12 @@ impl Node {
                             batch_txs.len()
                         );
 
+                        let mut transactions = vec![];
                         for (i, m) in batch_txs.into_iter().enumerate() {
-                            // Deserializes the bytes of the tx into a string. We are doing this to avoid default binary serialization.
-                            let _starknet_tx_string =
-                                String::from_utf8((&m[9..]).to_vec()).unwrap();
-
-                            //Commented it for now due to "trailing characters" error.
-                            // let starknet_tx: InvokeTransactionV1 =
-                            //     serde_json::from_str::<InvokeTransactionV1>(&starknet_tx_string)
-                            //         .unwrap();
-
-                            let starknet_tx = InvokeTransactionV1 {
-                                transaction_hash: Felt252::new(1920310231),
-                                max_fee: Felt252::new(89853483),
-                                signature: vec![Felt252::new(183728913)],
-                                nonce: Felt252::new(762716321),
-                                sender_address: Felt252::new(91232018),
-                                calldata: vec![Felt252::new(8126371)],
-                            };
-                            let n = 10_usize;
+                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&m);
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
+
+                            let n = 10_usize;
                             let program = include_bytes!("../../cairo_programs/fib_contract.casm");
                             let ret = run_cairo_1_entrypoint(
                                 program.as_slice(),
@@ -165,7 +149,36 @@ impl Node {
                                 &[0_usize.into(), 1_usize.into(), n.into()],
                             );
                             info!("Output: ret is {:?}", ret);
+
+                            let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
+                            let _ = self.external_store.add_transaction(
+                                starknet_tx.transaction_hash.to_le_bytes().to_vec(),
+                                starknet_tx_string.into_bytes(),
+                            );
+                            transactions.push(rpc::types::Transaction::Invoke(
+                                rpc::InvokeTransaction::V1(starknet_tx),
+                            ));
                         }
+
+                        // TODO create a correct Block Structure instad of a hardcoded one
+                        let block = rpc::BlockWithTxs {
+                            status: rpc_endpoint::rpc::BlockStatus::AcceptedOnL2,
+                            block_hash: Felt252::new(11239218),
+                            parent_hash: Felt252::new(19203123),
+                            block_number: 1,
+                            new_root: Felt252::new(938938281),
+                            timestamp: 1688498274,
+                            sequencer_address: Felt252::new(12039102),
+                            transactions,
+                        };
+                        let block_id = block.block_number;
+                        let block_string =
+                            serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block))
+                                .unwrap();
+
+                        let _ = self
+                            .external_store
+                            .add_block(block_id.to_le_bytes().to_vec(), block_string.into_bytes());
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")

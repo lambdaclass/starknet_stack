@@ -33,7 +33,7 @@ sequencer = { path = "../sequencer" }
 [features]
 benchmark = ["consensus/benchmark", "mempool/benchmark"]
 
-[[bin]]         
-name = "client"   
-path = "src/client.rs" 
-required-features = ["benchmark"] 
+[[bin]]
+name = "client"
+path = "src/client.rs"
+required-features = ["benchmark"]

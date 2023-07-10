@@ -7,6 +7,7 @@ use std::fmt::Debug;
 pub struct Store {
     programs: Db,
     transactions: Db,
+    blocks: Db,
 }
 
 impl Store {
@@ -14,6 +15,7 @@ impl Store {
         Self {
             programs: sled::open(format!("{path}.programs.db")).unwrap(),
             transactions: sled::open(format!("{path}.transactions.db")).unwrap(),
+            blocks: sled::open(format!("{path}.blocks.db")).unwrap(),
         }
     }
 }
@@ -39,6 +41,18 @@ impl StoreEngine for Store {
     fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
         self.transactions
             .get(&transaction_id)
+            .unwrap()
+            .map(|value| value.to_vec())
+    }
+
+    fn add_block(&mut self, block_id: Key, block: Value) -> Result<()> {
+        let _ = self.blocks.insert(block_id, block);
+        Ok(())
+    }
+
+    fn get_block(&self, block_id: Key) -> Option<Value> {
+        self.blocks
+            .get(&block_id)
             .unwrap()
             .map(|value| value.to_vec())
     }
