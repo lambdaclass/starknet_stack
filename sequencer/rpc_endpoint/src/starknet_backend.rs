@@ -11,7 +11,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{error::ErrorCode, ErrorObject},
 };
-use log::info;
+use log::{info, error};
 use sequencer::store::{Store, StoreEngine};
 
 pub struct StarknetBackend {
@@ -102,7 +102,6 @@ impl StarknetRpcApiServer for StarknetBackend {
 
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
-        info!("request {:?}", block_id);
         let id = match block_id {
             BlockId::Number(number) => number.to_ne_bytes(),
             BlockId::Hash(_) => todo!(),
@@ -110,9 +109,8 @@ impl StarknetRpcApiServer for StarknetBackend {
         };
         let serialized_block =
             String::from_utf8_lossy(&self.store.get_block(id.to_vec()).unwrap()).into_owned();
-        info!("result {}", serialized_block);
         serde_json::from_str(&serialized_block).map_err(|e| {
-            info!("error {}", e);
+            error!("error {}", e);
             ErrorObject::from(ErrorCode::ParseError)
         })
     }
