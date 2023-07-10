@@ -178,13 +178,9 @@ mod test {
 
         for x in 0..burst {
             if x == counter % burst {
-                // NOTE: This log entry is used to compute performance.
-                println!("Sending sample transaction {}", counter);
-
                 tx.put_u8(0u8); // Sample txs start with 0.
                 tx.put_u64(counter); // This counter identifies the tx.
             } else {
-                println!("Sending standard transaction {}", r);
                 r += 1;
 
                 tx.put_u8(1u8); // Standard txs start with 1.
