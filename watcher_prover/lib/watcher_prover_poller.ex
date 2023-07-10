@@ -74,6 +74,7 @@ defmodule WatcherProver.Poller do
 
         _ ->
           :ok = File.write("./proofs/#{block_hash}.proof", proof)
+          Logger.info("Saved block with id #{block_hash} to file ./proofs/#{block_hash}.proof")
       end
 
       {:noreply,
