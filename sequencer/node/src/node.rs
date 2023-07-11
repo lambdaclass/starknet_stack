@@ -13,9 +13,9 @@ use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
+use rpc_endpoint::rpc;
 use sequencer::store::StoreEngine;
 use std::convert::TryInto;
-use rpc_endpoint::rpc;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -138,7 +138,11 @@ impl Node {
 
                         let mut transactions = vec![];
                         for (i, m) in batch_txs.into_iter().enumerate() {
-                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&m);
+                            let invoke_tx_v1 = rpc::InvokeTransactionV1::from_bytes(&m);
+                            let tx_hash = invoke_tx_v1.transaction_hash.clone();
+                            let starknet_tx = rpc::types::Transaction::Invoke(
+                                rpc::InvokeTransaction::V1(invoke_tx_v1),
+                            );
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
 
                             let n = 10_usize;
@@ -152,12 +156,10 @@ impl Node {
 
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
                             let _ = self.external_store.add_transaction(
-                                starknet_tx.transaction_hash.to_le_bytes().to_vec(),
+                                tx_hash.to_le_bytes().to_vec(),
                                 starknet_tx_string.into_bytes(),
                             );
-                            transactions.push(rpc::types::Transaction::Invoke(
-                                rpc::InvokeTransaction::V1(starknet_tx),
-                            ));
+                            transactions.push(starknet_tx);
                         }
 
                         // TODO create a correct Block Structure instad of a hardcoded one

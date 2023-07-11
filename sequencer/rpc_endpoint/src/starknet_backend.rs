@@ -11,7 +11,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{error::ErrorCode, ErrorObject},
 };
-use log::{info, error};
+use log::{error, info};
 use sequencer::store::{Store, StoreEngine};
 
 pub struct StarknetBackend {
