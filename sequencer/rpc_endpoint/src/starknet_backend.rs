@@ -1,5 +1,5 @@
 use crate::rpc::{
-    BlockHashAndNumber, BlockId, BlockWithInternalTransactions, BroadcastedDeclareTransaction,
+    BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
     EventsPage, FeeEstimate, FunctionCall, InvokeTransactionResult, MaybePendingBlockWithTxHashes,
@@ -243,21 +243,6 @@ impl StarknetRpcApiServer for StarknetBackend {
         &self,
         transaction_hash: Felt252,
     ) -> RpcResult<MaybePendingTransactionReceipt> {
-        unimplemented!();
-    }
-
-    /// NOTE: Not part of the RPC spec
-    ///  Returns the receipt of a transaction by transaction hash.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - Blocks that you want to retrieve
-    /// * `height` - Height of the block from which we need blocks
-    fn get_n_blocks_from_height(
-        &self,
-        n: u64,
-        height: u64,
-    ) -> RpcResult<Vec<BlockWithInternalTransactions>> {
         unimplemented!();
     }
 }
