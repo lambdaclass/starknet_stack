@@ -118,7 +118,7 @@ impl Client {
                     tx.put_u8(1u8); // Standard txs start with 1.
                     tx.put_u64(r); // Ensures all clients send different txs.
                 };
-                let bytes = InvokeTransactionV1::new_as_bytes();
+                let bytes = InvokeTransactionV1::new_as_bytes(counter, r);
                 for b in bytes {
                     tx.put_u8(b);
                 }
@@ -187,7 +187,7 @@ mod test {
                 tx.put_u8(1u8); // Standard txs start with 1.
                 tx.put_u64(r); // Ensures all clients send different txs.
             };
-            let bytes = InvokeTransactionV1::new_as_bytes();
+            let bytes = InvokeTransactionV1::new_as_bytes(762716321, 8126371);
             for b in bytes {
                 tx.put_u8(b);
             }

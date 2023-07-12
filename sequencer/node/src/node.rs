@@ -161,7 +161,6 @@ impl Node {
                                 }
                                 _ => todo!(),
                             }
-
                             transactions.push(starknet_tx);
                         }
 
