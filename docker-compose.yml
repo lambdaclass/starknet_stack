@@ -1,48 +1,50 @@
+networks:
+  frontend:
+    ipam:
+      config:
+        - subnet: 172.27.0.0/24
+
 services:
-  sequencer:
+  sequencer_node0:
     build:
-      context: ./sequencer
-    deploy:
-      replicas: 4
-    volumes:
-      - sequencer:/sequencer/target/
-
-  watcher_prover:
-    build:
-      context: ./watcher_prover
-
-  starknet_stack_explorer:
-    build:
-      context: ./starknet_stack_explorer
-    ports:
-      - 4000:4000
-    environment:
-      - RPC_API_HOST=http://host.docker.internal:9944
-      - DATABASE_URL=ecto://postgres:postgres@postgres:5432/starknet_explorer_dev
-    depends_on:
-      - postgres
+      context: ./sequencer/
     networks:
-      default:
-        aliases:
-          - explorer
-
-  postgres_starknet_stack_explorer:
-    container_name: starknet_explorer_dev_db
-    image: postgres:15.3
-    ports:
-      - 5432:5432
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=starknet_explorer_dev
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      frontend:
+        ipv4_address: 172.27.0.10
     volumes:
-      - pg_data:/var/lib/postgresql/data/
-    networks:
-      default:
-        aliases:
-          - postgres
+      - ./sequencer/config/sequencer_node0.json:/sequencer/config/sequencer_node0.json
+      - ./sequencer/config/committee.json:/sequencer/config/committee.json
+    command: /sequencer/node -vvv run --keys /sequencer/config/sequencer_node0.json --committee /sequencer/config/committee.json --store /sequencer/db0
 
-volumes:
-  pg_data:
-  sequencer:
+  sequencer_node1:
+    build:
+      context: ./sequencer/
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.11
+    volumes:
+      - ./sequencer/config/sequencer_node1.json:/sequencer/config/sequencer_node1.json
+      - ./sequencer/config/committee.json:/sequencer/config/committee.json
+    command: /sequencer/node -vvv run --keys /sequencer/config/sequencer_node1.json --committee /sequencer/config/committee.json --store /sequencer/db1
+
+  sequencer_node2:
+    build:
+      context: ./sequencer/
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.12
+    volumes:
+      - ./sequencer/config/sequencer_node2.json:/sequencer/config/sequencer_node2.json
+      - ./sequencer/config/committee.json:/sequencer/config/committee.json
+    command: /sequencer/node -vvv run --keys /sequencer/config/sequencer_node2.json --committee /sequencer/config/committee.json --store /sequencer/db2
+
+  sequencer_node3:
+    build:
+      context: ./sequencer/
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.13
+    volumes:
+      - ./sequencer/config/sequencer_node3.json:/sequencer/config/sequencer_node3.json
+      - ./sequencer/config/committee.json:/sequencer/config/committee.json
+    command: /sequencer/node -vvv run --keys /sequencer/config/sequencer_node3.json --committee /sequencer/config/committee.json --store /sequencer/db3
