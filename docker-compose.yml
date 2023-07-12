@@ -1,0 +1,43 @@
+services:
+  sequencer:
+    build:
+      context: ./sequencer
+
+  watcher_prover:
+    build:
+      context: ./watcher_prover
+
+  starknet_stack_explorer:
+    build:
+      context: ./starknet_stack_explorer
+    ports:
+      - 4000:4000
+    environment:
+      - RPC_API_HOST=http://host.docker.internal:9944
+      - DATABASE_URL=ecto://postgres:postgres@postgres:5432/starknet_explorer_dev
+    depends_on:
+      - postgres
+    networks:
+      default:
+        aliases:
+          - explorer
+
+  postgres_starknet_stack_explorer:
+    container_name: starknet_explorer_dev_db
+    image: postgres:15.3
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=starknet_explorer_dev
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - pg_data:/var/lib/postgresql/data/
+    networks:
+      default:
+        aliases:
+          - postgres
+
+volumes:
+  pg_data:
