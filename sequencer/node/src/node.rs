@@ -137,7 +137,7 @@ impl Node {
                         );
 
                         let mut transactions = vec![];
-                        for (i, m) in batch_txs.into_iter().enumerate() {
+                        for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
                             // - First byte can be 0 or 1 and represents whether it's a benchmarked tx or standard tx
@@ -145,9 +145,10 @@ impl Node {
                             //
                             // If it's a benchmarked tx, it then gets tracked in logs to compute metrics
                             // So we need to strip that section in order to get the starknet transaction to execute 
+                            #[cfg(feature = "benchmark")]
+                            let tx_bytes = &tx_bytes[9..];
 
-                            let starknet_transaction_bytes = &m[9..];
-                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&starknet_transaction_bytes);
+                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&tx_bytes);
 
                             info!("Message {i} in {:?} is of tx_type {:?}, executing", p, starknet_tx);
 
