@@ -641,8 +641,10 @@ impl InvokeTransactionV1 {
         let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
         starknet_transaction_str.as_bytes().to_owned()
     }
+}
 
-    pub fn from_bytes(bytes: &[u8]) -> InvokeTransactionV1 {
+impl Transaction {
+    pub fn from_bytes(bytes: &[u8]) -> Transaction {
         let tx_string = String::from_utf8(
             bytes
                 .iter()
@@ -653,7 +655,7 @@ impl InvokeTransactionV1 {
         )
         .unwrap();
 
-        serde_json::from_str::<InvokeTransactionV1>(&tx_string).unwrap()
+        serde_json::from_str::<Transaction>(&tx_string).unwrap()
     }
 
     fn calculate_hash(&self) -> u64 {

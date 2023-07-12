@@ -211,7 +211,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         unimplemented!();
     }
 
-    /// Returns a transaction details from it's hash.
+    /// Returns a transaction details from its hash.
     ///
     /// If the transaction is in the transactions pool,
     /// it considers the transaction hash as not found.
@@ -221,17 +221,16 @@ impl StarknetRpcApiServer for StarknetBackend {
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction> {
-        let serialized_tx = String::from_utf8_lossy(
-            &self
-                .store
-                .get_transaction(transaction_hash.to_le_bytes().to_vec())
-                .unwrap(),
-        )
-        .into_owned();
-        serde_json::from_str::<Transaction>(&serialized_tx).map_err(|e| {
-            info!("error {}", e);
-            ErrorObject::from(ErrorCode::ParseError)
-        })
+        // TODO: add error handling
+        let tx = &self
+            .store
+            .get_transaction(transaction_hash.to_le_bytes().to_vec())
+            .unwrap();
+
+        let serialized_tx = String::from_utf8_lossy(tx);
+        let tx: Transaction = serde_json::from_str(&serialized_tx).unwrap();
+
+        Ok(tx)
     }
 
     /// Returns the receipt of a transaction by transaction hash.

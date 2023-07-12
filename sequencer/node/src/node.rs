@@ -13,7 +13,7 @@ use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
-use rpc_endpoint::rpc;
+use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
 use sequencer::store::StoreEngine;
 use std::convert::TryInto;
 use store::Store;
@@ -138,11 +138,7 @@ impl Node {
 
                         let mut transactions = vec![];
                         for (i, m) in batch_txs.into_iter().enumerate() {
-                            let invoke_tx_v1 = rpc::InvokeTransactionV1::from_bytes(&m);
-                            let tx_hash = invoke_tx_v1.transaction_hash.clone();
-                            let starknet_tx = rpc::types::Transaction::Invoke(
-                                rpc::InvokeTransaction::V1(invoke_tx_v1),
-                            );
+                            let starknet_tx = rpc::Transaction::from_bytes(&m);
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
 
                             let n = 10_usize;
@@ -155,10 +151,17 @@ impl Node {
                             info!("Output: ret is {:?}", ret);
 
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
-                            let _ = self.external_store.add_transaction(
-                                tx_hash.to_le_bytes().to_vec(),
-                                starknet_tx_string.into_bytes(),
-                            );
+
+                            match &starknet_tx {
+                                Transaction::Invoke(InvokeTransaction::V1(tx)) => {
+                                    let _ = self.external_store.add_transaction(
+                                        tx.transaction_hash.to_le_bytes().to_vec(),
+                                        starknet_tx_string.into_bytes(),
+                                    );
+                                }
+                                _ => todo!(),
+                            }
+
                             transactions.push(starknet_tx);
                         }
 
