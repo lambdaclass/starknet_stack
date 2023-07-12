@@ -138,8 +138,12 @@ impl Node {
 
                         let mut transactions = vec![];
                         for (i, m) in batch_txs.into_iter().enumerate() {
-                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&m);
-                            info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
+                            // because the consensus code uses the first 8 bytes to sample and track transactions on
+                            // the benchmarking side, we need to strip that section in order to get the transaction to execute 
+                            let starknet_transaction_bytes = &m[9..];
+                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&starknet_transaction_bytes);
+
+                            info!("Message {i} in {:?} is of tx_type {:?}, executing", p, starknet_tx);
 
                             let n = 10_usize;
                             let program = include_bytes!("../../cairo_programs/fib_contract.casm");

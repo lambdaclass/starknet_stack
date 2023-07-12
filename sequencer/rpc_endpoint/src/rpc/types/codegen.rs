@@ -644,7 +644,6 @@ impl InvokeTransactionV1 {
         let tx_string = String::from_utf8(
             bytes
                 .iter()
-                .skip(9)
                 .take_while(|v| *v != &0)
                 .map(|v| *v)
                 .collect(),
