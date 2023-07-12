@@ -17,8 +17,3 @@ pub use crate::config::{Committee, Parameters};
 pub use crate::mempool::{ConsensusMempoolMessage, Mempool};
 
 pub use crate::mempool::MempoolMessage;
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum TransactionType {
-    ExecuteFibonacci(u64),
-}
