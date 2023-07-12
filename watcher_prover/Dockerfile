@@ -24,5 +24,5 @@ RUN mix compile
 RUN mix release
 RUN mix phx.gen.release
 
-# Run command whan container is initialized
+# Run command when container is initialized
 CMD ./_build/prod/rel/watcher_prover/bin/watcher_prover start
