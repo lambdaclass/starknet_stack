@@ -46,3 +46,7 @@ cairo_native/
 
 # Readme
 README.md
+
+Makefile
+
+config/
