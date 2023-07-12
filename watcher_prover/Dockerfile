@@ -1,3 +1,5 @@
+FROM elixir:1.14.5-otp-25
+
 # Install cargo
 RUN apt-get -qq update
 RUN apt-get install -y -q build-essential curl
