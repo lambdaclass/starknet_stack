@@ -138,13 +138,4 @@ pub trait StarknetRpcApi {
         &self,
         transaction_hash: Felt252,
     ) -> RpcResult<MaybePendingTransactionReceipt>;
-
-    /// NOTE: This is not from the RPC spec and was created for the Kraken watcher prover
-    /// Returns list of blocks with full transaction data instead of just the hashes
-    #[method(name = "getBlocksFromHeight")]
-    fn get_n_blocks_from_height(
-        &self,
-        n: u64,
-        height: u64,
-    ) -> RpcResult<Vec<BlockWithInternalTransactions>>;
 }

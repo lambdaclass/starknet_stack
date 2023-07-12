@@ -28,7 +28,7 @@ impl StoreEngine for Store {
 
     fn get_program(&self, program_id: Key) -> Option<Value> {
         self.programs
-            .get(&program_id)
+            .get(program_id)
             .unwrap()
             .map(|value| value.to_vec())
     }
@@ -40,7 +40,7 @@ impl StoreEngine for Store {
 
     fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
         self.transactions
-            .get(&transaction_id)
+            .get(transaction_id)
             .unwrap()
             .map(|value| value.to_vec())
     }
@@ -52,7 +52,7 @@ impl StoreEngine for Store {
 
     fn get_block(&self, block_id: Key) -> Option<Value> {
         self.blocks
-            .get(&block_id)
+            .get(block_id)
             .unwrap()
             .map(|value| value.to_vec())
     }

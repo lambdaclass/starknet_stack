@@ -21,7 +21,6 @@ use std::sync::Arc;
 
 use cairo_felt::Felt252;
 
-use mempool::TransactionType;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 
@@ -83,31 +82,6 @@ pub struct BlockWithTxHashes {
     /// The hashes of the transactions included in this block
     #[serde_as(as = "Vec<FeltHex>")]
     pub transactions: Vec<Felt252>,
-}
-
-/// NOTE: Not from RPC spec standard
-/// Block with transaction hashes.
-///
-/// The block object.
-#[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "no_unknown_fields", serde(deny_unknown_fields))]
-pub struct BlockWithInternalTransactions {
-    /// Block hash
-    #[serde_as(as = "FeltHex")]
-    pub block_hash: Felt252,
-    /// The hash of this block's parent
-    #[serde_as(as = "FeltHex")]
-    pub parent_hash: Felt252,
-    /// The block number (its height)
-    pub block_number: u64,
-    /// The time in which the block was created, encoded in Unix time
-    pub timestamp: u64,
-    /// The Starknet identity of the sequencer submitting this block
-    #[serde_as(as = "FeltHex")]
-    pub sequencer_address: Felt252,
-    /// The hashes of the transactions included in this block
-    pub transactions: Vec<TransactionType>,
 }
 
 /// Block with transactions.

@@ -13,9 +13,9 @@ use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
+use rpc_endpoint::rpc;
 use sequencer::store::StoreEngine;
 use std::convert::TryInto;
-use rpc_endpoint::rpc;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
