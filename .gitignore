@@ -35,4 +35,4 @@ terraform.rc
 
 docker_volumes/
 
-starknet_explorer/
+starknet_stack_explorer/
