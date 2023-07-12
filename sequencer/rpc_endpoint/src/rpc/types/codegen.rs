@@ -628,30 +628,33 @@ impl InvokeTransactionV1 {
     pub fn new_as_bytes() -> Vec<u8> {
         // let transaction_type = TransactionType::ExecuteFibonacci(200 + counter);
         // TODO: these are default values, need to be changed
-        let starknet_transaction = InvokeTransactionV1 {
-            transaction_hash: Felt252::new(1920310231),
-            max_fee: Felt252::new(89853483),
-            signature: vec![Felt252::new(183728913)],
-            nonce: Felt252::new(762716321),
-            sender_address: Felt252::new(91232018),
-            calldata: vec![Felt252::new(8126371)],
-        };
+        let starknet_transaction =
+            Transaction::Invoke(InvokeTransaction::V1(InvokeTransactionV1 {
+                transaction_hash: Felt252::new(1920310231),
+                max_fee: Felt252::new(89853483),
+                signature: vec![Felt252::new(183728913)],
+                nonce: Felt252::new(762716321),
+                sender_address: Felt252::new(91232018),
+                calldata: vec![Felt252::new(8126371)],
+            }));
         let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
         starknet_transaction_str.as_bytes().to_owned()
     }
+}
 
-    pub fn from_bytes(bytes: &[u8]) -> InvokeTransactionV1 {
+impl Transaction {
+    pub fn from_bytes(bytes: &[u8]) -> Transaction {
         let tx_string = String::from_utf8(
             bytes
                 .iter()
                 .skip(9)
                 .take_while(|v| *v != &0)
-                .map(|v| *v)
+                .copied()
                 .collect(),
         )
         .unwrap();
 
-        serde_json::from_str::<InvokeTransactionV1>(&tx_string).unwrap()
+        serde_json::from_str::<Transaction>(&tx_string).unwrap()
     }
 }
 

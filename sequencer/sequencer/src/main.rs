@@ -38,7 +38,7 @@ async fn main() {
             info!("RPC Server started, running on port {}", RPC_PORT);
             handle.stopped().await;
         }
-        Err(e) => println!("Error creating RPC server: {}", e.to_string()),
+        Err(e) => println!("Error creating RPC server: {}", e),
     };
 }
 

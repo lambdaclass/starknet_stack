@@ -167,6 +167,7 @@ mod test {
     use bytes::BufMut;
     use bytes::BytesMut;
     use rand::Rng;
+    use rpc_endpoint::rpc::Transaction;
 
     #[test]
     fn test_serialize_transaction() {
@@ -193,7 +194,7 @@ mod test {
             tx.resize(size, 0u8);
             let bytes = tx.split().freeze();
 
-            let _ret = InvokeTransactionV1::from_bytes(&bytes);
+            let _ret = Transaction::from_bytes(&bytes);
         }
     }
 }
