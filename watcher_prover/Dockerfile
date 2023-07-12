@@ -18,8 +18,11 @@ RUN mix local.hex --force
 RUN mix local.rebar --force
 RUN mix deps.get --only $MIX_ENV
 RUN mix deps.compile
+RUN mix assets.deploy
+RUN mix phx.digest
 RUN mix compile
 RUN mix release
 RUN mix phx.gen.release
 
+# Run command when container is initialized
 CMD ./_build/prod/rel/watcher_prover/bin/watcher_prover start
