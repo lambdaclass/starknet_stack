@@ -5,13 +5,13 @@
 
 use cairo_felt::Felt252;
 use jsonrpsee::core::RpcResult;
-use jsonrpsee::proc_macros::rpc;
+use jsonrpsee::proc_macros::xrpc;
 
 pub mod types;
 pub use types::*;
 
 /// Starknet rpc interface.
-#[rpc(server, namespace = "starknet")]
+#[xrpc(server, namespace = "starknet")]
 pub trait StarknetRpcApi {
     /// Get the most recent accepted block number
     #[method(name = "blockNumber")]
