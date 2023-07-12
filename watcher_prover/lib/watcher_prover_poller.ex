@@ -24,6 +24,7 @@ defmodule WatcherProver.Poller do
     }
 
     Process.send_after(self(), :poll, @polling_frequency_ms)
+    :ok = File.mkdir_p("./proofs")
 
     {:ok, state}
   end
@@ -59,7 +60,7 @@ defmodule WatcherProver.Poller do
       # TODO: fetch executions from the invoke transactions for this block to prove
       {:ok, program} = File.read("./programs/fibonacci_cairo1.casm")
 
-      proof = run_proofs(program)
+      {proof, public_inputs} = run_proofs(program)
 
       Logger.info("Generated block proof #{inspect(proof)}")
 
@@ -73,7 +74,8 @@ defmodule WatcherProver.Poller do
           Logger.info("Uploaded proof of block with id #{block_hash}")
 
         _ ->
-          :ok = File.write("./proofs/#{block_hash}.proof", proof)
+          file_path = "./proofs/#{block_hash}.proof"
+          :ok = File.write(file_path, proof, [:write])
           Logger.info("Saved block with id #{block_hash} to file ./proofs/#{block_hash}.proof")
       end
 
