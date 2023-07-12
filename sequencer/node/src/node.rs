@@ -1,7 +1,10 @@
 use crate::config::Export as _;
 use crate::config::{Committee, ConfigError, Parameters, Secret};
 use cairo_felt::Felt252;
+use cairo_lang_compiler::CompilerConfig;
+use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
 use cairo_lang_starknet::casm_contract_class::CasmContractClass;
+use cairo_native::easy::compile_and_execute;
 use cairo_vm::hint_processor::cairo_1_hint_processor::hint_processor::Cairo1HintProcessor;
 use cairo_vm::serde::deserialize_program::BuiltinName;
 use cairo_vm::types::program::Program;
@@ -12,10 +15,14 @@ use consensus::{Block, Consensus};
 use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
+use num_bigint::BigUint;
 use rpc_endpoint::new_server;
 use rpc_endpoint::rpc;
 use sequencer::store::StoreEngine;
+use serde_json::json;
 use std::convert::TryInto;
+use std::io::stdout;
+use std::path::Path;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -143,12 +150,17 @@ impl Node {
 
                             let n = 10_usize;
                             let program = include_bytes!("../../cairo_programs/fib_contract.casm");
-                            let ret = run_cairo_1_entrypoint(
-                                program.as_slice(),
-                                0,
-                                &[0_usize.into(), 1_usize.into(), n.into()],
-                            );
-                            info!("Output: ret is {:?}", ret);
+                            let execution_engine = true;
+                            if execution_engine {
+                                let ret = run_cairo_1_entrypoint(
+                                    program.as_slice(),
+                                    0,
+                                    &[0_usize.into(), 1_usize.into(), n.into()],
+                                );
+                                info!("Output: ret is {:?}", ret);
+                            } else {
+                                //execute with cairo_native
+                            }
 
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
                             let _ = self.external_store.add_transaction(
@@ -325,6 +337,13 @@ fn get_casm_contract_builtins(
 
 #[cfg(test)]
 mod test {
+    use std::{io::stdout, path::Path};
+
+    use cairo_lang_compiler::CompilerConfig;
+    use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
+    use cairo_native::easy::compile_and_execute;
+    use num_bigint::BigUint;
+    use serde_json::json;
 
     #[test]
     fn fib_1_cairovm() {
@@ -348,5 +367,55 @@ mod test {
             &[1_usize.into(), 1_usize.into(), n.into()],
         );
         assert_eq!(ret, vec![55_usize.into()]);
+    }
+
+    #[test]
+    fn fib_10_cairo_native() {
+        let a = {
+            let mut digits = BigUint::from(0_u32).to_u32_digits();
+            digits.resize(8, 0);
+            dbg!(digits)
+        };
+
+        let b = {
+            let mut digits = BigUint::from(1_u32).to_u32_digits();
+            digits.resize(8, 0);
+            dbg!(digits)
+        };
+
+        let n = {
+            let mut digits = BigUint::from(10_u32).to_u32_digits();
+            digits.resize(8, 0);
+            dbg!(digits)
+        };
+        std::env::set_var(
+            "CARGO_MANIFEST_DIR",
+            format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
+        );
+
+        let program = cairo_lang_compiler::compile_cairo_project_at_path(
+            Path::new("../cairo_programs/fib_contract.cairo"),
+            CompilerConfig {
+                replace_ids: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        compile_and_execute::<CoreType, CoreLibfunc, _, _>(
+            &program,
+            &program
+                .funcs
+                .iter()
+                .find(|x| {
+                    x.id.debug_name.as_deref() == Some("fib_contract::fib_contract::Fibonacci::fib")
+                })
+                .unwrap()
+                .id,
+            json!([null, 9000, a, b, n]),
+            &mut serde_json::Serializer::new(stdout()),
+        )
+        .unwrap();
+        println!();
     }
 }
