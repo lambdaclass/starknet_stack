@@ -24,6 +24,5 @@ RUN mix compile
 RUN mix release
 RUN mix phx.gen.release
 
+# Run command whan container is initialized
 CMD ./_build/prod/rel/watcher_prover/bin/watcher_prover start
-
-# /watcher/_build/prod/rel/watcher_prover/lib/watcher_prover-0.1.0/priv/static/cache_manifest.json
