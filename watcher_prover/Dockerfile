@@ -8,8 +8,6 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 # Environment variables
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV MIX_ENV=prod
-ENV RPC_HOST=localhost
-ENV RPC_PORT=10009
 
 # Copy watcher_prover inside docker
 WORKDIR /watcher
