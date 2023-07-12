@@ -2,6 +2,10 @@ services:
   sequencer:
     build:
       context: ./sequencer
+    deploy:
+      replicas: 4
+    volumes:
+      - sequencer:/sequencer/target/
 
   watcher_prover:
     build:
@@ -41,3 +45,4 @@ services:
 
 volumes:
   pg_data:
+  sequencer:
