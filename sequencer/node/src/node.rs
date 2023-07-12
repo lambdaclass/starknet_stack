@@ -346,11 +346,11 @@ mod test {
     #[test]
     fn fib_10_cairovm() {
         let program = include_bytes!("../../cairo_programs/fib_contract.casm");
-        let n = 9_usize;
+        let n = 10_usize;
         let ret = super::run_cairo_1_entrypoint(
             program.as_slice(),
             0,
-            &[1_usize.into(), 1_usize.into(), n.into()],
+            &[0_usize.into(), 1_usize.into(), n.into()],
         );
         assert_eq!(ret, vec![55_usize.into()]);
     }
