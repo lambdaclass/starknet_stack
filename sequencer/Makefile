@@ -21,3 +21,18 @@ install-cairo-native:
 
 run-fibonacci:
 	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && ./cairo_native/target/release/cli run -f fib::fib::main ./cairo_programs/fib.cairo --available-gas 900000000
+
+build-docker:
+	docker build -t sequencer:latest .
+
+generate-nodes-keys: init build-docker
+	if [ ! -d config/ ]; then \
+		mkdir config/; \
+	fi
+	@for node in $(shell seq 0 3); do \
+		echo Generating keys for sequencer node $${node}: config/sequencer_node$${node}.json; \
+		docker run sequencer:latest bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
+	done
+
+generate-commitee-for-docker: generate-nodes-keys
+	cd benchmark && fab config "172.27.0.10, 172.27.0.11, 172.27.0.12, 172.27.0.13"
