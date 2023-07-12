@@ -654,7 +654,6 @@ impl InvokeTransactionV1 {
     ///
     /// A vector of bytes representing the transaction.
     pub fn new_as_bytes(nonce: u64, calldata: u64) -> Vec<u8> {
-        // let transaction_type = TransactionType::ExecuteFibonacci(200 + counter);
         // TODO: these are default values, need to be changed
         let mut starknet_transaction = InvokeTransactionV1 {
             transaction_hash: Felt252::new(0), //Temporary hash
