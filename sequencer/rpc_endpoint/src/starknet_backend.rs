@@ -116,7 +116,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     }
 
     /// Returns the chain id.
-    fn chain_id(&self) -> RpcResult<FeltParam> {
+    fn chain_id(&self) -> RpcResult<Felt252> {
         unimplemented!();
     }
 
