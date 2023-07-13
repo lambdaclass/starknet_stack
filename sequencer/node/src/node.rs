@@ -13,7 +13,7 @@ use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
-use rpc_endpoint::rpc;
+use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
 use sequencer::store::StoreEngine;
 use std::convert::TryInto;
 use store::Store;
@@ -138,11 +138,7 @@ impl Node {
 
                         let mut transactions = vec![];
                         for (i, m) in batch_txs.into_iter().enumerate() {
-                            let invoke_tx_v1 = rpc::InvokeTransactionV1::from_bytes(&m);
-                            let tx_hash = invoke_tx_v1.transaction_hash.clone();
-                            let starknet_tx = rpc::types::Transaction::Invoke(
-                                rpc::InvokeTransaction::V1(invoke_tx_v1),
-                            );
+                            let starknet_tx = rpc::Transaction::from_bytes(&m);
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
 
                             let n = 10_usize;
@@ -153,12 +149,25 @@ impl Node {
                                 &[0_usize.into(), 1_usize.into(), n.into()],
                             );
                             info!("Output: ret is {:?}", ret);
-
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
-                            let _ = self.external_store.add_transaction(
-                                tx_hash.to_le_bytes().to_vec(),
-                                starknet_tx_string.into_bytes(),
-                            );
+
+                            match &starknet_tx {
+                                Transaction::Invoke(InvokeTransaction::V1(tx)) => {
+                                    info!(
+                                        "tx hash serialized: {}, decimal {} (hex {})",
+                                        serde_json::to_string(&tx.transaction_hash).unwrap(),
+                                        &tx.transaction_hash,
+                                        &tx.transaction_hash.to_str_radix(16)
+                                    );
+
+                                    let _ = self.external_store.add_transaction(
+                                        tx.transaction_hash.to_be_bytes().to_vec(),
+                                        starknet_tx_string.into_bytes(),
+                                    );
+                                }
+                                _ => todo!(),
+                            }
+
                             transactions.push(starknet_tx);
                         }
 
@@ -174,13 +183,15 @@ impl Node {
                             transactions,
                         };
                         let block_id = block.block_number;
-                        let block_string =
+                        let block_serialized: Vec<u8> =
                             serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block))
-                                .unwrap();
+                                .unwrap()
+                                .as_bytes()
+                                .to_vec();
 
                         let _ = self
                             .external_store
-                            .add_block(block_id.to_le_bytes().to_vec(), block_string.into_bytes());
+                            .add_block(block_id.to_be_bytes().to_vec(), block_serialized);
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
@@ -347,7 +358,7 @@ mod test {
         let ret = super::run_cairo_1_entrypoint(
             program.as_slice(),
             0,
-            &[1_usize.into(), 1_usize.into(), n.into()],
+            &[0_usize.into(), 1_usize.into(), n.into()],
         );
         assert_eq!(ret, vec![55_usize.into()]);
     }

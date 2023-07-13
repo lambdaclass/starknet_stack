@@ -13,6 +13,8 @@ pub mod sled;
 pub(crate) type Key = Vec<u8>;
 pub(crate) type Value = Vec<u8>;
 
+// TODO: add tests
+
 pub trait StoreEngine: Debug + Send {
     fn add_program(&mut self, program_id: Key, program: Value) -> Result<()>;
     fn get_program(&self, program_id: Key) -> Option<Value>;
@@ -51,6 +53,8 @@ impl Store {
         }
     }
 }
+
+// TODO: we might want this API to return types objects instead of bytes
 
 impl StoreEngine for Store {
     fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {

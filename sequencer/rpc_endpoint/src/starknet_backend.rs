@@ -2,9 +2,9 @@ use crate::rpc::{
     BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
-    EventsPage, FeeEstimate, FunctionCall, InvokeTransactionResult, MaybePendingBlockWithTxHashes,
-    MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate,
-    SyncStatusType, Transaction,
+    EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
+    MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt,
+    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -211,7 +211,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         unimplemented!();
     }
 
-    /// Returns a transaction details from it's hash.
+    /// Returns a transaction details from its hash.
     ///
     /// If the transaction is in the transactions pool,
     /// it considers the transaction hash as not found.
@@ -221,17 +221,23 @@ impl StarknetRpcApiServer for StarknetBackend {
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction> {
-        let serialized_tx = String::from_utf8_lossy(
-            &self
-                .store
-                .get_transaction(transaction_hash.to_le_bytes().to_vec())
-                .unwrap(),
-        )
-        .into_owned();
-        serde_json::from_str::<Transaction>(&serialized_tx).map_err(|e| {
-            info!("error {}", e);
-            ErrorObject::from(ErrorCode::ParseError)
-        })
+        // TODO: add error handling
+        let tx = &self
+            .store
+            .get_transaction(transaction_hash.to_be_bytes().to_vec())
+            .unwrap();
+
+        let deserialized_tx: Transaction =
+            serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
+        info!("tx json: {:?}", deserialized_tx);
+        match &deserialized_tx {
+            Transaction::Invoke(InvokeTransaction::V1(t)) => {
+                info!("tx_hash {}", t.transaction_hash);
+            }
+            _ => todo!(),
+        }
+
+        Ok(deserialized_tx)
     }
 
     /// Returns the receipt of a transaction by transaction hash.
