@@ -1,10 +1,10 @@
 use crate::rpc::{
-    BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
+    serializable_types::FeltParam, BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
     EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
     MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt,
-    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction, serializable_types::FeltParam,
+    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -225,7 +225,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         let transaction_hash = transaction_hash.0;
 
         info!("{}", transaction_hash);
-        
+
         // TODO: add error handling
         let tx = &self
             .store
