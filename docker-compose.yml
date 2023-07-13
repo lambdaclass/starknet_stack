@@ -11,6 +11,8 @@ services:
     networks:
       frontend:
         ipv4_address: 172.27.0.10
+    ports:
+      - 10000:10008
     volumes:
       - ./sequencer/config/sequencer_node0.json:/sequencer/config/sequencer_node0.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
@@ -22,6 +24,8 @@ services:
     networks:
       frontend:
         ipv4_address: 172.27.0.11
+    ports:
+      - 10001:10008
     volumes:
       - ./sequencer/config/sequencer_node1.json:/sequencer/config/sequencer_node1.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
@@ -33,6 +37,8 @@ services:
     networks:
       frontend:
         ipv4_address: 172.27.0.12
+    ports:
+      - 10002:10008
     volumes:
       - ./sequencer/config/sequencer_node2.json:/sequencer/config/sequencer_node2.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
@@ -44,6 +50,8 @@ services:
     networks:
       frontend:
         ipv4_address: 172.27.0.13
+    ports:
+      - 10003:10008
     volumes:
       - ./sequencer/config/sequencer_node3.json:/sequencer/config/sequencer_node3.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
