@@ -23,7 +23,6 @@ use std::sync::Arc;
 
 use cairo_felt::Felt252;
 
-use log::info;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 

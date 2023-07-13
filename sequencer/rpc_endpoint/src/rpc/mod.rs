@@ -10,6 +10,8 @@ use jsonrpsee::proc_macros::rpc;
 pub mod types;
 pub use types::*;
 
+use self::serializable_types::FeltParam;
+
 /// Starknet rpc interface.
 #[rpc(server, namespace = "starknet")]
 pub trait StarknetRpcApi {
@@ -130,7 +132,7 @@ pub trait StarknetRpcApi {
 
     /// Returns the information about a transaction by transaction hash.
     #[method(name = "getTransactionByHash")]
-    fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction>;
+    fn get_transaction_by_hash(&self, transaction_hash: FeltParam) -> RpcResult<Transaction>;
 
     /// Returns the receipt of a transaction by transaction hash.
     #[method(name = "getTransactionReceipt")]

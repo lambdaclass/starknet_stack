@@ -4,7 +4,7 @@ use crate::rpc::{
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
     EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
     MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt,
-    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
+    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction, serializable_types::FeltParam,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -220,7 +220,12 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// # Arguments
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
-    fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction> {
+    fn get_transaction_by_hash(&self, transaction_hash: FeltParam) -> RpcResult<Transaction> {
+        // necessary destructuring so that we can use a hex felt as a param
+        let transaction_hash = transaction_hash.0;
+
+        info!("{}", transaction_hash);
+        
         // TODO: add error handling
         let tx = &self
             .store
