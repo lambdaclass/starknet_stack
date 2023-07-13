@@ -26,7 +26,7 @@ impl<'de> DeserializeAs<'de, Felt252> for FeltHex {
         D: Deserializer<'de>,
     {
         let value = String::deserialize(deserializer)?;
-        Ok(Felt252::parse_bytes(value.as_bytes(),16).unwrap())
+        Ok(Felt252::parse_bytes(value.as_bytes(), 16).unwrap())
     }
 }
 
@@ -126,7 +126,7 @@ pub mod base64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::rpc::{Transaction, InvokeTransaction, InvokeTransactionV1};
+    use crate::rpc::{InvokeTransaction, InvokeTransactionV1, Transaction};
 
     use super::*;
 
@@ -155,11 +155,11 @@ mod tests {
                 calldata: vec![Felt252::new(2)],
             }));
 
-            let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
-            
-            let deserialized_tx:Transaction = serde_json::from_str(&starknet_transaction_str).unwrap();
-            if let Transaction::Invoke(InvokeTransaction::V1(v)) = deserialized_tx {
-                assert_eq!(Felt252::new(1), v.transaction_hash);
-            }
+        let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
+
+        let deserialized_tx: Transaction = serde_json::from_str(&starknet_transaction_str).unwrap();
+        if let Transaction::Invoke(InvokeTransaction::V1(v)) = deserialized_tx {
+            assert_eq!(Felt252::new(1), v.transaction_hash);
+        }
     }
 }

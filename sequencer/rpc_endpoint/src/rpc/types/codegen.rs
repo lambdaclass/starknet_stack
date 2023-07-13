@@ -622,26 +622,10 @@ pub struct InvokeTransactionV1 {
 }
 
 impl InvokeTransactionV1 {
-    /// Creates a transaction and returns it as a vector of bytes.
-    /// The transaction is a InvokeTransactionV1 transaction.
-    ///
-    /// # Returns
-    ///
-    /// A vector of bytes representing the transaction.
-    pub fn new_as_bytes(nonce: u64, calldata: u64) -> Vec<u8> {
-        // TODO: these are default values, need to be changed
-        let mut starknet_transaction = InvokeTransactionV1 {
-            transaction_hash: Felt252::new(0), //Temporary hash
-            max_fee: Felt252::new(89853483),
-            signature: vec![Felt252::new(183728913)],
-            nonce: Felt252::new(nonce),
-            sender_address: Felt252::new(91232018),
-            calldata: vec![Felt252::new(calldata)],
-        };
-        starknet_transaction.transaction_hash = Felt252::new(starknet_transaction.calculate_hash());
-        let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
-        info!("{}", starknet_transaction_str);
-        starknet_transaction_str.as_bytes().to_owned()
+    fn calculate_hash(&self) -> u64 {
+        let mut s = DefaultHasher::new();
+        self.hash(&mut s);
+        s.finish()
     }
 }
 
@@ -660,10 +644,28 @@ impl Transaction {
         serde_json::from_str::<Transaction>(&tx_string).unwrap()
     }
 
-    fn calculate_hash(&self) -> u64 {
-        let mut s = DefaultHasher::new();
-        self.hash(&mut s);
-        s.finish()
+    /// Creates a transaction and returns it as a vector of bytes.
+    /// The transaction is a InvokeTransactionV1 transaction.
+    ///
+    /// # Returns
+    ///
+    /// A vector of bytes representing the transaction.
+    pub fn new_invoke_as_bytes(nonce: u64, calldata: u64) -> Vec<u8> {
+        // TODO: these are default values, need to be changed
+        let mut starknet_transaction = InvokeTransactionV1 {
+            transaction_hash: Felt252::new(0), //Temporary hash
+            max_fee: Felt252::new(89853483),
+            signature: vec![Felt252::new(183728913)],
+            nonce: Felt252::new(nonce),
+            sender_address: Felt252::new(91232018),
+            calldata: vec![Felt252::new(calldata)],
+        };
+        starknet_transaction.transaction_hash = Felt252::new(starknet_transaction.calculate_hash());
+
+        let full_transaction = Transaction::Invoke(InvokeTransaction::V1(starknet_transaction));
+        let starknet_transaction_str = serde_json::to_string(&full_transaction).unwrap();
+        info!("{}", starknet_transaction_str);
+        starknet_transaction_str.as_bytes().to_owned()
     }
 }
 

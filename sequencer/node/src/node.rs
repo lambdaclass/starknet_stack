@@ -153,11 +153,16 @@ impl Node {
 
                             match &starknet_tx {
                                 Transaction::Invoke(InvokeTransaction::V1(tx)) => {
-                                    info!("tx hash: {}, displays as {}", serde_json::to_string(&tx.transaction_hash).unwrap(), &tx.transaction_hash);
-                                    
+                                    info!(
+                                        "tx hash serialized: {}, decimal {} (hex {})",
+                                        serde_json::to_string(&tx.transaction_hash).unwrap(),
+                                        &tx.transaction_hash,
+                                        &tx.transaction_hash.to_str_radix(16)
+                                    );
+
                                     let _ = self.external_store.add_transaction(
-                                    tx.transaction_hash.to_be_bytes().to_vec(),
-                                       starknet_tx_string.into_bytes(),
+                                        tx.transaction_hash.to_be_bytes().to_vec(),
+                                        starknet_tx_string.into_bytes(),
                                     );
                                 }
                                 _ => todo!(),
@@ -180,7 +185,9 @@ impl Node {
                         let block_id = block.block_number;
                         let block_serialized: Vec<u8> =
                             serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block))
-                                .unwrap().as_bytes().to_vec();
+                                .unwrap()
+                                .as_bytes()
+                                .to_vec();
 
                         let _ = self
                             .external_store
