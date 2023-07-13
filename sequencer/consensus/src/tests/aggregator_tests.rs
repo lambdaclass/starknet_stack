@@ -35,7 +35,7 @@ fn make_qc() {
     let vote = Vote::new_from_key(hash, round, public_key, &secret_key);
     match aggregator.add_vote(vote) {
         Ok(Some(qc)) => assert!(qc.verify(&committee()).is_ok()),
-        _ => assert!(false),
+        _ => panic!(),
     }
 }
 
