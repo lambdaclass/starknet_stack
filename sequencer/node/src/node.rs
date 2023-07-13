@@ -374,16 +374,19 @@ mod test {
         let a = {
             let mut digits = BigUint::from(0_u32).to_u32_digits();
             digits.resize(8, 0);
+            digits
         };
 
         let b = {
             let mut digits = BigUint::from(1_u32).to_u32_digits();
             digits.resize(8, 0);
+            digits
         };
 
         let n = {
-            let mut digits = BigUint::from(1000_u32).to_u32_digits();
+            let mut digits = BigUint::from(10_u32).to_u32_digits();
             digits.resize(8, 0);
+            digits
         };
         std::env::set_var(
             "CARGO_MANIFEST_DIR",
