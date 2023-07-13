@@ -30,7 +30,7 @@ impl<'de> DeserializeAs<'de, Felt252> for FeltHex {
         D: Deserializer<'de>,
     {
         let value = String::deserialize(deserializer)?;
-        Ok(Felt252::from_bytes_be(value.as_bytes()))
+        Ok(Felt252::parse_bytes(value.as_bytes(), 16).unwrap())
     }
 }
 
@@ -130,6 +130,8 @@ pub mod base64 {
 
 #[cfg(test)]
 mod tests {
+    use crate::rpc::{InvokeTransaction, InvokeTransactionV1, Transaction};
+
     use super::*;
 
     use serde_with::serde_as;
@@ -143,5 +145,28 @@ mod tests {
     fn empty_string_deser() {
         let r = serde_json::from_str::<TestStruct>("\"\"").unwrap();
         assert_eq!(r.0, None);
+    }
+
+    #[test]
+    fn serialize_deserialize_tx() {
+        let starknet_transaction =
+            Transaction::Invoke(InvokeTransaction::V1(InvokeTransactionV1 {
+                transaction_hash: Felt252::new(2314),
+                max_fee: Felt252::new(1),
+                signature: vec![Felt252::new(423)],
+                nonce: Felt252::new(1),
+                sender_address: Felt252::new(1),
+                calldata: vec![Felt252::new(2)],
+            }));
+
+        let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
+
+        let deserialized_tx: Transaction = serde_json::from_str(&starknet_transaction_str).unwrap();
+        if let Transaction::Invoke(InvokeTransaction::V1(v)) = deserialized_tx {
+            assert_eq!(Felt252::new(2314), v.transaction_hash);
+            assert_eq!(&Felt252::new(423), v.signature.first().unwrap());
+        } else {
+            panic!()
+        }
     }
 }
