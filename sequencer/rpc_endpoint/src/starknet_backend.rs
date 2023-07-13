@@ -224,8 +224,6 @@ impl StarknetRpcApiServer for StarknetBackend {
         // necessary destructuring so that we can use a hex felt as a param
         let transaction_hash = transaction_hash.0;
 
-        info!("{}", transaction_hash);
-
         // TODO: add error handling
         let tx = &self
             .store
