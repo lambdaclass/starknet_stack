@@ -63,9 +63,19 @@ defmodule WatcherProver.Poller do
 
       Logger.info("Generated block proof #{inspect(proof)}")
 
-      # TODO: Uncomment this when we are ready
-      # :ok = S3.upload_object!(:erlang.list_to_binary(proof), block["block_hash"])
-      Logger.info("Uploaded proof of block with id #{block["block_hash"]}")
+      block_hash = block["block_hash"]
+      prover_storage = Application.get_env(:watcher_prover, :prover_storage)
+
+      case prover_storage do
+        "s3" ->
+          # TODO: Uncomment this when we are ready
+          # :ok = S3.upload_object!(:erlang.list_to_binary(proof), block["block_hash"])
+          Logger.info("Uploaded proof of block with id #{block_hash}")
+
+        _ ->
+          :ok = File.write("./proofs/#{block_hash}.proof", proof)
+          Logger.info("Saved block with id #{block_hash} to file ./proofs/#{block_hash}.proof")
+      end
 
       {:noreply,
        %{

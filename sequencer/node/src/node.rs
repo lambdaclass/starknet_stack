@@ -137,6 +137,7 @@ impl Node {
                         );
 
                         let mut transactions = vec![];
+                      
                         for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
@@ -163,12 +164,10 @@ impl Node {
 
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
                             let _ = self.external_store.add_transaction(
-                                starknet_tx.transaction_hash.to_le_bytes().to_vec(),
+                                tx_hash.to_le_bytes().to_vec(),
                                 starknet_tx_string.into_bytes(),
                             );
-                            transactions.push(rpc::types::Transaction::Invoke(
-                                rpc::InvokeTransaction::V1(starknet_tx),
-                            ));
+                            transactions.push(starknet_tx);
                         }
 
                         // TODO create a correct Block Structure instad of a hardcoded one
