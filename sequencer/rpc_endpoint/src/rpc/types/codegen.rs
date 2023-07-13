@@ -648,7 +648,7 @@ impl InvokeTransactionV1 {
                 .iter()
                 .skip(9)
                 .take_while(|v| *v != &0)
-                .map(|v| *v)
+                .copied()
                 .collect(),
         )
         .unwrap();
