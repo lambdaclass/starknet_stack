@@ -36,3 +36,5 @@ terraform.rc
 docker_volumes/
 
 madara_explorer/
+
+.DS_Store
