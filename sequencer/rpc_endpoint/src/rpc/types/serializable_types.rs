@@ -147,9 +147,9 @@ mod tests {
     fn serialize_deserialize_tx() {
         let starknet_transaction =
             Transaction::Invoke(InvokeTransaction::V1(InvokeTransactionV1 {
-                transaction_hash: Felt252::new(1),
+                transaction_hash: Felt252::new(2314),
                 max_fee: Felt252::new(1),
-                signature: vec![Felt252::new(1)],
+                signature: vec![Felt252::new(423)],
                 nonce: Felt252::new(1),
                 sender_address: Felt252::new(1),
                 calldata: vec![Felt252::new(2)],
@@ -159,7 +159,10 @@ mod tests {
 
         let deserialized_tx: Transaction = serde_json::from_str(&starknet_transaction_str).unwrap();
         if let Transaction::Invoke(InvokeTransaction::V1(v)) = deserialized_tx {
-            assert_eq!(Felt252::new(1), v.transaction_hash);
+            assert_eq!(Felt252::new(2314), v.transaction_hash);
+            assert_eq!(&Felt252::new(423), v.signature.first().unwrap());
+        } else {
+            panic!()
         }
     }
 }
