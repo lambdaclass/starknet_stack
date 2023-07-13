@@ -35,4 +35,4 @@ terraform.rc
 
 docker_volumes/
 
-starknet_stack_explorer/
+madara_explorer/
