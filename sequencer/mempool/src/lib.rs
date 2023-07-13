@@ -10,9 +10,6 @@ mod synchronizer;
 #[path = "tests/common.rs"]
 mod common;
 
-use serde::Deserialize;
-use serde::Serialize;
-
 pub use crate::config::{Committee, Parameters};
 pub use crate::mempool::{ConsensusMempoolMessage, Mempool};
 
