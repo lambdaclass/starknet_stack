@@ -1,10 +1,10 @@
 use crate::rpc::{
-    BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
+    serializable_types::FeltParam, BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
-    EventsPage, FeeEstimate, FunctionCall, InvokeTransactionResult, MaybePendingBlockWithTxHashes,
-    MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate,
-    SyncStatusType, Transaction,
+    EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
+    MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt,
+    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -37,8 +37,8 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// get the storage at a given address and key and at a given block
     fn get_storage_at(
         &self,
-        contract_address: Felt252,
-        key: Felt252,
+        contract_address: FeltParam,
+        key: FeltParam,
         block_id: BlockId,
     ) -> RpcResult<Felt252> {
         unimplemented!();
@@ -52,7 +52,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     fn get_class_at(
         &self,
         block_id: BlockId,
-        contract_address: Felt252,
+        contract_address: FeltParam,
     ) -> RpcResult<ContractClass> {
         unimplemented!();
     }
@@ -72,7 +72,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     fn get_class_hash_at(
         &self,
         block_id: BlockId,
-        contract_address: Felt252,
+        contract_address: FeltParam,
     ) -> RpcResult<Felt252> {
         unimplemented!();
     }
@@ -83,7 +83,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     }
 
     /// Get the contract class definition in the given block associated with the given hash.
-    fn get_class(&self, block_id: BlockId, class_hash: Felt252) -> RpcResult<ContractClass> {
+    fn get_class(&self, block_id: BlockId, class_hash: FeltParam) -> RpcResult<ContractClass> {
         unimplemented!();
     }
 
@@ -96,7 +96,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     }
 
     /// Get the nonce associated with the given address at the given block
-    fn get_nonce(&self, block_id: BlockId, contract_address: Felt252) -> RpcResult<Felt252> {
+    fn get_nonce(&self, block_id: BlockId, contract_address: FeltParam) -> RpcResult<Felt252> {
         unimplemented!();
     }
 
@@ -211,7 +211,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         unimplemented!();
     }
 
-    /// Returns a transaction details from it's hash.
+    /// Returns a transaction details from its hash.
     ///
     /// If the transaction is in the transactions pool,
     /// it considers the transaction hash as not found.
@@ -220,18 +220,27 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// # Arguments
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
-    fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction> {
-        let serialized_tx = String::from_utf8_lossy(
-            &self
-                .store
-                .get_transaction(transaction_hash.to_le_bytes().to_vec())
-                .unwrap(),
-        )
-        .into_owned();
-        serde_json::from_str::<Transaction>(&serialized_tx).map_err(|e| {
-            info!("error {}", e);
-            ErrorObject::from(ErrorCode::ParseError)
-        })
+    fn get_transaction_by_hash(&self, transaction_hash: FeltParam) -> RpcResult<Transaction> {
+        // necessary destructuring so that we can use a hex felt as a param
+        let transaction_hash = transaction_hash.0;
+
+        // TODO: add error handling
+        let tx = &self
+            .store
+            .get_transaction(transaction_hash.to_be_bytes().to_vec())
+            .unwrap();
+
+        let deserialized_tx: Transaction =
+            serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
+        info!("tx json: {:?}", deserialized_tx);
+        match &deserialized_tx {
+            Transaction::Invoke(InvokeTransaction::V1(t)) => {
+                info!("tx_hash {}", t.transaction_hash);
+            }
+            _ => todo!(),
+        }
+
+        Ok(deserialized_tx)
     }
 
     /// Returns the receipt of a transaction by transaction hash.
@@ -241,7 +250,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_receipt(
         &self,
-        transaction_hash: Felt252,
+        transaction_hash: FeltParam,
     ) -> RpcResult<MaybePendingTransactionReceipt> {
         unimplemented!();
     }

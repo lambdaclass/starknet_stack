@@ -10,6 +10,8 @@ use jsonrpsee::proc_macros::rpc;
 pub mod types;
 pub use types::*;
 
+use self::serializable_types::FeltParam;
+
 /// Starknet rpc interface.
 #[rpc(server, namespace = "starknet")]
 pub trait StarknetRpcApi {
@@ -29,8 +31,8 @@ pub trait StarknetRpcApi {
     #[method(name = "getStorageAt")]
     fn get_storage_at(
         &self,
-        contract_address: Felt252,
-        key: Felt252,
+        contract_address: FeltParam,
+        key: FeltParam,
         block_id: BlockId,
     ) -> RpcResult<Felt252>;
 
@@ -43,13 +45,13 @@ pub trait StarknetRpcApi {
     fn get_class_at(
         &self,
         block_id: BlockId,
-        contract_address: Felt252,
+        contract_address: FeltParam,
     ) -> RpcResult<ContractClass>;
 
     /// Get the contract class hash in the given block for the contract deployed at the given
     /// address
     #[method(name = "getClassHashAt")]
-    fn get_class_hash_at(&self, block_id: BlockId, contract_address: Felt252)
+    fn get_class_hash_at(&self, block_id: BlockId, contract_address: FeltParam)
         -> RpcResult<Felt252>;
 
     /// Get an object about the sync status, or false if the node is not syncing
@@ -58,7 +60,7 @@ pub trait StarknetRpcApi {
 
     /// Get the contract class definition in the given block associated with the given hash
     #[method(name = "getClass")]
-    fn get_class(&self, block_id: BlockId, class_hash: Felt252) -> RpcResult<ContractClass>;
+    fn get_class(&self, block_id: BlockId, class_hash: FeltParam) -> RpcResult<ContractClass>;
 
     /// Get block information with transaction hashes given the block id
     #[method(name = "getBlockWithTxHashes")]
@@ -69,7 +71,7 @@ pub trait StarknetRpcApi {
 
     /// Get the nonce associated with the given address at the given block
     #[method(name = "getNonce")]
-    fn get_nonce(&self, block_id: BlockId, contract_address: Felt252) -> RpcResult<Felt252>;
+    fn get_nonce(&self, block_id: BlockId, contract_address: FeltParam) -> RpcResult<Felt252>;
 
     /// Get block information with full transactions given the block id
     #[method(name = "getBlockWithTxs")]
@@ -130,12 +132,12 @@ pub trait StarknetRpcApi {
 
     /// Returns the information about a transaction by transaction hash.
     #[method(name = "getTransactionByHash")]
-    fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction>;
+    fn get_transaction_by_hash(&self, transaction_hash: FeltParam) -> RpcResult<Transaction>;
 
     /// Returns the receipt of a transaction by transaction hash.
     #[method(name = "getTransactionReceipt")]
     fn get_transaction_receipt(
         &self,
-        transaction_hash: Felt252,
+        transaction_hash: FeltParam,
     ) -> RpcResult<MaybePendingTransactionReceipt>;
 }

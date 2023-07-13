@@ -4,7 +4,7 @@ use serde_with::serde_as;
 
 // TODO: better namespacing of exports?
 mod codegen;
-mod serializable_types;
+pub mod serializable_types;
 
 pub use codegen::{
     BlockStatus, BlockTag, BlockWithTxHashes, BlockWithTxs, BroadcastedDeclareTransactionV1,
