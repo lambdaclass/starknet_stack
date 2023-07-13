@@ -4,15 +4,16 @@ use crate::rpc::{
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
     EventsPage, FeeEstimate, FunctionCall, InvokeTransactionResult, MaybePendingBlockWithTxHashes,
     MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate,
-    SyncStatusType, Transaction,
+    SyncStatusType, Transaction, InvokeTransaction, serializable_types::FeltHex,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{error::ErrorCode, ErrorObject},
 };
-use log::error;
+use log::{error, info};
 use sequencer::store::{Store, StoreEngine};
+use serde_with::{SerializeAs, DeserializeAs};
 
 pub struct StarknetBackend {
     pub(crate) store: Store,
@@ -224,13 +225,20 @@ impl StarknetRpcApiServer for StarknetBackend {
         // TODO: add error handling
         let tx = &self
             .store
-            .get_transaction(transaction_hash.to_le_bytes().to_vec())
+            .get_transaction(transaction_hash.to_be_bytes().to_vec())
             .unwrap();
 
-        let serialized_tx = String::from_utf8_lossy(tx);
-        let tx: Transaction = serde_json::from_str(&serialized_tx).unwrap();
+        let deserialized_tx: Transaction = serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
+        info!("tx json: {:?}", deserialized_tx);
+        match &deserialized_tx {
+            Transaction::Invoke(InvokeTransaction::V1(t)) => 
+            {
+                info!("tx_hash {}", t.transaction_hash);
+            },
+            _ => todo!(),
+        }
 
-        Ok(tx)
+        Ok(deserialized_tx)
     }
 
     /// Returns the receipt of a transaction by transaction hash.

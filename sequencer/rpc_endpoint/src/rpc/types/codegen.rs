@@ -23,6 +23,7 @@ use std::sync::Arc;
 
 use cairo_felt::Felt252;
 
+use log::info;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 
@@ -639,6 +640,7 @@ impl InvokeTransactionV1 {
         };
         starknet_transaction.transaction_hash = Felt252::new(starknet_transaction.calculate_hash());
         let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
+        info!("{}", starknet_transaction_str);
         starknet_transaction_str.as_bytes().to_owned()
     }
 }

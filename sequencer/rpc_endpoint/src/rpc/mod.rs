@@ -10,6 +10,8 @@ use jsonrpsee::proc_macros::rpc;
 pub mod types;
 pub use types::*;
 
+use self::serializable_types::FeltHex;
+
 /// Starknet rpc interface.
 #[rpc(server, namespace = "starknet")]
 pub trait StarknetRpcApi {
