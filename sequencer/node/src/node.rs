@@ -374,19 +374,16 @@ mod test {
         let a = {
             let mut digits = BigUint::from(0_u32).to_u32_digits();
             digits.resize(8, 0);
-            dbg!(digits)
         };
 
         let b = {
             let mut digits = BigUint::from(1_u32).to_u32_digits();
             digits.resize(8, 0);
-            dbg!(digits)
         };
 
         let n = {
-            let mut digits = BigUint::from(10_u32).to_u32_digits();
+            let mut digits = BigUint::from(1000_u32).to_u32_digits();
             digits.resize(8, 0);
-            dbg!(digits)
         };
         std::env::set_var(
             "CARGO_MANIFEST_DIR",
@@ -402,6 +399,8 @@ mod test {
         )
         .unwrap();
 
+        let mut writer: Vec<u8> = Vec::new();
+        let mut res = serde_json::Serializer::new(&mut writer);
         compile_and_execute::<CoreType, CoreLibfunc, _, _>(
             &program,
             &program
@@ -413,9 +412,16 @@ mod test {
                 .unwrap()
                 .id,
             json!([null, 9000, a, b, n]),
-            &mut serde_json::Serializer::new(stdout()),
+            &mut res,
         )
         .unwrap();
-        println!();
+
+        // The output expected as a string will be a json that looks like this:
+        // [null,9000,[0,[[55,0,0,0,0,0,0,0]]]]
+        let deserialized_result: String = String::from_utf8(writer).unwrap();
+        let deserialized_value = serde_json::from_str::<serde_json::Value>(&deserialized_result)
+            .expect("Failed to deserialize result");
+        let result_in_value = deserialized_value[2][1][0][0].as_u64().unwrap();
+        assert_eq!(result_in_value, 55);
     }
 }
