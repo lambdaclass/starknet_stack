@@ -49,7 +49,7 @@ fn verify_qc_insufficient_stake() {
 
     // Verify the QC.
     match qc.verify(&committee()) {
-        Err(ConsensusError::QCRequiresQuorum) => {},
+        Err(ConsensusError::QCRequiresQuorum) => {}
         _ => panic!(),
     }
 }

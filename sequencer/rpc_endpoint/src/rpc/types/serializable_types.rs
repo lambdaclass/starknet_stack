@@ -1,6 +1,13 @@
 use cairo_felt::Felt252;
-use serde::{Deserialize, Deserializer, Serializer};
-use serde_with::{DeserializeAs, SerializeAs};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_with::{serde_as, DeserializeAs, SerializeAs};
+
+// We need the newtype in order to be able to use it the RPC function signatures since
+// jsonrpsee uses serde's deserialize implementations to deserialize params and
+// Felt252's from cairo-felt ends up deserializing from the limbs instead of a hex number
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+pub struct FeltParam(#[serde_as(as = "FeltHex")] pub Felt252);
 
 pub struct FeltHex;
 

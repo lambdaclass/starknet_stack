@@ -1,5 +1,5 @@
 use crate::rpc::{
-    BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
+    serializable_types::FeltParam, BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
     EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
@@ -37,8 +37,8 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// get the storage at a given address and key and at a given block
     fn get_storage_at(
         &self,
-        contract_address: Felt252,
-        key: Felt252,
+        contract_address: FeltParam,
+        key: FeltParam,
         block_id: BlockId,
     ) -> RpcResult<Felt252> {
         unimplemented!();
@@ -52,7 +52,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     fn get_class_at(
         &self,
         block_id: BlockId,
-        contract_address: Felt252,
+        contract_address: FeltParam,
     ) -> RpcResult<ContractClass> {
         unimplemented!();
     }
@@ -72,7 +72,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     fn get_class_hash_at(
         &self,
         block_id: BlockId,
-        contract_address: Felt252,
+        contract_address: FeltParam,
     ) -> RpcResult<Felt252> {
         unimplemented!();
     }
@@ -83,7 +83,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     }
 
     /// Get the contract class definition in the given block associated with the given hash.
-    fn get_class(&self, block_id: BlockId, class_hash: Felt252) -> RpcResult<ContractClass> {
+    fn get_class(&self, block_id: BlockId, class_hash: FeltParam) -> RpcResult<ContractClass> {
         unimplemented!();
     }
 
@@ -96,7 +96,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     }
 
     /// Get the nonce associated with the given address at the given block
-    fn get_nonce(&self, block_id: BlockId, contract_address: Felt252) -> RpcResult<Felt252> {
+    fn get_nonce(&self, block_id: BlockId, contract_address: FeltParam) -> RpcResult<Felt252> {
         unimplemented!();
     }
 
@@ -220,7 +220,10 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// # Arguments
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
-    fn get_transaction_by_hash(&self, transaction_hash: Felt252) -> RpcResult<Transaction> {
+    fn get_transaction_by_hash(&self, transaction_hash: FeltParam) -> RpcResult<Transaction> {
+        // necessary destructuring so that we can use a hex felt as a param
+        let transaction_hash = transaction_hash.0;
+
         // TODO: add error handling
         let tx = &self
             .store
@@ -247,7 +250,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_receipt(
         &self,
-        transaction_hash: Felt252,
+        transaction_hash: FeltParam,
     ) -> RpcResult<MaybePendingTransactionReceipt> {
         unimplemented!();
     }
