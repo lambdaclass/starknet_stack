@@ -7,7 +7,7 @@ use futures::future::join_all;
 use futures::sink::SinkExt as _;
 use log::{info, warn};
 use rand::Rng;
-use rpc_endpoint::rpc::InvokeTransactionV1;
+use rpc_endpoint::rpc::Transaction;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use tokio::time::{interval, sleep, Duration, Instant};
@@ -118,7 +118,7 @@ impl Client {
                     tx.put_u8(1u8); // Standard txs start with 1.
                     tx.put_u64(r); // Ensures all clients send different txs.
                 };
-                let bytes = InvokeTransactionV1::new_as_bytes(counter, r);
+                let bytes = Transaction::new_invoke_as_bytes(counter, r);
                 for b in bytes {
                     tx.put_u8(b);
                 }
@@ -163,7 +163,6 @@ impl Client {
 
 #[cfg(test)]
 mod test {
-    use crate::InvokeTransactionV1;
     use bytes::BufMut;
     use bytes::BytesMut;
     use rand::Rng;
@@ -187,7 +186,7 @@ mod test {
                 tx.put_u8(1u8); // Standard txs start with 1.
                 tx.put_u64(r); // Ensures all clients send different txs.
             };
-            let bytes = InvokeTransactionV1::new_as_bytes(762716321, 8126371);
+            let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371);
             for b in bytes {
                 tx.put_u8(b);
             }

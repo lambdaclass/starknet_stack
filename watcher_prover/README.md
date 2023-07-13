@@ -16,6 +16,12 @@ By running provers in parallel, throughput of the proving system will be as high
 
 The following environment variables are required:
 
+For the type of storage to use:
+
+- `PROVER_STORAGE`:
+  - `local` for storing the proof in the local filesystem (files will be stored in proofs/ directory) or
+  - `s3` for storing the proof in an AWS S3 bucket
+
 For AWS S3 bucket (used to upload the generated proofs):
 
 - `AWS_ACCESS_KEY_ID`: AWS access key id

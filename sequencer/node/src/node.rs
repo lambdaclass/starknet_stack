@@ -149,18 +149,25 @@ impl Node {
                                 &[0_usize.into(), 1_usize.into(), n.into()],
                             );
                             info!("Output: ret is {:?}", ret);
-
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
 
                             match &starknet_tx {
                                 Transaction::Invoke(InvokeTransaction::V1(tx)) => {
+                                    info!(
+                                        "tx hash serialized: {}, decimal {} (hex {})",
+                                        serde_json::to_string(&tx.transaction_hash).unwrap(),
+                                        &tx.transaction_hash,
+                                        &tx.transaction_hash.to_str_radix(16)
+                                    );
+
                                     let _ = self.external_store.add_transaction(
-                                        tx.transaction_hash.to_le_bytes().to_vec(),
+                                        tx.transaction_hash.to_be_bytes().to_vec(),
                                         starknet_tx_string.into_bytes(),
                                     );
                                 }
                                 _ => todo!(),
                             }
+
                             transactions.push(starknet_tx);
                         }
 
@@ -176,13 +183,15 @@ impl Node {
                             transactions,
                         };
                         let block_id = block.block_number;
-                        let block_string =
+                        let block_serialized: Vec<u8> =
                             serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block))
-                                .unwrap();
+                                .unwrap()
+                                .as_bytes()
+                                .to_vec();
 
                         let _ = self
                             .external_store
-                            .add_block(block_id.to_le_bytes().to_vec(), block_string.into_bytes());
+                            .add_block(block_id.to_be_bytes().to_vec(), block_serialized);
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")

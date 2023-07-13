@@ -30,7 +30,7 @@ async fn get_existing_parent_block() {
     // Ask the predecessor of 'block' to the synchronizer.
     match synchronizer.get_parent_block(&block).await {
         Ok(Some(b)) => assert_eq!(b, b2),
-        _ => assert!(false),
+        _ => panic!(),
     }
 }
 
@@ -53,7 +53,7 @@ async fn get_genesis_parent_block() {
     // Ask the predecessor of 'block' to the synchronizer.
     match synchronizer.get_parent_block(&block()).await {
         Ok(Some(b)) => assert_eq!(b, Block::genesis()),
-        _ => assert!(false),
+        _ => panic!(),
     }
 }
 
