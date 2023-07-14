@@ -635,7 +635,6 @@ impl Transaction {
         let tx_string = String::from_utf8(
             bytes
                 .iter()
-                .skip(9)
                 .take_while(|v| *v != &0)
                 .copied()
                 .collect(),
