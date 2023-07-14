@@ -43,6 +43,14 @@ impl StoreEngine for Store {
     fn get_block(&self, _block_id: Key) -> Option<Value> {
         todo!()
     }
+
+    fn set_value(&mut self, _key: Key, _value: Value) -> Result<()> {
+        todo!()
+    }
+
+    fn get_value(&self, _key: Key) -> Option<Value> {
+        todo!()
+    }
 }
 
 impl Debug for Store {

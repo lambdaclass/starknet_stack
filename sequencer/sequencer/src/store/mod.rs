@@ -15,6 +15,7 @@ pub(crate) type Value = Vec<u8>;
 
 // TODO: add tests
 
+const BLOCK_HEIGHT: &str = "height";
 pub trait StoreEngine: Debug + Send {
     fn add_program(&mut self, program_id: Key, program: Value) -> Result<()>;
     fn get_program(&self, program_id: Key) -> Option<Value>;
@@ -22,6 +23,8 @@ pub trait StoreEngine: Debug + Send {
     fn get_transaction(&self, transaction_id: Key) -> Option<Value>;
     fn add_block(&mut self, block_id: Key, block: Value) -> Result<()>;
     fn get_block(&self, block_id: Key) -> Option<Value>;
+    fn set_value(&mut self, key: Key, value: Value) -> Result<()>;
+    fn get_value(&self, key: Key) -> Option<Value>;
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +41,7 @@ pub enum EngineType {
 
 impl Store {
     pub fn new(path: &str, engine_type: EngineType) -> Self {
-        match engine_type {
+        let mut store = match engine_type {
             EngineType::RocksDB => Self {
                 engine: Arc::new(Mutex::new(
                     RocksDBStore::new("rocks").expect("could not create rocksdb store"),
@@ -50,14 +53,19 @@ impl Store {
             EngineType::InMemory => Self {
                 engine: Arc::new(Mutex::new(InMemoryStore::new())),
             },
+        };
+        store.init();
+        store
+    }
+
+    fn init(&mut self) {
+        if self.get_height().is_none() {
+            _ = self.set_height(0);
         }
     }
-}
 
-// TODO: we might want this API to return types objects instead of bytes
-
-impl StoreEngine for Store {
-    fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
+    // TODO: we might want this API to return types objects instead of bytes
+    pub fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
         self.engine
             .clone()
             .lock()
@@ -65,11 +73,11 @@ impl StoreEngine for Store {
             .add_program(program_id, program)
     }
 
-    fn get_program(&self, program_id: Key) -> Option<Value> {
+    pub fn get_program(&self, program_id: Key) -> Option<Value> {
         self.engine.clone().lock().unwrap().get_program(program_id)
     }
 
-    fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
+    pub fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
         self.engine
             .clone()
             .lock()
@@ -77,7 +85,7 @@ impl StoreEngine for Store {
             .add_transaction(transaction_id, transaction)
     }
 
-    fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
+    pub fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
         self.engine
             .clone()
             .lock()
@@ -85,7 +93,7 @@ impl StoreEngine for Store {
             .get_transaction(transaction_id)
     }
 
-    fn add_block(&mut self, block_id: Key, block: Value) -> Result<()> {
+    pub fn add_block(&mut self, block_id: Key, block: Value) -> Result<()> {
         self.engine
             .clone()
             .lock()
@@ -93,7 +101,28 @@ impl StoreEngine for Store {
             .add_block(block_id, block)
     }
 
-    fn get_block(&self, block_id: Key) -> Option<Value> {
-        self.engine.clone().lock().unwrap().get_block(block_id)
+    pub fn get_block(&self, block_height: u64) -> Option<Value> {
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .get_block(block_height.to_be_bytes().to_vec())
+    }
+
+    pub fn set_height(&mut self, value: u64) -> Result<()> {
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .set_value(BLOCK_HEIGHT.into(), value.to_be_bytes().to_vec())
+    }
+
+    pub fn get_height(&self) -> Option<u64> {
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .get_value(BLOCK_HEIGHT.into())
+            .map(|value| u64::from_be_bytes(value.as_slice()[..8].try_into().unwrap()))
     }
 }
