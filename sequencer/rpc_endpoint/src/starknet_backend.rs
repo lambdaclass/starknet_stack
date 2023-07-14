@@ -103,7 +103,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
         let id = match block_id {
-            BlockId::Number(number) => number.to_ne_bytes(),
+            BlockId::Number(number) => number.to_be_bytes(),
             BlockId::Hash(_) => todo!(),
             BlockId::Tag(_) => todo!(),
         };
@@ -224,23 +224,25 @@ impl StarknetRpcApiServer for StarknetBackend {
         // necessary destructuring so that we can use a hex felt as a param
         let transaction_hash = transaction_hash.0;
 
-        // TODO: add error handling
-        let tx = &self
+        match &self
             .store
             .get_transaction(transaction_hash.to_be_bytes().to_vec())
-            .unwrap();
+        {
+            Some(tx) => {
+                let deserialized_tx: Transaction =
+                    serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
+                info!("tx json: {:?}", deserialized_tx);
+                match &deserialized_tx {
+                    Transaction::Invoke(InvokeTransaction::V1(t)) => {
+                        info!("tx_hash {}", t.transaction_hash);
+                    }
+                    _ => todo!(),
+                }
 
-        let deserialized_tx: Transaction =
-            serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
-        info!("tx json: {:?}", deserialized_tx);
-        match &deserialized_tx {
-            Transaction::Invoke(InvokeTransaction::V1(t)) => {
-                info!("tx_hash {}", t.transaction_hash);
+                Ok(deserialized_tx)
             }
-            _ => todo!(),
+            None => todo!(),
         }
-
-        Ok(deserialized_tx)
     }
 
     /// Returns the receipt of a transaction by transaction hash.

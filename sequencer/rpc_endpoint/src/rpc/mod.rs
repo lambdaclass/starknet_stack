@@ -51,8 +51,11 @@ pub trait StarknetRpcApi {
     /// Get the contract class hash in the given block for the contract deployed at the given
     /// address
     #[method(name = "getClassHashAt")]
-    fn get_class_hash_at(&self, block_id: BlockId, contract_address: FeltParam)
-        -> RpcResult<Felt252>;
+    fn get_class_hash_at(
+        &self,
+        block_id: BlockId,
+        contract_address: FeltParam,
+    ) -> RpcResult<Felt252>;
 
     /// Get an object about the sync status, or false if the node is not syncing
     #[method(name = "syncing")]
