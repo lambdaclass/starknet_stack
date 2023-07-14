@@ -9,7 +9,7 @@ pub mod starknet_backend;
 
 pub async fn new_server(port: u16, store: Store) -> Result<ServerHandle> {
     let server = ServerBuilder::default()
-        .build(format!("127.0.0.1:{}", port))
+        .build(format!("0.0.0.0:{}", port))
         .await?;
     let server_handle = server.start(StarknetBackend { store }.into_rpc())?;
 
