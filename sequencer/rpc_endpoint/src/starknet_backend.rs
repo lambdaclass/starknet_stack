@@ -105,7 +105,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         let id = match block_id {
             BlockId::Number(number) => {
                 info!("block number requested is {}", &number);
-                number.to_ne_bytes()
+                number.to_be_bytes()
             }
             BlockId::Hash(_) => todo!(),
             BlockId::Tag(_) => todo!(),
