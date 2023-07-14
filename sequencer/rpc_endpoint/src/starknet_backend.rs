@@ -102,9 +102,11 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
         let block_bytes = match block_id {
-            BlockId::Number(height) => self.store.get_block_by_height(height).unwrap(),
+            BlockId::Number(height) => {
+                info!("block number requested is {}", &number);
+                self.store.get_block_by_height(height).unwrap()
+            },
             BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()).unwrap(),
-            BlockId::Tag(_) => todo!(),
         };
         let serialized_block = String::from_utf8_lossy(&block_bytes).into_owned();
         serde_json::from_str(&serialized_block).map_err(|e| {
