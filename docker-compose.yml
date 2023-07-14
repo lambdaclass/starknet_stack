@@ -71,7 +71,7 @@ services:
       - postgres_watcher_prover
       - sequencer_node0
     networks:
-      default:
+      frontend:
         aliases:
           - watcher
 
@@ -88,7 +88,7 @@ services:
     ports:
       - 5433:5432
     networks:
-      default:
+      frontend:
         aliases:
           - postgres_watcher_prover
 
@@ -97,11 +97,12 @@ services:
       file: ./madara_explorer/docker-compose.yml
       service: starknet-explorer
     environment:
-      - RPC_API_HOST=http://host.docker.internal:10000
+      - RPC_API_HOST=http://sequencer_node0:10008
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  postgres_madara_explorer:
+  postgres:
+    container_name: postgres_madara_explorera
     extends:
       file: ./madara_explorer/docker-compose.yml
       service: postgres

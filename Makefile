@@ -1,7 +1,9 @@
 .PHONY: docker-compose-up
 
 clone-madara-explorer:
-	git clone https://github.com/lambdaclass/madara_explorer.git --branch dockerfile
+	if [ ! -d "madara_explorer" ]; then \
+		git clone https://github.com/lambdaclass/madara_explorer.git --branch dockerfile; \
+	fi
 
 docker-compose-up: clone-madara-explorer
 	cd sequencer && make generate-commitee-for-docker
