@@ -139,9 +139,24 @@ impl Node {
                         );
 
                         let mut transactions = vec![];
-                        for (i, m) in batch_txs.into_iter().enumerate() {
-                            let starknet_tx = rpc::Transaction::from_bytes(&m);
-                            info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
+
+                        for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
+                            // Consensus codebase uses the first 9 bytes to track the transaction like this:
+                            //
+                            // - First byte can be 0 or 1 and represents whether it's a benchmarked tx or standard tx
+                            // - Next 8 bytes represent a transaction ID
+                            //
+                            // If it's a benchmarked tx, it then gets tracked in logs to compute metrics
+                            // So we need to strip that section in order to get the starknet transaction to execute
+                            #[cfg(feature = "benchmark")]
+                            let tx_bytes = &tx_bytes[9..];
+
+                            let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
+
+                            info!(
+                                "Message {i} in {:?} is of tx_type {:?}, executing",
+                                p, starknet_tx
+                            );
 
                             let n = 10_usize;
                             let program = include_bytes!("../../cairo_programs/fib_contract.casm");
