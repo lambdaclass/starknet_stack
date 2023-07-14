@@ -147,11 +147,13 @@ impl Node {
                         for (i, m) in batch_txs.into_iter().enumerate() {
                             let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&m);
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
-
                             let n = 10_usize;
-                            let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+
+                            // TODO create a execution engine structure to improve code quality
                             let execution_engine = true;
                             if execution_engine {
+                                let program =
+                                    include_bytes!("../../cairo_programs/fib_contract.casm");
                                 let ret = run_cairo_1_entrypoint(
                                     program.as_slice(),
                                     0,
@@ -159,7 +161,11 @@ impl Node {
                                 );
                                 info!("Output: ret is {:?}", ret);
                             } else {
-                                //execute with cairo_native
+                                let a = get_input_value_cairo_native(0_u32);
+                                let b = get_input_value_cairo_native(1_u32);
+                                let n = get_input_value_cairo_native(n as u32);
+                                let ret = execute_fibonacci_cairo_native(a, b, n);
+                                info!("Output: ret is {:?}", ret);
                             }
 
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
