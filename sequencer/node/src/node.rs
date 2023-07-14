@@ -240,7 +240,7 @@ impl Node {
 
         let block_with_txs = rpc::BlockWithTxs {
             status,
-            block_hash: block_hash.clone(),
+            block_hash,
             parent_hash,
             block_number: height,
             new_root,
@@ -260,14 +260,7 @@ impl Node {
 
         _ = self
             .external_store
-            .add_block(block_id.to_be_bytes().to_vec(), block_serialized.clone());
-
-        // TODO: Remove copies
-
-        _ = self
-            .external_store
-            .add_block(block_hash.to_be_bytes().to_vec(), block_serialized);
-
+            .add_block(block_id.to_be_bytes().to_vec(), block_serialized);
         _ = self.external_store.set_height(height);
     }
 }
