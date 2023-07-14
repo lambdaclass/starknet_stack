@@ -335,6 +335,12 @@ fn get_casm_contract_builtins(
         .collect()
 }
 
+fn get_input_value_cairo_native(n: u32) -> Vec<u32> {
+    let mut digits = BigUint::from(n).to_u32_digits();
+    digits.resize(8, 0);
+    digits
+}
+
 #[cfg(test)]
 mod test {
     use std::{io::stdout, path::Path};
@@ -371,23 +377,12 @@ mod test {
 
     #[test]
     fn fib_10_cairo_native() {
-        let a = {
-            let mut digits = BigUint::from(0_u32).to_u32_digits();
-            digits.resize(8, 0);
-            digits
-        };
+        let a = super::get_input_value_cairo_native(0_u32);
 
-        let b = {
-            let mut digits = BigUint::from(1_u32).to_u32_digits();
-            digits.resize(8, 0);
-            digits
-        };
+        let b = super::get_input_value_cairo_native(1_u32);
 
-        let n = {
-            let mut digits = BigUint::from(10_u32).to_u32_digits();
-            digits.resize(8, 0);
-            digits
-        };
+        let n = super::get_input_value_cairo_native(10_u32);
+
         std::env::set_var(
             "CARGO_MANIFEST_DIR",
             format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
@@ -426,5 +421,11 @@ mod test {
             .expect("Failed to deserialize result");
         let result_in_value = deserialized_value[2][1][0][0].as_u64().unwrap();
         assert_eq!(result_in_value, 55);
+    }
+
+    #[test]
+    fn get_input_value_cairo_native_should_be_10() {
+        let input = super::get_input_value_cairo_native(10);
+        assert_eq!(input, vec![10, 0, 0, 0, 0, 0, 0, 0]);
     }
 }
