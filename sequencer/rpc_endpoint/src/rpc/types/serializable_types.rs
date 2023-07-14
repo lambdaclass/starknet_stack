@@ -94,7 +94,7 @@ impl SerializeAs<u64> for NumAsHex {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&format!("{value:#x}"))
+        serializer.serialize_str(&format!("0x{value:#x}"))
     }
 }
 
