@@ -17,6 +17,8 @@
 // - `TXN`
 // - `TXN_RECEIPT`
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use cairo_felt::Felt252;
@@ -618,40 +620,60 @@ pub struct InvokeTransactionV1 {
     pub calldata: Vec<Felt252>,
 }
 
+// TODO move this code to the uppermost Transaction enum and adapt for different
+// transaction types.
 impl InvokeTransactionV1 {
+    fn calculate_hash(&self) -> u64 {
+        let mut s = DefaultHasher::new();
+        self.hash(&mut s);
+        s.finish()
+    }
+}
+
+impl Transaction {
+    pub fn from_bytes(bytes: &[u8]) -> Transaction {
+        let tx_string = String::from_utf8(
+            bytes
+                .iter()
+                .take_while(|v| *v != &0)
+                .copied()
+                .collect(),
+        )
+        .unwrap();
+
+        serde_json::from_str::<Transaction>(&tx_string).unwrap()
+    }
+
     /// Creates a transaction and returns it as a vector of bytes.
     /// The transaction is a InvokeTransactionV1 transaction.
     ///
     /// # Returns
     ///
     /// A vector of bytes representing the transaction.
-    pub fn new_as_bytes() -> Vec<u8> {
-        // let transaction_type = TransactionType::ExecuteFibonacci(200 + counter);
+    pub fn new_invoke_as_bytes(nonce: u64, calldata: u64) -> Vec<u8> {
         // TODO: these are default values, need to be changed
-        let starknet_transaction = InvokeTransactionV1 {
-            transaction_hash: Felt252::new(1920310231),
+        let mut invoke_tx_v1 = InvokeTransactionV1 {
+            transaction_hash: Felt252::new(0), //Temporary hash
             max_fee: Felt252::new(89853483),
             signature: vec![Felt252::new(183728913)],
-            nonce: Felt252::new(762716321),
+            nonce: Felt252::new(nonce),
             sender_address: Felt252::new(91232018),
-            calldata: vec![Felt252::new(8126371)],
+            calldata: vec![Felt252::new(calldata)],
         };
-        let starknet_transaction_str = serde_json::to_string(&starknet_transaction).unwrap();
+        invoke_tx_v1.transaction_hash = Felt252::new(invoke_tx_v1.calculate_hash());
+        let full_transaction = Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1));
+        let starknet_transaction_str = serde_json::to_string(&full_transaction).unwrap();
         starknet_transaction_str.as_bytes().to_owned()
     }
+}
 
-    pub fn from_bytes(bytes: &[u8]) -> InvokeTransactionV1 {
-        let tx_string = String::from_utf8(
-            bytes
-                .iter()
-                .skip(9)
-                .take_while(|v| *v != &0)
-                .map(|v| *v)
-                .collect(),
-        )
-        .unwrap();
-
-        serde_json::from_str::<InvokeTransactionV1>(&tx_string).unwrap()
+impl Hash for InvokeTransactionV1 {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.max_fee.hash(state);
+        self.signature.hash(state);
+        self.nonce.hash(state);
+        self.sender_address.hash(state);
+        self.calldata.hash(state);
     }
 }
 

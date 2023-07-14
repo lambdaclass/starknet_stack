@@ -4,15 +4,12 @@ authors = ["LambdaClass <hello@lambdaclass.com>"]
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "rpc_endpoint"
-path = "src/main.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bincode = "1.3.3"
 log = "0.4.0"
-jsonrpsee = { version="0.18.2", features = ["server", "macros"] }
+jsonrpsee = { version="0.18.2", default-features = true, features = ["server", "macros"] }
 mempool = { path = "../mempool" }
 sequencer = { path = "../sequencer" }
 serde_json = { version = "1.0.96", default-features = false }

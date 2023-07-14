@@ -20,7 +20,7 @@ fn verify_qc_authority_reuse() {
     // Verify the QC.
     match qc.verify(&committee()) {
         Err(ConsensusError::AuthorityReuse(name)) => assert_eq!(name, vote.0),
-        _ => assert!(false),
+        _ => panic!(),
     }
 }
 
@@ -37,7 +37,7 @@ fn verify_qc_unknown_authority() {
     // Verify the QC.
     match qc.verify(&committee()) {
         Err(ConsensusError::UnknownAuthority(name)) => assert_eq!(name, unknown),
-        _ => assert!(false),
+        _ => panic!(),
     }
 }
 
@@ -49,7 +49,7 @@ fn verify_qc_insufficient_stake() {
 
     // Verify the QC.
     match qc.verify(&committee()) {
-        Err(ConsensusError::QCRequiresQuorum) => assert!(true),
-        _ => assert!(false),
+        Err(ConsensusError::QCRequiresQuorum) => {}
+        _ => panic!(),
     }
 }
