@@ -33,7 +33,7 @@ use serializable_types::NumAsHex;
 /// Block status.
 ///
 /// The status of the block.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum BlockStatus {
     #[serde(rename = "PENDING")]
     Pending,

@@ -12,7 +12,7 @@ use jsonrpsee::{
     types::{error::ErrorCode, ErrorObject},
 };
 use log::{error, info};
-use sequencer::store::{Store, StoreEngine};
+use sequencer::store::Store;
 
 pub struct StarknetBackend {
     pub(crate) store: Store,
@@ -22,8 +22,7 @@ pub struct StarknetBackend {
 #[allow(unused_variables)]
 impl StarknetRpcApiServer for StarknetBackend {
     fn block_number(&self) -> RpcResult<u64> {
-        // TODO: Hardcoded for now, replace with actual query
-        Ok(1)
+        Ok(self.store.get_height().expect("Heigh not found"))
     }
 
     fn block_hash_and_number(&self) -> RpcResult<BlockHashAndNumber> {
@@ -108,7 +107,8 @@ impl StarknetRpcApiServer for StarknetBackend {
             BlockId::Tag(_) => todo!(),
         };
         let serialized_block =
-            String::from_utf8_lossy(&self.store.get_block(id.to_vec()).unwrap()).into_owned();
+            String::from_utf8_lossy(&self.store.get_block(u64::from_be_bytes(id)).unwrap())
+                .into_owned();
         serde_json::from_str(&serialized_block).map_err(|e| {
             error!("error {}", e);
             ErrorObject::from(ErrorCode::ParseError)

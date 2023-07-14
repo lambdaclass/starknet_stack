@@ -8,6 +8,7 @@ pub struct Store {
     programs: Db,
     transactions: Db,
     blocks: Db,
+    values: Db,
 }
 
 impl Store {
@@ -16,6 +17,7 @@ impl Store {
             programs: sled::open(format!("{path}.programs.db")).unwrap(),
             transactions: sled::open(format!("{path}.transactions.db")).unwrap(),
             blocks: sled::open(format!("{path}.blocks.db")).unwrap(),
+            values: sled::open(format!("{path}.values.db")).unwrap(),
         }
     }
 }
@@ -55,6 +57,15 @@ impl StoreEngine for Store {
             .get(block_id)
             .unwrap()
             .map(|value| value.to_vec())
+    }
+
+    fn set_value(&mut self, key: Key, value: Value) -> Result<()> {
+        let _ = self.values.insert(key, value);
+        Ok(())
+    }
+
+    fn get_value(&self, key: Key) -> Option<Value> {
+        self.values.get(key).unwrap().map(|value| value.to_vec())
     }
 }
 
