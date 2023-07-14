@@ -1,6 +1,6 @@
 use cairo_felt::Felt252;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
+use serde_with::{serde_as};
 
 // TODO: better namespacing of exports?
 mod codegen;
@@ -124,8 +124,11 @@ pub struct DeployAccountTransactionResult {
 /// Block hash, number or tag
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlockId {
+    #[serde(rename = "block_hash")]
     Hash(Felt252),
+    #[serde(rename = "block_number")]
     Number(u64),
+    #[serde(rename = "block_tag")]
     Tag(BlockTag),
 }
 

@@ -102,7 +102,10 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
         let id = match block_id {
-            BlockId::Number(number) => number.to_be_bytes(),
+            BlockId::Number(number) => {
+                info!("block number requested is {}", &number);
+                number.to_be_bytes()
+            }
             BlockId::Hash(_) => todo!(),
             BlockId::Tag(_) => todo!(),
         };
