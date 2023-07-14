@@ -1,8 +1,8 @@
 .PHONY: init node install-cairo-native run-fibonacci
 
 init:
-	rustup toolchain install nightly-2023-06-19 --component rustc,cargo,rustfmt
-	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
+	#rustup toolchain install nightly-2023-06-19 --component rustc,cargo,rustfmt
+	python3 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
 
 bench:
 	cd benchmark && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && fab local
