@@ -102,7 +102,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   postgres:
-    container_name: postgres_madara_explorera
+    container_name: postgres_madara_explorer
     extends:
       file: ./madara_explorer/docker-compose.yml
       service: postgres
