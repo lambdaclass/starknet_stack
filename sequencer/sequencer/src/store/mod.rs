@@ -2,6 +2,7 @@ use self::in_memory::Store as InMemoryStore;
 use self::rocksdb::Store as RocksDBStore;
 use self::sled::Store as SledStore;
 use anyhow::Result;
+use cairo_felt::Felt252;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 
@@ -107,6 +108,14 @@ impl Store {
             .lock()
             .unwrap()
             .get_block(block_height.to_be_bytes().to_vec())
+    }
+
+    pub fn get_block_by_hash(&self, hash: Felt252) -> Option<Value> {
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .get_block(hash.to_be_bytes().to_vec())
     }
 
     pub fn set_height(&mut self, value: u64) -> Result<()> {
