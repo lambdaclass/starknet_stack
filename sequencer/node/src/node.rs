@@ -19,7 +19,7 @@ use num_bigint::BigUint;
 use rpc_endpoint::new_server;
 use rpc_endpoint::rpc;
 use sequencer::store::StoreEngine;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::convert::TryInto;
 use std::io::stdout;
 use std::path::Path;
@@ -341,15 +341,48 @@ fn get_input_value_cairo_native(n: u32) -> Vec<u32> {
     digits
 }
 
+fn execute_fibonacci_cairo_native(a: Vec<u32>, b: Vec<u32>, n: Vec<u32>) -> u64 {
+    std::env::set_var(
+        "CARGO_MANIFEST_DIR",
+        format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
+    );
+
+    let program = cairo_lang_compiler::compile_cairo_project_at_path(
+        Path::new("../cairo_programs/fib_contract.cairo"),
+        CompilerConfig {
+            replace_ids: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let mut writer: Vec<u8> = Vec::new();
+    let mut res = serde_json::Serializer::new(&mut writer);
+    compile_and_execute::<CoreType, CoreLibfunc, _, _>(
+        &program,
+        &program
+            .funcs
+            .iter()
+            .find(|x| {
+                x.id.debug_name.as_deref() == Some("fib_contract::fib_contract::Fibonacci::fib")
+            })
+            .unwrap()
+            .id,
+        json!([null, 9000, a, b, n]),
+        &mut res,
+    )
+    .unwrap();
+
+    // The output expected as a string will be a json that looks like this:
+    // [null,9000,[0,[[55,0,0,0,0,0,0,0]]]]
+    let deserialized_result: String = String::from_utf8(writer).unwrap();
+    let deserialized_value = serde_json::from_str::<serde_json::Value>(&deserialized_result)
+        .expect("Failed to deserialize result");
+    deserialized_value[2][1][0][0].as_u64().unwrap()
+}
+
 #[cfg(test)]
 mod test {
-    use std::{io::stdout, path::Path};
-
-    use cairo_lang_compiler::CompilerConfig;
-    use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
-    use cairo_native::easy::compile_and_execute;
-    use num_bigint::BigUint;
-    use serde_json::json;
 
     #[test]
     fn fib_1_cairovm() {
@@ -383,44 +416,8 @@ mod test {
 
         let n = super::get_input_value_cairo_native(10_u32);
 
-        std::env::set_var(
-            "CARGO_MANIFEST_DIR",
-            format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
-        );
-
-        let program = cairo_lang_compiler::compile_cairo_project_at_path(
-            Path::new("../cairo_programs/fib_contract.cairo"),
-            CompilerConfig {
-                replace_ids: true,
-                ..Default::default()
-            },
-        )
-        .unwrap();
-
-        let mut writer: Vec<u8> = Vec::new();
-        let mut res = serde_json::Serializer::new(&mut writer);
-        compile_and_execute::<CoreType, CoreLibfunc, _, _>(
-            &program,
-            &program
-                .funcs
-                .iter()
-                .find(|x| {
-                    x.id.debug_name.as_deref() == Some("fib_contract::fib_contract::Fibonacci::fib")
-                })
-                .unwrap()
-                .id,
-            json!([null, 9000, a, b, n]),
-            &mut res,
-        )
-        .unwrap();
-
-        // The output expected as a string will be a json that looks like this:
-        // [null,9000,[0,[[55,0,0,0,0,0,0,0]]]]
-        let deserialized_result: String = String::from_utf8(writer).unwrap();
-        let deserialized_value = serde_json::from_str::<serde_json::Value>(&deserialized_result)
-            .expect("Failed to deserialize result");
-        let result_in_value = deserialized_value[2][1][0][0].as_u64().unwrap();
-        assert_eq!(result_in_value, 55);
+        let fib_10 = super::execute_fibonacci_cairo_native(a, b, n);
+        assert_eq!(fib_10, 55);
     }
 
     #[test]
