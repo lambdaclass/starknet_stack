@@ -23,7 +23,7 @@ impl SerializeAs<Felt252> for FeltHex {
         S: Serializer,
     {
         let value = value.to_str_radix(16);
-        serializer.serialize_str(&value)
+        serializer.serialize_str(&format!("0x{}",&value))
     }
 }
 
@@ -94,7 +94,7 @@ impl SerializeAs<u64> for NumAsHex {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&format!("0x{value:#x}"))
+        serializer.serialize_str(&format!("{value:#x}"))
     }
 }
 
