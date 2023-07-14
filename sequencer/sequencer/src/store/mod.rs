@@ -21,8 +21,9 @@ pub trait StoreEngine: Debug + Send {
     fn get_program(&self, program_id: Key) -> Option<Value>;
     fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()>;
     fn get_transaction(&self, transaction_id: Key) -> Option<Value>;
-    fn add_block(&mut self, block_id: Key, block: Value) -> Result<()>;
-    fn get_block(&self, block_id: Key) -> Option<Value>;
+    fn add_block(&mut self, block_hash: Key, block_height: Key, block: Value) -> Result<()>;
+    fn get_block_by_hash(&self, block_hash: Key) -> Option<Value>;
+    fn get_block_by_height(&self, block_height: Key) -> Option<Value>;
     fn set_value(&mut self, key: Key, value: Value) -> Result<()>;
     fn get_value(&self, key: Key) -> Option<Value>;
 }
@@ -93,20 +94,28 @@ impl Store {
             .get_transaction(transaction_id)
     }
 
-    pub fn add_block(&mut self, block_id: Key, block: Value) -> Result<()> {
+    pub fn add_block(&mut self, block_hash: Key, block_height: Key, block: Value) -> Result<()> {
         self.engine
             .clone()
             .lock()
             .unwrap()
-            .add_block(block_id, block)
+            .add_block(block_hash, block_height, block)
     }
 
-    pub fn get_block(&self, block_height: u64) -> Option<Value> {
+    pub fn get_block_by_height(&self, block_height: u64) -> Option<Value> {
         self.engine
             .clone()
             .lock()
             .unwrap()
-            .get_block(block_height.to_be_bytes().to_vec())
+            .get_block_by_height(block_height.to_be_bytes().to_vec())
+    }
+
+    pub fn get_block_by_hash(&self, block_hash: Key) -> Option<Value> {
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .get_block_by_hash(block_hash)
     }
 
     pub fn set_height(&mut self, value: u64) -> Result<()> {

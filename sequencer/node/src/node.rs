@@ -163,7 +163,7 @@ impl Node {
                                     );
 
                                     let _ = self.external_store.add_transaction(
-                                        tx.transaction_hash.to_be_bytes().to_vec(),
+                                        tx.transaction_hash.to_bytes_be(),
                                         starknet_tx_string.into_bytes(),
                                     );
                                 }
@@ -192,14 +192,14 @@ impl Node {
 
         let status = rpc_endpoint::rpc::BlockStatus::AcceptedOnL2;
         // TODO: store deserialization should be managed in store logic.
-        let parent_block = self
-            .external_store
-            .get_block(height - 1)
-            .map(|serialized_block| {
-                serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
-                    &String::from_utf8_lossy(&serialized_block).into_owned(),
-                )
-            });
+        let parent_block =
+            self.external_store
+                .get_block_by_height(height - 1)
+                .map(|serialized_block| {
+                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
+                        &String::from_utf8_lossy(&serialized_block).into_owned(),
+                    )
+                });
         let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
             rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
             _ => Felt252::new(0),
@@ -228,7 +228,7 @@ impl Node {
 
         let block_with_txs = rpc::BlockWithTxs {
             status,
-            block_hash,
+            block_hash: block_hash.clone(),
             parent_hash,
             block_number: height,
             new_root,
@@ -237,18 +237,19 @@ impl Node {
             transactions,
         };
 
-        let block_id = block_with_txs.block_number;
         let block_serialized: Vec<u8> =
             serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block_with_txs))
                 .unwrap()
                 .as_bytes()
                 .to_vec();
 
-        info!("Storing block: {} at height {}", block_id, height);
+        info!("Storing block: {} at height {}", block_hash.clone(), height);
 
-        _ = self
-            .external_store
-            .add_block(block_id.to_be_bytes().to_vec(), block_serialized);
+        _ = self.external_store.add_block(
+            block_hash.to_bytes_be(),
+            height.to_be_bytes().to_vec(),
+            block_serialized,
+        );
         _ = self.external_store.set_height(height);
     }
 }
