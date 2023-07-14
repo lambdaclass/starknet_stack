@@ -14,8 +14,10 @@ use log::info;
 use mempool::{Mempool, MempoolMessage};
 use rpc_endpoint::new_server;
 use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
-use sequencer::store::StoreEngine;
+use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
+use std::hash::{Hash, Hasher};
+use std::time::{SystemTime, UNIX_EPOCH};
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -171,27 +173,7 @@ impl Node {
                             transactions.push(starknet_tx);
                         }
 
-                        // TODO create a correct Block Structure instad of a hardcoded one
-                        let block = rpc::BlockWithTxs {
-                            status: rpc_endpoint::rpc::BlockStatus::AcceptedOnL2,
-                            block_hash: Felt252::new(11239218),
-                            parent_hash: Felt252::new(19203123),
-                            block_number: 1,
-                            new_root: Felt252::new(938938281),
-                            timestamp: 1688498274,
-                            sequencer_address: Felt252::new(12039102),
-                            transactions,
-                        };
-                        let block_id = block.block_number;
-                        let block_serialized: Vec<u8> =
-                            serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block))
-                                .unwrap()
-                                .as_bytes()
-                                .to_vec();
-
-                        let _ = self
-                            .external_store
-                            .add_block(block_id.to_be_bytes().to_vec(), block_serialized);
+                        self.store_new_block(transactions);
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
@@ -199,6 +181,75 @@ impl Node {
                 }
             }
         }
+    }
+
+    fn store_new_block(&mut self, transactions: Vec<Transaction>) {
+        let height = self
+            .external_store
+            .get_height()
+            .expect("Height value not found")
+            + 1;
+
+        let status = rpc_endpoint::rpc::BlockStatus::AcceptedOnL2;
+        // TODO: store deserialization should be managed in store logic.
+        let parent_block = self
+            .external_store
+            .get_block(height - 1)
+            .map(|serialized_block| {
+                serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
+                    &String::from_utf8_lossy(&serialized_block).into_owned(),
+                )
+            });
+        let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
+            rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
+            _ => Felt252::new(0),
+        });
+        let new_root = Felt252::new(938938281);
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Timestamp failed")
+            .as_secs();
+        let sequencer_address = Felt252::new(12039102);
+
+        // TODO: This is quick and dirty hashing,
+        //       Block hashing should be done in it's own module
+        let mut state = DefaultHasher::new();
+        status.hash(&mut state);
+        parent_hash.hash(&mut state);
+        height.hash(&mut state);
+        new_root.hash(&mut state);
+        timestamp.hash(&mut state);
+        sequencer_address.hash(&mut state);
+        transactions.iter().for_each(|tx| match tx {
+            Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => invoke_tx.hash(&mut state),
+            _ => (),
+        });
+        let block_hash = Felt252::new(state.finish());
+
+        let block_with_txs = rpc::BlockWithTxs {
+            status,
+            block_hash,
+            parent_hash,
+            block_number: height,
+            new_root,
+            timestamp,
+            sequencer_address,
+            transactions,
+        };
+
+        let block_id = block_with_txs.block_number;
+        let block_serialized: Vec<u8> =
+            serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block_with_txs))
+                .unwrap()
+                .as_bytes()
+                .to_vec();
+
+        info!("Storing block: {} at height {}", block_id, height);
+
+        _ = self
+            .external_store
+            .add_block(block_id.to_be_bytes().to_vec(), block_serialized);
+        _ = self.external_store.set_height(height);
     }
 }
 

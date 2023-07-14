@@ -41,6 +41,7 @@ defmodule WatcherProver.Poller do
           highest_block: highest_block
         }
       ) do
+    Process.send_after(self(), :poll, @polling_frequency_ms)
     {:ok, latest_block_number} = Rpc.last_block_number()
 
     updated_highest_block =
