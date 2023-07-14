@@ -121,10 +121,11 @@ pub struct DeployAccountTransactionResult {
     pub contract_address: Felt252,
 }
 
+#[serde_as]
 /// Block hash, number or tag
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlockId {
-    Hash(Felt252),
+    Hash(#[serde_as(as = "FeltHex")] Felt252),
     Number(u64),
     Tag(BlockTag),
 }

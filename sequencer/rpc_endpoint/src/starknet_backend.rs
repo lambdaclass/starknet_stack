@@ -101,14 +101,12 @@ impl StarknetRpcApiServer for StarknetBackend {
 
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
-        let id = match block_id {
-            BlockId::Number(number) => number.to_be_bytes(),
-            BlockId::Hash(_) => todo!(),
+        let block_bytes = match block_id {
+            BlockId::Number(height) => self.store.get_block_by_height(height).unwrap(),
+            BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()).unwrap(),
             BlockId::Tag(_) => todo!(),
         };
-        let serialized_block =
-            String::from_utf8_lossy(&self.store.get_block(u64::from_be_bytes(id)).unwrap())
-                .into_owned();
+        let serialized_block = String::from_utf8_lossy(&block_bytes).into_owned();
         serde_json::from_str(&serialized_block).map_err(|e| {
             error!("error {}", e);
             ErrorObject::from(ErrorCode::ParseError)
@@ -224,10 +222,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         // necessary destructuring so that we can use a hex felt as a param
         let transaction_hash = transaction_hash.0;
 
-        match &self
-            .store
-            .get_transaction(transaction_hash.to_be_bytes().to_vec())
-        {
+        match &self.store.get_transaction(transaction_hash.to_bytes_be()) {
             Some(tx) => {
                 let deserialized_tx: Transaction =
                     serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
