@@ -62,8 +62,8 @@ services:
     environment:
       - DATABASE_URL=ecto://postgres:postgres@postgres_watcher_prover:5432/watcher_prover_dev
       - SECRET_KEY_BASE=IVx1FJb5Fg34MApqVRoSOFx/2PdNTnJRU5w1X/2A1G3E8qJKhLMGI5GJGPYglP1e
-      - RPC_HOST=host.docker.internal
-      - RPC_PORT=10000
+      - RPC_HOST=sequencer_node0
+      - RPC_PORT=10008
       - PROVER_STORAGE=local
     extra_hosts:
       - "host.docker.internal:host-gateway"
