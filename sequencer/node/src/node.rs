@@ -17,6 +17,7 @@ use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
 use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
 use std::hash::{Hash, Hasher};
+use std::time::{SystemTime, UNIX_EPOCH};
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -216,7 +217,10 @@ impl Node {
             _ => Felt252::new(0),
         });
         let new_root = Felt252::new(938938281);
-        let timestamp = 1688498274; //provide real timestamp
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Timestamp failed")
+            .as_secs();
         let sequencer_address = Felt252::new(12039102);
 
         // TODO: This is quick and dirty hashing,
