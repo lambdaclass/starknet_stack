@@ -1,5 +1,9 @@
 .PHONY: docker-compose-up
 
+clean:
+	rm -rf ./madara_explorer/
+	make docker-compose-up
+
 clone-madara-explorer:
 	git clone https://github.com/lambdaclass/madara_explorer.git --branch dockerfile
 
