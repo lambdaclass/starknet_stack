@@ -36,6 +36,7 @@ pub enum MaybePendingBlockWithTxHashes {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum MaybePendingBlockWithTxs {
     Block(BlockWithTxs),
     PendingBlock(PendingBlockWithTxs),
