@@ -33,3 +33,8 @@ Additionally, you can also explore the blockchain with [Starknet Stack Explorer]
 
 
 
+## Trust assumptions
+
+- Currently there is no way to validate whether a proof of an execution is related to a specific transaction. There are currently plans to enable this.
+- The fact that the prover pool requests the blocks/transactions from the sequencer means there needs to be trust between them. Running a trusted node alongside the proving pool is encouraged for this. Notice that because we use BFT consensus, the alternative could be to query 2/3 of the nodes in order to ensure consensus, but this has its own set of downsides.
+
