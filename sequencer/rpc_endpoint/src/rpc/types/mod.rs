@@ -1,6 +1,6 @@
 use cairo_felt::Felt252;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as};
+use serde_with::serde_as;
 
 // TODO: better namespacing of exports?
 mod codegen;

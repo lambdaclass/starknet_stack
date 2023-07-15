@@ -151,7 +151,7 @@ impl Node {
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
-                            let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
+                            let starknet_tx = rpc::Transaction::from_bytes(tx_bytes);
 
                             info!("Message {i} in {:?} is of tx_type {:?}, executing", p, starknet_tx);
 
@@ -209,7 +209,7 @@ impl Node {
                 .get_block_by_height(height - 1)
                 .map(|serialized_block| {
                     serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
-                        &String::from_utf8_lossy(&serialized_block).into_owned(),
+                        &String::from_utf8_lossy(&serialized_block),
                     )
                 });
         let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
@@ -255,7 +255,7 @@ impl Node {
                 .as_bytes()
                 .to_vec();
 
-        info!("Storing block: {} at height {}", block_hash.clone(), height);
+        info!("Storing block: {} at height {}", block_hash, height);
 
         _ = self.external_store.add_block(
             block_hash.to_bytes_be(),
