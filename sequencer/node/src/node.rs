@@ -139,8 +139,8 @@ impl Node {
                         );
 
                         let mut transactions = vec![];
-                      
-                        for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
+
+                      for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
                             // - First byte can be 0 or 1 and represents whether it's a benchmarked tx or standard tx
@@ -209,7 +209,7 @@ impl Node {
                 .get_block_by_height(height - 1)
                 .map(|serialized_block| {
                     serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
-                        &String::from_utf8_lossy(&serialized_block),
+                        &String::from_utf8_lossy(&serialized_block).into_owned(),
                     )
                 });
         let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
