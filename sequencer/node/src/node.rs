@@ -19,10 +19,10 @@ use num_bigint::BigUint;
 use rpc_endpoint::new_server;
 use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
 use sequencer::store::StoreEngine;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::convert::TryInto;
-use std::io::stdout;
 use std::path::Path;
+use std::sync::Arc;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -38,6 +38,7 @@ pub struct Node {
     pub commit: Receiver<Block>,
     pub store: Store,
     pub external_store: sequencer::store::Store,
+    pub sierra_program: Arc<cairo_lang_sierra::program::Program>,
 }
 
 impl Node {
@@ -67,6 +68,17 @@ impl Node {
         let store = Store::new(store_path).expect("Failed to create store");
         let external_store =
             sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
+
+        // Compile fibonacci to Sierra
+        let sierra_program: Arc<cairo_lang_sierra::program::Program> =
+            cairo_lang_compiler::compile_cairo_project_at_path(
+                Path::new("../cairo_programs/fib_contract.cairo"),
+                CompilerConfig {
+                    replace_ids: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
 
         // Run the signature service.
         let signature_service = SignatureService::new(secret_key);
@@ -118,6 +130,7 @@ impl Node {
             commit: rx_commit,
             store,
             external_store,
+            sierra_program: sierra_program,
         })
     }
 
@@ -145,24 +158,24 @@ impl Node {
 
                         let mut transactions = vec![];
                         for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
-                            
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
                             // - First byte can be 0 or 1 and represents whether it's a benchmarked tx or standard tx
                             // - Next 8 bytes represent a transaction ID
                             //
                             // If it's a benchmarked tx, it then gets tracked in logs to compute metrics
-                            // So we need to strip that section in order to get the starknet transaction to execute 
+                            // So we need to strip that section in order to get the starknet transaction to execute
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
-                          
-                            let starknet_tx = rpc::InvokeTransactionV1::from_bytes(&tx_bytes);
+
+                            let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
                             info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
                             let n = 10_usize;
 
                             // TODO create a execution engine structure to improve code quality
-                            let execution_engine = true;
-                            if execution_engine {
+                            // In this case we are executing cairo_native
+                            let is_cairo_vm = false;
+                            if is_cairo_vm {
                                 let program =
                                     include_bytes!("../../cairo_programs/fib_contract.casm");
                                 let ret = run_cairo_1_entrypoint(
@@ -175,7 +188,8 @@ impl Node {
                                 let a = get_input_value_cairo_native(0_u32);
                                 let b = get_input_value_cairo_native(1_u32);
                                 let n = get_input_value_cairo_native(n as u32);
-                                let ret = execute_fibonacci_cairo_native(a, b, n);
+                                let ret =
+                                    execute_fibonacci_cairo_native(&self.sierra_program, a, b, n);
                                 info!("Output: ret is {:?}", ret);
                             }
 
@@ -372,21 +386,18 @@ fn get_input_value_cairo_native(n: u32) -> Vec<u32> {
     digits
 }
 
-fn execute_fibonacci_cairo_native(a: Vec<u32>, b: Vec<u32>, n: Vec<u32>) -> u64 {
+fn execute_fibonacci_cairo_native(
+    sierra_program: &Arc<cairo_lang_sierra::program::Program>,
+    a: Vec<u32>,
+    b: Vec<u32>,
+    n: Vec<u32>,
+) -> u64 {
     std::env::set_var(
         "CARGO_MANIFEST_DIR",
         format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
     );
 
-    let program = cairo_lang_compiler::compile_cairo_project_at_path(
-        Path::new("../cairo_programs/fib_contract.cairo"),
-        CompilerConfig {
-            replace_ids: true,
-            ..Default::default()
-        },
-    )
-    .unwrap();
-
+    let program = sierra_program;
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);
     compile_and_execute::<CoreType, CoreLibfunc, _, _>(
@@ -414,6 +425,9 @@ fn execute_fibonacci_cairo_native(a: Vec<u32>, b: Vec<u32>, n: Vec<u32>) -> u64 
 
 #[cfg(test)]
 mod test {
+    use std::path::Path;
+
+    use cairo_lang_compiler::CompilerConfig;
 
     #[test]
     fn fib_1_cairovm() {
@@ -447,7 +461,16 @@ mod test {
 
         let n = super::get_input_value_cairo_native(10_u32);
 
-        let fib_10 = super::execute_fibonacci_cairo_native(a, b, n);
+        let sierra_program = cairo_lang_compiler::compile_cairo_project_at_path(
+            Path::new("../cairo_programs/fib_contract.cairo"),
+            CompilerConfig {
+                replace_ids: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let fib_10 = super::execute_fibonacci_cairo_native(&sierra_program, a, b, n);
         assert_eq!(fib_10, 55);
     }
 
