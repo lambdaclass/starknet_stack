@@ -23,7 +23,7 @@ impl SerializeAs<Felt252> for FeltHex {
         S: Serializer,
     {
         let value = value.to_str_radix(16);
-        serializer.serialize_str(&value)
+        serializer.serialize_str(&format!("0x{}", &value))
     }
 }
 
@@ -33,7 +33,10 @@ impl<'de> DeserializeAs<'de, Felt252> for FeltHex {
         D: Deserializer<'de>,
     {
         let value = String::deserialize(deserializer)?;
-        Ok(Felt252::parse_bytes(value.as_bytes(), 16).unwrap())
+        match value.starts_with("0x") {
+            true => Ok(Felt252::parse_bytes(value[2..].as_bytes(), 16).unwrap()),
+            false => Ok(Felt252::parse_bytes(value.as_bytes(), 16).unwrap()),
+        }
     }
 }
 
