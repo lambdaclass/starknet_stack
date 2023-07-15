@@ -25,6 +25,7 @@ use cairo_felt::Felt252;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
+use crate::rpc::serializable_types::U128;
 
 use super::*;
 use serializable_types::base64;
@@ -107,13 +108,15 @@ pub struct BlockWithTxs {
     #[serde_as(as = "FeltHex")]
     pub new_root: Felt252,
     /// The time in which the block was created, encoded in Unix time
-    pub timestamp: u64,
+    #[serde_as(as = "U128")]
+    pub timestamp: u128,
     /// The Starknet identity of the sequencer submitting this block
     #[serde_as(as = "FeltHex")]
     pub sequencer_address: Felt252,
     /// The transactions in this block
     pub transactions: Vec<Transaction>,
 }
+
 
 /// Broadcasted declare transaction v1.
 ///
@@ -632,14 +635,8 @@ impl InvokeTransactionV1 {
 
 impl Transaction {
     pub fn from_bytes(bytes: &[u8]) -> Transaction {
-        let tx_string = String::from_utf8(
-            bytes
-                .iter()
-                .take_while(|v| *v != &0)
-                .copied()
-                .collect(),
-        )
-        .unwrap();
+        let tx_string =
+            String::from_utf8(bytes.iter().take_while(|v| *v != &0).copied().collect()).unwrap();
 
         serde_json::from_str::<Transaction>(&tx_string).unwrap()
     }

@@ -139,7 +139,7 @@ impl Node {
                         );
 
                         let mut transactions = vec![];
-                      
+
                         for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
@@ -147,13 +147,16 @@ impl Node {
                             // - Next 8 bytes represent a transaction ID
                             //
                             // If it's a benchmarked tx, it then gets tracked in logs to compute metrics
-                            // So we need to strip that section in order to get the starknet transaction to execute 
+                            // So we need to strip that section in order to get the starknet transaction to execute
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
                             let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
-
-                            info!("Message {i} in {:?} is of tx_type {:?}, executing", p, starknet_tx);
+                            
+                            info!(
+                                "Message {i} in {:?} is of tx_type {:?}, executing",
+                                p, starknet_tx
+                            );
 
                             let n = 10_usize;
                             let program = include_bytes!("../../cairo_programs/fib_contract.casm");
@@ -175,7 +178,7 @@ impl Node {
                                     );
 
                                     let _ = self.external_store.add_transaction(
-                                        tx.transaction_hash.to_be_bytes().to_vec(),
+                                        tx.transaction_hash.to_bytes_be(),
                                         starknet_tx_string.into_bytes(),
                                     );
                                 }
@@ -185,7 +188,7 @@ impl Node {
                             transactions.push(starknet_tx);
                         }
 
-                        self.store_new_block(transactions);
+                        self.create_and_store_new_block(transactions);
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
@@ -195,7 +198,7 @@ impl Node {
         }
     }
 
-    fn store_new_block(&mut self, transactions: Vec<Transaction>) {
+    fn create_and_store_new_block(&mut self, transactions: Vec<Transaction>) {
         let height = self
             .external_store
             .get_height()
@@ -204,23 +207,26 @@ impl Node {
 
         let status = rpc_endpoint::rpc::BlockStatus::AcceptedOnL2;
         // TODO: store deserialization should be managed in store logic.
-        let parent_block = self
-            .external_store
-            .get_block(height - 1)
-            .map(|serialized_block| {
-                serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
-                    &String::from_utf8_lossy(&serialized_block).into_owned(),
-                )
-            });
+        let parent_block =
+            self.external_store
+                .get_block_by_height(height - 1)
+                .map(|serialized_block| {
+                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(&String::from_utf8(
+                        serialized_block,
+                    ).unwrap())
+                });
+
         let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
             rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
             _ => Felt252::new(0),
         });
         let new_root = Felt252::new(938938281);
+
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Timestamp failed")
-            .as_secs();
+            .as_millis();
+
         let sequencer_address = Felt252::new(12039102);
 
         // TODO: This is quick and dirty hashing,
@@ -240,7 +246,7 @@ impl Node {
 
         let block_with_txs = rpc::BlockWithTxs {
             status,
-            block_hash,
+            block_hash: block_hash.clone(),
             parent_hash,
             block_number: height,
             new_root,
@@ -249,18 +255,19 @@ impl Node {
             transactions,
         };
 
-        let block_id = block_with_txs.block_number;
         let block_serialized: Vec<u8> =
             serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block_with_txs))
                 .unwrap()
                 .as_bytes()
                 .to_vec();
 
-        info!("Storing block: {} at height {}", block_id, height);
+        info!("Storing block: {} at height {}", block_hash, height);
 
-        _ = self
-            .external_store
-            .add_block(block_id.to_be_bytes().to_vec(), block_serialized);
+        _ = self.external_store.add_block(
+            block_hash.to_bytes_be(),
+            height.to_be_bytes().to_vec(),
+            block_serialized,
+        );
         _ = self.external_store.set_height(height);
     }
 }
@@ -401,6 +408,8 @@ fn get_casm_contract_builtins(
 
 #[cfg(test)]
 mod test {
+    use serde::{Serialize, Deserialize};
+
 
     #[test]
     fn fib_1_cairovm() {
@@ -424,5 +433,23 @@ mod test {
             &[0_usize.into(), 1_usize.into(), n.into()],
         );
         assert_eq!(ret, vec![55_usize.into()]);
+    }
+
+    #[derive(Serialize, Deserialize)]
+    enum TestEnum {
+        TestA(TestStruct)
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct TestStruct {
+        pub a: u128,
+    }
+
+    #[test]
+    fn serialize_deserialize_block() {
+        let test = TestEnum::TestA(TestStruct {a:1u128});
+        let serialized = serde_json::to_string(&test).unwrap();
+        let _deserialized: TestEnum = serde_json::from_str(&serialized).unwrap();
+        //assert!(deserialized.a == test.a);
     }
 }

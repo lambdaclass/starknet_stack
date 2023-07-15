@@ -39,7 +39,7 @@ impl Store {
                         let result = if db.get(id.clone()).unwrap_or(None).is_some() {
                             Err(anyhow!(
                                 "Id {} already exists in the store",
-                                String::from_utf8_lossy(&id),
+                                String::from_utf8(id).unwrap(),
                             ))
                         } else {
                             Ok(db
@@ -124,11 +124,15 @@ impl StoreEngine for Store {
         reply_receiver.recv().expect("error").expect("Other error")
     }
 
-    fn add_block(&mut self, _block_id: Key, _block: Value) -> Result<()> {
+    fn add_block(&mut self, _block_hash: Key, _block_height: Key, _block: Value) -> Result<()> {
         todo!()
     }
 
-    fn get_block(&self, _block_id: Key) -> Option<Value> {
+    fn get_block_by_hash(&self, _block_hash: Key) -> Option<Value> {
+        todo!()
+    }
+
+    fn get_block_by_height(&self, _block_height: Key) -> Option<Value> {
         todo!()
     }
 
