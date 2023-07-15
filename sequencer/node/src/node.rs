@@ -211,9 +211,9 @@ impl Node {
             self.external_store
                 .get_block_by_height(height - 1)
                 .map(|serialized_block| {
-                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
-                        &String::from_utf8_lossy(&serialized_block),
-                    )
+                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(&String::from_utf8_lossy(
+                        &serialized_block,
+                    ))
                 });
         let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
             rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
