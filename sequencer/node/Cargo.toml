@@ -8,7 +8,11 @@ publish = false
 [dependencies]
 cairo-felt = "0.5.2"
 cairo-vm = { version = "0.8.1", features = ["cairo-1-hints"]}
+cairo-lang-compiler = "2.0.1"
 cairo-lang-starknet = { version = "2.0.0", default-features = false }
+cairo-lang-sierra = "2.0.1"
+num-bigint = "0.4.3"
+cairo-native = { git = "https://github.com/lambdaclass/cairo_native", rev="9433c7e"}
 tokio = { version = "1.1.0", features = ["time", "macros", "net", "rt-multi-thread"] }
 tokio-util = { version = "0.7.3", features = ["codec"] }
 log = "0.4.0"

@@ -41,5 +41,8 @@ Cargo.lock
 # Cairo Native repository
 cairo_native/
 
+# Cairo Corelib
+corelib/
+
 .assets
 .elixir_ls

@@ -1,7 +1,10 @@
 use crate::config::Export as _;
 use crate::config::{Committee, ConfigError, Parameters, Secret};
 use cairo_felt::Felt252;
+use cairo_lang_compiler::CompilerConfig;
+use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
 use cairo_lang_starknet::casm_contract_class::CasmContractClass;
+use cairo_native::easy::compile_and_execute;
 use cairo_vm::hint_processor::cairo_1_hint_processor::hint_processor::Cairo1HintProcessor;
 use cairo_vm::serde::deserialize_program::BuiltinName;
 use cairo_vm::types::program::Program;
@@ -12,10 +15,14 @@ use consensus::{Block, Consensus};
 use crypto::SignatureService;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
+use num_bigint::BigUint;
 use rpc_endpoint::new_server;
 use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
 use sequencer::store::StoreEngine;
+use serde_json::json;
 use std::convert::TryInto;
+use std::path::Path;
+use std::sync::Arc;
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -31,6 +38,7 @@ pub struct Node {
     pub commit: Receiver<Block>,
     pub store: Store,
     pub external_store: sequencer::store::Store,
+    pub sierra_program: Arc<cairo_lang_sierra::program::Program>,
 }
 
 impl Node {
@@ -60,6 +68,17 @@ impl Node {
         let store = Store::new(store_path).expect("Failed to create store");
         let external_store =
             sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
+
+        // Compile fibonacci to Sierra
+        let sierra_program: Arc<cairo_lang_sierra::program::Program> =
+            cairo_lang_compiler::compile_cairo_project_at_path(
+                Path::new("../cairo_programs/fib_contract.cairo"),
+                CompilerConfig {
+                    replace_ids: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
 
         // Run the signature service.
         let signature_service = SignatureService::new(secret_key);
@@ -111,6 +130,7 @@ impl Node {
             commit: rx_commit,
             store,
             external_store,
+            sierra_program: sierra_program,
         })
     }
 
@@ -137,7 +157,6 @@ impl Node {
                         );
 
                         let mut transactions = vec![];
-                      
                         for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
@@ -145,22 +164,35 @@ impl Node {
                             // - Next 8 bytes represent a transaction ID
                             //
                             // If it's a benchmarked tx, it then gets tracked in logs to compute metrics
-                            // So we need to strip that section in order to get the starknet transaction to execute 
+                            // So we need to strip that section in order to get the starknet transaction to execute
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
                             let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
-
-                            info!("Message {i} in {:?} is of tx_type {:?}, executing", p, starknet_tx);
-
+                            info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
                             let n = 10_usize;
-                            let program = include_bytes!("../../cairo_programs/fib_contract.casm");
-                            let ret = run_cairo_1_entrypoint(
-                                program.as_slice(),
-                                0,
-                                &[0_usize.into(), 1_usize.into(), n.into()],
-                            );
-                            info!("Output: ret is {:?}", ret);
+
+                            // TODO create a execution engine structure to improve code quality
+                            // In this case we are executing cairo_native
+                            let is_cairo_vm = false;
+                            if is_cairo_vm {
+                                let program =
+                                    include_bytes!("../../cairo_programs/fib_contract.casm");
+                                let ret = run_cairo_1_entrypoint(
+                                    program.as_slice(),
+                                    0,
+                                    &[0_usize.into(), 1_usize.into(), n.into()],
+                                );
+                                info!("Output: ret is {:?}", ret);
+                            } else {
+                                let a = get_input_value_cairo_native(0_u32);
+                                let b = get_input_value_cairo_native(1_u32);
+                                let n = get_input_value_cairo_native(n as u32);
+                                let ret =
+                                    execute_fibonacci_cairo_native(&self.sierra_program, a, b, n);
+                                info!("Output: ret is {:?}", ret);
+                            }
+
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
 
                             match &starknet_tx {
@@ -348,8 +380,54 @@ fn get_casm_contract_builtins(
         .collect()
 }
 
+fn get_input_value_cairo_native(n: u32) -> Vec<u32> {
+    let mut digits = BigUint::from(n).to_u32_digits();
+    digits.resize(8, 0);
+    digits
+}
+
+fn execute_fibonacci_cairo_native(
+    sierra_program: &Arc<cairo_lang_sierra::program::Program>,
+    a: Vec<u32>,
+    b: Vec<u32>,
+    n: Vec<u32>,
+) -> u64 {
+    std::env::set_var(
+        "CARGO_MANIFEST_DIR",
+        format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
+    );
+
+    let program = sierra_program;
+    let mut writer: Vec<u8> = Vec::new();
+    let mut res = serde_json::Serializer::new(&mut writer);
+    compile_and_execute::<CoreType, CoreLibfunc, _, _>(
+        &program,
+        &program
+            .funcs
+            .iter()
+            .find(|x| {
+                x.id.debug_name.as_deref() == Some("fib_contract::fib_contract::Fibonacci::fib")
+            })
+            .unwrap()
+            .id,
+        json!([null, 9000, a, b, n]),
+        &mut res,
+    )
+    .unwrap();
+
+    // The output expected as a string will be a json that looks like this:
+    // [null,9000,[0,[[55,0,0,0,0,0,0,0]]]]
+    let deserialized_result: String = String::from_utf8(writer).unwrap();
+    let deserialized_value = serde_json::from_str::<serde_json::Value>(&deserialized_result)
+        .expect("Failed to deserialize result");
+    deserialized_value[2][1][0][0].as_u64().unwrap()
+}
+
 #[cfg(test)]
 mod test {
+    use std::path::Path;
+
+    use cairo_lang_compiler::CompilerConfig;
 
     #[test]
     fn fib_1_cairovm() {
@@ -373,5 +451,32 @@ mod test {
             &[0_usize.into(), 1_usize.into(), n.into()],
         );
         assert_eq!(ret, vec![55_usize.into()]);
+    }
+
+    #[test]
+    fn fib_10_cairo_native() {
+        let a = super::get_input_value_cairo_native(0_u32);
+
+        let b = super::get_input_value_cairo_native(1_u32);
+
+        let n = super::get_input_value_cairo_native(10_u32);
+
+        let sierra_program = cairo_lang_compiler::compile_cairo_project_at_path(
+            Path::new("../cairo_programs/fib_contract.cairo"),
+            CompilerConfig {
+                replace_ids: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let fib_10 = super::execute_fibonacci_cairo_native(&sierra_program, a, b, n);
+        assert_eq!(fib_10, 55);
+    }
+
+    #[test]
+    fn get_input_value_cairo_native_should_be_10() {
+        let input = super::get_input_value_cairo_native(10);
+        assert_eq!(input, vec![10, 0, 0, 0, 0, 0, 0, 0]);
     }
 }
