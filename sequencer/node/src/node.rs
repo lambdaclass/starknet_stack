@@ -188,7 +188,7 @@ impl Node {
                             transactions.push(starknet_tx);
                         }
 
-                        self.store_new_block(transactions);
+                        self.create_and_store_new_block(transactions);
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
@@ -198,7 +198,7 @@ impl Node {
         }
     }
 
-    fn store_new_block(&mut self, transactions: Vec<Transaction>) {
+    fn create_and_store_new_block(&mut self, transactions: Vec<Transaction>) {
         let height = self
             .external_store
             .get_height()
@@ -220,10 +220,12 @@ impl Node {
             _ => Felt252::new(0),
         });
         let new_root = Felt252::new(938938281);
+        
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Timestamp failed")
-            .as_secs();
+            .as_millis();
+
         let sequencer_address = Felt252::new(12039102);
 
         // TODO: This is quick and dirty hashing,
