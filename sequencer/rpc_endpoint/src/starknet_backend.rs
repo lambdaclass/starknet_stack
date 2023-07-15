@@ -116,7 +116,7 @@ impl StarknetRpcApiServer for StarknetBackend {
                 .unwrap(),
             _ => todo!(),
         };
-        let serialized_block = String::from_utf8_lossy(&block_bytes).into_owned();
+        let serialized_block = String::from_utf8(block_bytes).unwrap();
         serde_json::from_str(&serialized_block).map_err(|e| {
             error!("error {}", e);
             ErrorObject::from(ErrorCode::ParseError)
