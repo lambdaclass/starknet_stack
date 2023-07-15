@@ -1,7 +1,7 @@
-use std::hash::Hash;
+
 
 use crate::rpc::{
-    serializable_types::FeltParam, BlockHashAndNumber, BlockId, BlockTag,
+    serializable_types::FeltParam, BlockHashAndNumber, BlockId,
     BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
     BroadcastedInvokeTransaction, BroadcastedTransaction, ContractClass, DeclareTransactionResult,
     DeployAccountTransactionResult, EventFilterWithPage, EventsPage, FeeEstimate, FunctionCall,
@@ -110,7 +110,7 @@ impl StarknetRpcApiServer for StarknetBackend {
                 self.store.get_block_by_height(height).unwrap()
             }
             BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()).unwrap(),
-            BlockId::Tag(BlockTag::Latest) => self
+            BlockId::Latest => self
                 .store
                 .get_block_by_height(self.store.get_height().expect("Height not found"))
                 .unwrap(),
@@ -274,9 +274,9 @@ impl StarknetRpcApiServer for StarknetBackend {
                     events: vec![],
                 };
 
-                return Ok(MaybePendingTransactionReceipt::Receipt(
+                Ok(MaybePendingTransactionReceipt::Receipt(
                     crate::rpc::TransactionReceipt::Invoke(invoke_tx_receipt),
-                ));
+                ))
             }
             _ => todo!("Transaction receipts or transaction not found"),
         }

@@ -129,8 +129,10 @@ pub enum BlockId {
     Hash(Felt252),
     #[serde(rename = "block_number")]
     Number(u64),
-    #[serde(rename = "block_tag")]
-    Tag(BlockTag),
+    #[serde(rename = "latest")]
+    Latest,
+    #[serde(rename = "pending")]
+    Pending,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
