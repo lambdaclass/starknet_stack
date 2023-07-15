@@ -107,7 +107,7 @@ pub struct BlockWithTxs {
     #[serde_as(as = "FeltHex")]
     pub new_root: Felt252,
     /// The time in which the block was created, encoded in Unix time
-    pub timestamp: u64,
+    pub timestamp: u128,
     /// The Starknet identity of the sequencer submitting this block
     #[serde_as(as = "FeltHex")]
     pub sequencer_address: Felt252,
