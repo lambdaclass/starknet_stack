@@ -1,4 +1,5 @@
 use cairo_felt::Felt252;
+use log::info;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::{serde_as, DeserializeAs, SerializeAs};
 
@@ -16,6 +17,11 @@ pub struct FeltHexOption;
 pub struct FeltPendingBlockHash;
 
 pub(crate) struct NumAsHex;
+
+// NOTE: This newtype was created as a workaround because if it did not exist, the block would have an issue deserializing
+// correctly ("u128 is not supported") as long as the `MaybePendingBlockWithTxs` enum has the "type" tag which the API needs
+#[derive(Debug, Clone)]
+pub struct U128(u128);
 
 impl SerializeAs<Felt252> for FeltHex {
     fn serialize_as<S>(value: &Felt252, serializer: S) -> Result<S::Ok, S::Error>
@@ -115,6 +121,34 @@ impl<'de> DeserializeAs<'de, u64> for NumAsHex {
         }
     }
 }
+
+impl SerializeAs<u128> for U128 {
+    fn serialize_as<S>(value: &u128, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{value}"))
+    }
+}
+
+impl<'de> DeserializeAs<'de, u128> for U128 {
+    fn deserialize_as<D>(deserializer: D) -> Result<u128, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        info!("the thing as string is {}", value);
+
+
+            match u128::from_str_radix(&value, 10) {
+                Ok(value) => Ok(value),
+                Err(err) => Err(serde::de::Error::custom(format!(
+                    "invalid dec string: {err}"
+                ))),
+            }
+    }
+}
+
 pub mod base64 {
     use base64::engine::general_purpose;
     use base64::Engine;

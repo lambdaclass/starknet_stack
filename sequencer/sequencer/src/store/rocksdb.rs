@@ -39,7 +39,7 @@ impl Store {
                         let result = if db.get(id.clone()).unwrap_or(None).is_some() {
                             Err(anyhow!(
                                 "Id {} already exists in the store",
-                                String::from_utf8_lossy(&id),
+                                String::from_utf8(id).unwrap(),
                             ))
                         } else {
                             Ok(db
