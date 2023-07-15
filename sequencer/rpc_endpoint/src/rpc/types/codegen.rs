@@ -632,14 +632,8 @@ impl InvokeTransactionV1 {
 
 impl Transaction {
     pub fn from_bytes(bytes: &[u8]) -> Transaction {
-        let tx_string = String::from_utf8(
-            bytes
-                .iter()
-                .take_while(|v| *v != &0)
-                .copied()
-                .collect(),
-        )
-        .unwrap();
+        let tx_string =
+            String::from_utf8(bytes.iter().take_while(|v| *v != &0).copied().collect()).unwrap();
 
         serde_json::from_str::<Transaction>(&tx_string).unwrap()
     }
