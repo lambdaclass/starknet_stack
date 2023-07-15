@@ -1,6 +1,7 @@
 .PHONY: init node install-cairo-native run-fibonacci
 
 init:
+	rustup override set nightly-2023-06-19-aarch64-apple-darwin
 	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
 
 bench:
