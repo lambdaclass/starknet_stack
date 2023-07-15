@@ -4,7 +4,7 @@ use crate::rpc::{
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
     EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
     MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt,
-    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
+    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction, BlockTag,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -107,7 +107,10 @@ impl StarknetRpcApiServer for StarknetBackend {
                 self.store.get_block_by_height(height).unwrap()
             }
             BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()).unwrap(),
-            BlockId::Tag(_) => todo!(),
+            BlockId::Tag(BlockTag::Latest) => {
+                self.store.get_block_by_height(self.store.get_height().expect("Height not found")).unwrap()
+            },
+            _ => todo!(),
         };
         let serialized_block = String::from_utf8_lossy(&block_bytes).into_owned();
         serde_json::from_str(&serialized_block).map_err(|e| {
