@@ -211,16 +211,17 @@ impl Node {
             self.external_store
                 .get_block_by_height(height - 1)
                 .map(|serialized_block| {
-                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(&String::from_utf8_lossy(
-                        &serialized_block,
-                    ))
+                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(&String::from_utf8(
+                        serialized_block,
+                    ).unwrap())
                 });
+
         let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
             rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
             _ => Felt252::new(0),
         });
         let new_root = Felt252::new(938938281);
-        
+
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Timestamp failed")
@@ -407,6 +408,8 @@ fn get_casm_contract_builtins(
 
 #[cfg(test)]
 mod test {
+    use serde::{Serialize, Deserialize};
+
 
     #[test]
     fn fib_1_cairovm() {
@@ -430,5 +433,23 @@ mod test {
             &[0_usize.into(), 1_usize.into(), n.into()],
         );
         assert_eq!(ret, vec![55_usize.into()]);
+    }
+
+    #[derive(Serialize, Deserialize)]
+    enum TestEnum {
+        TestA(TestStruct)
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct TestStruct {
+        pub a: u128,
+    }
+
+    #[test]
+    fn serialize_deserialize_block() {
+        let test = TestEnum::TestA(TestStruct {a:1u128});
+        let serialized = serde_json::to_string(&test).unwrap();
+        let _deserialized: TestEnum = serde_json::from_str(&serialized).unwrap();
+        //assert!(deserialized.a == test.a);
     }
 }
