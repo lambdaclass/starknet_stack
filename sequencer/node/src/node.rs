@@ -140,20 +140,23 @@ impl Node {
 
                         let mut transactions = vec![];
 
-                      for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
+                        for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
                             // - First byte can be 0 or 1 and represents whether it's a benchmarked tx or standard tx
                             // - Next 8 bytes represent a transaction ID
                             //
                             // If it's a benchmarked tx, it then gets tracked in logs to compute metrics
-                            // So we need to strip that section in order to get the starknet transaction to execute 
+                            // So we need to strip that section in order to get the starknet transaction to execute
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
-                            let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
+                            let starknet_tx = rpc::Transaction::from_bytes(tx_bytes);
 
-                            info!("Message {i} in {:?} is of tx_type {:?}, executing", p, starknet_tx);
+                            info!(
+                                "Message {i} in {:?} is of tx_type {:?}, executing",
+                                p, starknet_tx
+                            );
 
                             let n = 10_usize;
                             let program = include_bytes!("../../cairo_programs/fib_contract.casm");
@@ -209,7 +212,7 @@ impl Node {
                 .get_block_by_height(height - 1)
                 .map(|serialized_block| {
                     serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
-                        &String::from_utf8_lossy(&serialized_block).into_owned(),
+                        &String::from_utf8_lossy(&serialized_block),
                     )
                 });
         let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
