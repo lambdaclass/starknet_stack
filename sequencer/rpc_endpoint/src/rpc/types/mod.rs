@@ -1,5 +1,3 @@
-
-
 use cairo_felt::Felt252;
 use serde::{Deserialize, Serialize};
 
