@@ -35,4 +35,16 @@ FROM debian:bullseye-slim as sequencer
 
 COPY --from=builder /sequencer/target/release /sequencer/
 
+WORKDIR /sequencer/
+
+RUN apt update -y && apt install -y git
+
+RUN git clone \
+              --depth 1 \
+              --branch v2.0.1 \
+              https://github.com/starkware-libs/cairo.git \
+              starkware-cairo
+RUN cp -r starkware-cairo/corelib .
+RUN rm -rf starkware-cairo/
+
 CMD /sequencer/node
