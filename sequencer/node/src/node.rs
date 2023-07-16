@@ -32,13 +32,84 @@ pub const CHANNEL_CAPACITY: usize = 1_000;
 /// Default port offset for RPC endpoint
 const RPC_PORT_OFFSET: u16 = 1000;
 
+struct CairoVMExecutionProgram {
+    fib_program: Vec<u8>,
+    fact_program: Vec<u8>,
+}
+
+struct SierraExecutionProgram {
+    fib_program: Arc<cairo_lang_sierra::program::Program>,
+    fact_program: Arc<cairo_lang_sierra::program::Program>,
+}
+
+impl SierraExecutionProgram {
+    fn execute_fibonacci(&self, a: Vec<u32>, b: Vec<u32>, n: Vec<u32>) {
+        let ret = execute_fibonacci_cairo_native(&self.fib_program, a, b, n);
+        info!("Output: ret is {:?}", ret)
+    }
+
+    fn execute_factorial(&self, n: Vec<u32>) {
+        let ret = execute_fact_cairo_native(&self.fact_program, n);
+        info!("Output: ret is {:?}", ret)
+    }
+}
+
+impl CairoVMExecutionProgram {
+    fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
+        let ret = run_cairo_1_entrypoint(
+            self.fib_program.as_slice(),
+            0,
+            &[0_usize.into(), 1_usize.into(), n.into()],
+        );
+        info!("Output: ret is {:?}", ret)
+    }
+
+    fn execute_factorial(&self, n: usize) {
+        let ret = run_cairo_1_entrypoint(
+            self.fact_program.as_slice(),
+            0,
+            &[0_usize.into(), 1_usize.into(), n.into()],
+        );
+        info!("Output: ret is {:?}", ret)
+    }
+}
+
+enum ExecutionProgram {
+    Cairo(CairoVMExecutionProgram),
+    Sierra(SierraExecutionProgram),
+}
+
+impl ExecutionProgram {
+    fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
+        match self {
+            ExecutionProgram::Cairo(execution_program) => {
+                execution_program.execute_fibonacci(a, b, n)
+            }
+            ExecutionProgram::Sierra(execution_program) => execution_program.execute_fibonacci(
+                get_input_value_cairo_native(a as u32),
+                get_input_value_cairo_native(b as u32),
+                get_input_value_cairo_native(n as u32),
+            ),
+        }
+    }
+
+    fn execute_factorial(&self, n: usize) {
+        match self {
+            ExecutionProgram::Cairo(execution_program) => execution_program.execute_factorial(n),
+            ExecutionProgram::Sierra(execution_program) => {
+                execution_program.execute_factorial(get_input_value_cairo_native(n as u32))
+            }
+        }
+    }
+}
+
 // What type is V1(InvokeTransactionV1)?
 
 pub struct Node {
     pub commit: Receiver<Block>,
     pub store: Store,
     pub external_store: sequencer::store::Store,
-    pub sierra_program: Arc<cairo_lang_sierra::program::Program>,
+    execution_program: ExecutionProgram,
 }
 
 impl Node {
@@ -68,17 +139,42 @@ impl Node {
         let store = Store::new(store_path).expect("Failed to create store");
         let external_store =
             sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
+        let is_cairovm = false;
+        let execution_program = if is_cairovm {
+            let fib_casm_program: Vec<u8> =
+                include_bytes!("../../cairo_programs/fib_contract.casm").to_vec();
+            let fact_casm_program: Vec<u8> =
+                include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
+            ExecutionProgram::Cairo(CairoVMExecutionProgram {
+                fib_program: fib_casm_program,
+                fact_program: fact_casm_program,
+            })
+        } else {
+            let fact_sierra_program: Arc<cairo_lang_sierra::program::Program> =
+                cairo_lang_compiler::compile_cairo_project_at_path(
+                    Path::new("../cairo_programs/fact_contract.cairo"),
+                    CompilerConfig {
+                        replace_ids: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
+            // Compile fibonacci to Sierra
+            let fib_sierra_program: Arc<cairo_lang_sierra::program::Program> =
+                cairo_lang_compiler::compile_cairo_project_at_path(
+                    Path::new("../cairo_programs/fib_contract.cairo"),
+                    CompilerConfig {
+                        replace_ids: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
 
-        // Compile fibonacci to Sierra
-        let sierra_program: Arc<cairo_lang_sierra::program::Program> =
-            cairo_lang_compiler::compile_cairo_project_at_path(
-                Path::new("../cairo_programs/fib_contract.cairo"),
-                CompilerConfig {
-                    replace_ids: true,
-                    ..Default::default()
-                },
-            )
-            .unwrap();
+            ExecutionProgram::Sierra(SierraExecutionProgram {
+                fib_program: fib_sierra_program,
+                fact_program: fact_sierra_program,
+            })
+        };
 
         // Run the signature service.
         let signature_service = SignatureService::new(secret_key);
@@ -130,7 +226,7 @@ impl Node {
             commit: rx_commit,
             store,
             external_store,
-            sierra_program: sierra_program,
+            execution_program,
         })
     }
 
@@ -173,24 +269,11 @@ impl Node {
                             let n = 10_usize;
 
                             // TODO create a execution engine structure to improve code quality
-                            // In this case we are executing cairo_native
-                            let is_cairo_vm = false;
-                            if is_cairo_vm {
-                                let program =
-                                    include_bytes!("../../cairo_programs/fib_contract.casm");
-                                let ret = run_cairo_1_entrypoint(
-                                    program.as_slice(),
-                                    0,
-                                    &[0_usize.into(), 1_usize.into(), n.into()],
-                                );
-                                info!("Output: ret is {:?}", ret);
+                            let is_fib = true;
+                            if is_fib {
+                                self.execution_program.execute_fibonacci(0, 1, n);
                             } else {
-                                let a = get_input_value_cairo_native(0_u32);
-                                let b = get_input_value_cairo_native(1_u32);
-                                let n = get_input_value_cairo_native(n as u32);
-                                let ret =
-                                    execute_fibonacci_cairo_native(&self.sierra_program, a, b, n);
-                                info!("Output: ret is {:?}", ret);
+                                self.execution_program.execute_factorial(n);
                             }
 
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
@@ -423,6 +506,41 @@ fn execute_fibonacci_cairo_native(
     deserialized_value[2][1][0][0].as_u64().unwrap()
 }
 
+fn execute_fact_cairo_native(
+    sierra_program: &Arc<cairo_lang_sierra::program::Program>,
+    n: Vec<u32>,
+) -> u64 {
+    std::env::set_var(
+        "CARGO_MANIFEST_DIR",
+        format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
+    );
+
+    let program = sierra_program;
+    let mut writer: Vec<u8> = Vec::new();
+    let mut res = serde_json::Serializer::new(&mut writer);
+    compile_and_execute::<CoreType, CoreLibfunc, _, _>(
+        &program,
+        &program
+            .funcs
+            .iter()
+            .find(|x| {
+                x.id.debug_name.as_deref() == Some("fact_contract::fact_contract::Factorial::fact")
+            })
+            .unwrap()
+            .id,
+        json!([null, 9000, n]),
+        &mut res,
+    )
+    .unwrap();
+
+    // The output expected as a string will be a json that looks like this:
+    // [null,9000,[0,[[55,0,0,0,0,0,0,0]]]]
+    let deserialized_result: String = String::from_utf8(writer).unwrap();
+    let deserialized_value = serde_json::from_str::<serde_json::Value>(&deserialized_result)
+        .expect("Failed to deserialize result");
+    deserialized_value[2][1][0][0].as_u64().unwrap()
+}
+
 #[cfg(test)]
 mod test {
     use std::path::Path;
@@ -472,6 +590,27 @@ mod test {
 
         let fib_10 = super::execute_fibonacci_cairo_native(&sierra_program, a, b, n);
         assert_eq!(fib_10, 55);
+    }
+
+    #[test]
+    fn fact_10_cairo_native() {
+        let a = super::get_input_value_cairo_native(0_u32);
+
+        let b = super::get_input_value_cairo_native(1_u32);
+
+        let n = super::get_input_value_cairo_native(10_u32);
+
+        let sierra_program = cairo_lang_compiler::compile_cairo_project_at_path(
+            Path::new("../cairo_programs/fact_contract.cairo"),
+            CompilerConfig {
+                replace_ids: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let fact_10 = super::execute_fact_cairo_native(&sierra_program, n);
+        assert_eq!(fact_10, 3628800);
     }
 
     #[test]
