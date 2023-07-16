@@ -151,8 +151,8 @@ impl Node {
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
-                            let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
-                            
+                            let starknet_tx = rpc::Transaction::from_bytes(tx_bytes);
+
                             info!(
                                 "Message {i} in {:?} is of tx_type {:?}, executing",
                                 p, starknet_tx
@@ -211,9 +211,9 @@ impl Node {
             self.external_store
                 .get_block_by_height(height - 1)
                 .map(|serialized_block| {
-                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(&String::from_utf8(
-                        serialized_block,
-                    ).unwrap())
+                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
+                        &String::from_utf8(serialized_block).unwrap(),
+                    )
                 });
 
         let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
@@ -240,7 +240,7 @@ impl Node {
         sequencer_address.hash(&mut state);
         transactions.iter().for_each(|tx| match tx {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => invoke_tx.hash(&mut state),
-            _ => (),
+            _ => todo!(),
         });
         let block_hash = Felt252::new(state.finish());
 
@@ -408,8 +408,7 @@ fn get_casm_contract_builtins(
 
 #[cfg(test)]
 mod test {
-    use serde::{Serialize, Deserialize};
-
+    use serde::{Deserialize, Serialize};
 
     #[test]
     fn fib_1_cairovm() {
@@ -437,7 +436,7 @@ mod test {
 
     #[derive(Serialize, Deserialize)]
     enum TestEnum {
-        TestA(TestStruct)
+        TestA(TestStruct),
     }
 
     #[derive(Serialize, Deserialize)]
@@ -447,7 +446,7 @@ mod test {
 
     #[test]
     fn serialize_deserialize_block() {
-        let test = TestEnum::TestA(TestStruct {a:1u128});
+        let test = TestEnum::TestA(TestStruct { a: 1u128 });
         let serialized = serde_json::to_string(&test).unwrap();
         let _deserialized: TestEnum = serde_json::from_str(&serialized).unwrap();
         //assert!(deserialized.a == test.a);
