@@ -1,6 +1,9 @@
 use cairo_felt::Felt252;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::json;
 use serde_with::{serde_as, DeserializeAs, SerializeAs};
+
+use super::{BlockWithTxs, MaybePendingBlockWithTxs};
 
 // We need the newtype in order to be able to use it the RPC function signatures since
 // jsonrpsee uses serde's deserialize implementations to deserialize params and
@@ -23,7 +26,7 @@ impl SerializeAs<Felt252> for FeltHex {
         S: Serializer,
     {
         let value = value.to_str_radix(16);
-        serializer.serialize_str(&value)
+        serializer.serialize_str(&format!("0x{}", &value))
     }
 }
 
@@ -33,7 +36,10 @@ impl<'de> DeserializeAs<'de, Felt252> for FeltHex {
         D: Deserializer<'de>,
     {
         let value = String::deserialize(deserializer)?;
-        Ok(Felt252::parse_bytes(value.as_bytes(), 16).unwrap())
+        match value.starts_with("0x") {
+            true => Ok(Felt252::parse_bytes(value[2..].as_bytes(), 16).unwrap()),
+            false => Ok(Felt252::parse_bytes(value.as_bytes(), 16).unwrap()),
+        }
     }
 }
 
@@ -112,6 +118,7 @@ impl<'de> DeserializeAs<'de, u64> for NumAsHex {
         }
     }
 }
+
 pub mod base64 {
     use base64::engine::general_purpose;
     use base64::Engine;
@@ -131,9 +138,36 @@ pub mod base64 {
     }
 }
 
+impl<'de> Deserialize<'de> for MaybePendingBlockWithTxs {
+    fn deserialize<D>(deserializer: D) -> Result<MaybePendingBlockWithTxs, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut value: serde_json::Value = Deserialize::deserialize(deserializer)?;
+
+        match value.get("type").unwrap().as_str().expect("Type not found") {
+            "Block" => {
+                let mutable_map = value
+                    .as_object_mut()
+                    .expect("Error when trying to get a mutable reference");
+                mutable_map.remove("type");
+                let object = json!(mutable_map);
+
+                Ok(serde_json::from_value::<BlockWithTxs>(object)
+                    .map(Self::Block)
+                    .unwrap())
+            }
+            "PendingBlock" => todo!(),
+            _ => Err(serde::de::Error::custom("Enum type not supported")),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::rpc::{InvokeTransaction, InvokeTransactionV1, Transaction};
+    use crate::rpc::{
+        BlockWithTxs, InvokeTransaction, InvokeTransactionV1, MaybePendingBlockWithTxs, Transaction,
+    };
 
     use super::*;
 
@@ -171,5 +205,14 @@ mod tests {
         } else {
             panic!()
         }
+    }
+
+    #[test]
+    fn serdeserialize_block_with_txs() {
+        let block = MaybePendingBlockWithTxs::Block(BlockWithTxs::default());
+        let serialized = serde_json::to_string(&block).unwrap();
+        println!("serialized  {}", serialized);
+        let deserialized: MaybePendingBlockWithTxs = serde_json::from_str(&serialized).unwrap();
+        println!("{:?}", deserialized);
     }
 }

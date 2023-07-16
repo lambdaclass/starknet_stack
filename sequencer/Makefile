@@ -9,7 +9,7 @@ bench:
 
 node:
 #	./client 127.0.0.1:9006 --size 512 --rate 250 --timeout 1000
-	cargo run --bin node --release -- -vvv run --keys ./benchmark/.node-$(N).json --committee ./benchmark/.committee.json --store .db-$(N) --parameters ./benchmark/.parameters.json
+	cargo run --bin node --release -- -vvv run --keys ./benchmark/.node-$(N).json --committee ./benchmark/.committee.json --parameters ./benchmark/.parameters.json --store benchmark/.db-$(N)
 
 install-cairo-native:
 	git clone https://github.com/lambdaclass/cairo_native.git
