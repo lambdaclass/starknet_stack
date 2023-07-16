@@ -1,5 +1,6 @@
 use cairo_felt::Felt252;
 use serde::{Deserialize, Serialize};
+
 use serde_with::serde_as;
 
 // TODO: better namespacing of exports?
@@ -35,7 +36,7 @@ pub enum MaybePendingBlockWithTxHashes {
     PendingBlock(PendingBlockWithTxHashes),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type")]
 pub enum MaybePendingBlockWithTxs {
     Block(BlockWithTxs),

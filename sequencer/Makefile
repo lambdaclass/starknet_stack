@@ -1,26 +1,35 @@
 .PHONY: init node install-cairo-native run-fibonacci
 
-init:
-	#rustup toolchain install nightly-2023-06-19 --component rustc,cargo,rustfmt
-	python3 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
+init: install-cairo-native
+	rustup override set nightly-2023-06-19-aarch64-apple-darwin
+	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
 
 bench:
-	cd benchmark && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && fab local
+	cd benchmark && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && export RUST_LOG=info,salsa=off,cairo_native=off && fab local
 
+N:=0
 node:
 #	./client 127.0.0.1:9006 --size 512 --rate 250 --timeout 1000
-	cargo run --bin node --release -- -vvv run --keys ./benchmark/.node-$(N).json --committee ./benchmark/.committee.json --parameters ./benchmark/.parameters.json --store benchmark/.db-$(N)
+	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cd benchmark && cargo run --bin node --release -- -vvv run --keys ./.node-$(N).json --committee ./.committee.json --parameters ./.parameters.json --store ./.db-$(N)
+
 
 install-cairo-native:
-	git clone https://github.com/lambdaclass/cairo_native.git
-#	temporary solution until refactor to new version of cairo_native is done
-	cd cairo_native && git checkout 289eddc05e84b99ae37c2889a31abc69f1fedfd1
 	brew install llvm@16
 	brew install tmux
-	cd cairo_native && scripts/fetch-corelibs.sh && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo +nightly-2023-06-19 build --release
+	set -e
+	git clone \
+		--depth 1 \
+		--branch v2.0.1 \
+		https://github.com/starkware-libs/cairo.git \
+		starkware-cairo
+	cp -r starkware-cairo/corelib .
+	rm -rf starkware-cairo/
 
-run-fibonacci:
-	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && ./cairo_native/target/release/cli run -f fib::fib::main ./cairo_programs/fib.cairo --available-gas 900000000
+build:
+	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo build --all --release
+
+test:
+	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo test
 
 build-docker:
 	docker build -t sequencer:latest .
@@ -36,3 +45,4 @@ generate-nodes-keys: init build-docker
 
 generate-commitee-for-docker: generate-nodes-keys
 	cd benchmark && fab config "172.27.0.10, 172.27.0.11, 172.27.0.12, 172.27.0.13"
+

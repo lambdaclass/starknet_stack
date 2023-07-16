@@ -11,7 +11,7 @@ The sequencer can be broken down into (roughly) 3 interchangeable modules:
 
 - Mempool (Narwhal) which stores received transactions
 - Consensus (Bullshark, Tendermint, Hotstuff) which orders transactions stored by the mempool
-- Execution Engine, which executes the transactions on the state machine. The OS is given by Starknet in Rust and execution is deferred to Sierra2MLIR or Cairo-rs.
+- Execution Engine, which executes the transactions on the state machine. The OS is given by Starknet in Rust and execution is deferred to Cairo Native or Cairo-rs.
 
 By interchangeable modules we mean that the underlying algorithm implementation in the Mempool communication, the Consensus protocol or the Execution Engine can be changed and configured.
 
@@ -25,7 +25,7 @@ To run the Sequencer cairo_native is needed for execution. To install [cairo_nat
 make install-cairo-native
 ```
 
-For the installation process **only works with MacOS**.
+For the installation process **only works with MacOS** and it only works with **rust nightly** (overriden with make init). It also needs `python3.9` installed.
 
 To deploy and benchmark a testbed of 4 nodes on your local machine, clone the repo and initialize it with the following make target:
 

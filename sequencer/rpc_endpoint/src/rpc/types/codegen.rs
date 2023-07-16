@@ -25,7 +25,6 @@ use cairo_felt::Felt252;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
-use crate::rpc::serializable_types::U128;
 
 use super::*;
 use serializable_types::base64;
@@ -34,11 +33,12 @@ use serializable_types::NumAsHex;
 /// Block status.
 ///
 /// The status of the block.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default)]
 pub enum BlockStatus {
     #[serde(rename = "PENDING")]
     Pending,
     #[serde(rename = "ACCEPTED_ON_L2")]
+    #[default]
     AcceptedOnL2,
     #[serde(rename = "ACCEPTED_ON_L1")]
     AcceptedOnL1,
@@ -91,7 +91,7 @@ pub struct BlockWithTxHashes {
 ///
 /// The block object.
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
 #[cfg_attr(feature = "no_unknown_fields", serde(deny_unknown_fields))]
 pub struct BlockWithTxs {
     /// Status
@@ -108,7 +108,6 @@ pub struct BlockWithTxs {
     #[serde_as(as = "FeltHex")]
     pub new_root: Felt252,
     /// The time in which the block was created, encoded in Unix time
-    #[serde_as(as = "U128")]
     pub timestamp: u128,
     /// The Starknet identity of the sequencer submitting this block
     #[serde_as(as = "FeltHex")]
@@ -116,7 +115,6 @@ pub struct BlockWithTxs {
     /// The transactions in this block
     pub transactions: Vec<Transaction>,
 }
-
 
 /// Broadcasted declare transaction v1.
 ///
