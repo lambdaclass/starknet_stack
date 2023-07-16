@@ -106,6 +106,7 @@ impl Client {
             let now = Instant::now();
 
             for x in 0..burst {
+                let internal_counter = 0;
                 if x == counter % burst {
                     // NOTE: This log entry is used to compute performance.
                     info!("Sending sample transaction {}", counter);
@@ -118,21 +119,22 @@ impl Client {
                     tx.put_u8(1u8); // Standard txs start with 1.
                     tx.put_u64(r); // Ensures all clients send different txs.
                 };
-                let bytes = Transaction::new_invoke_as_bytes(counter, r);
+                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r);
                 for b in bytes {
                     tx.put_u8(b);
                 }
-                if self.size < tx.len() {
-                    warn!("Transaction size too big");
-                    break 'main;
-                }
-                tx.resize(self.size, 0u8);
+                //if self.size < tx.len() {
+                //    warn!("Transaction size too big");
+                //    break 'main;
+                //}
+                //tx.resize(self.size, 0u8);
                 let bytes = tx.split().freeze();
 
                 if let Err(e) = transport.send(bytes).await {
                     warn!("Failed to send transaction: {}", e);
                     break 'main;
                 }
+                internal_counter +=1;
             }
             if now.elapsed().as_millis() > BURST_DURATION as u128 {
                 // NOTE: This log entry is used to compute performance.

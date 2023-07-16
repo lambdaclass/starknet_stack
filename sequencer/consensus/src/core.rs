@@ -147,7 +147,7 @@ impl Core {
                     // NOTE: This log entry is used to compute performance.
                     info!("Committed {} -> {:?}", block, x);
                 }
-            }
+            } 
             debug!("Committed {:?}", block);
             if let Err(e) = self.tx_commit.send(block).await {
                 warn!("Failed to send block through the commit channel: {}", e);

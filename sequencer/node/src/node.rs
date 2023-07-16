@@ -142,6 +142,8 @@ impl Node {
 
     pub async fn analyze_block(&mut self) {
         while let Some(block) = self.commit.recv().await {
+            let mut transactions = vec![];
+
             // This is where we can further process committed block.
             for p in block.payload {
                 let tx_batch = self.store.read(p.to_vec()).await.unwrap().unwrap();
@@ -158,7 +160,6 @@ impl Node {
                             batch_txs.len()
                         );
 
-                        let mut transactions = vec![];
                         for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
@@ -220,12 +221,14 @@ impl Node {
                             transactions.push(starknet_tx);
                         }
 
-                        self.create_and_store_new_block(transactions);
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
                     }
                 }
+            }
+            if (!transactions.is_empty()){
+                self.create_and_store_new_block(transactions);
             }
         }
     }

@@ -127,7 +127,7 @@ pub struct DeployAccountTransactionResult {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlockId {
     #[serde(rename = "block_hash")]
-    Hash(Felt252),
+    Hash(#[serde_as(as = "FeltHex")] Felt252),
     #[serde(rename = "block_number")]
     Number(u64),
     #[serde(rename = "latest")]
