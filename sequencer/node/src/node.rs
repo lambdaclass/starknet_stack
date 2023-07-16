@@ -33,16 +33,18 @@ pub const CHANNEL_CAPACITY: usize = 1_000;
 const RPC_PORT_OFFSET: u16 = 1000;
 
 struct CairoVMExecutionProgram {
+    // TODO: change this to a reference to a program and the casm contract class
+    // Vec<u8> is the bytes of the file of the cairo program
     fib_program: Vec<u8>,
     fact_program: Vec<u8>,
 }
 
-struct SierraExecutionProgram {
+struct CairoNativeExecutionProgram {
     fib_program: Arc<cairo_lang_sierra::program::Program>,
     fact_program: Arc<cairo_lang_sierra::program::Program>,
 }
 
-impl SierraExecutionProgram {
+impl CairoNativeExecutionProgram {
     fn execute_fibonacci(&self, a: Vec<u32>, b: Vec<u32>, n: Vec<u32>) {
         let ret = execute_fibonacci_cairo_native(&self.fib_program, a, b, n);
         info!("Output Fib Cairo Native: ret is {:?}", ret)
@@ -74,18 +76,18 @@ impl CairoVMExecutionProgram {
     }
 }
 
-enum ExecutionProgram {
+enum ExecutionEngine {
     Cairo(CairoVMExecutionProgram),
-    Sierra(SierraExecutionProgram),
+    Sierra(CairoNativeExecutionProgram),
 }
 
-impl ExecutionProgram {
+impl ExecutionEngine {
     fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
         match self {
-            ExecutionProgram::Cairo(execution_program) => {
+            ExecutionEngine::Cairo(execution_program) => {
                 execution_program.execute_fibonacci(a, b, n)
             }
-            ExecutionProgram::Sierra(execution_program) => execution_program.execute_fibonacci(
+            ExecutionEngine::Sierra(execution_program) => execution_program.execute_fibonacci(
                 get_input_value_cairo_native(a as u32),
                 get_input_value_cairo_native(b as u32),
                 get_input_value_cairo_native(n as u32),
@@ -95,8 +97,8 @@ impl ExecutionProgram {
 
     fn execute_factorial(&self, n: usize) {
         match self {
-            ExecutionProgram::Cairo(execution_program) => execution_program.execute_factorial(n),
-            ExecutionProgram::Sierra(execution_program) => {
+            ExecutionEngine::Cairo(execution_program) => execution_program.execute_factorial(n),
+            ExecutionEngine::Sierra(execution_program) => {
                 execution_program.execute_factorial(get_input_value_cairo_native(n as u32))
             }
         }
@@ -109,7 +111,7 @@ pub struct Node {
     pub commit: Receiver<Block>,
     pub store: Store,
     pub external_store: sequencer::store::Store,
-    execution_program: ExecutionProgram,
+    execution_program: ExecutionEngine,
 }
 
 impl Node {
@@ -145,7 +147,7 @@ impl Node {
                     include_bytes!("../../cairo_programs/fib_contract.casm").to_vec();
                 let fact_casm_program: Vec<u8> =
                     include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
-                ExecutionProgram::Cairo(CairoVMExecutionProgram {
+                ExecutionEngine::Cairo(CairoVMExecutionProgram {
                     fib_program: fib_casm_program,
                     fact_program: fact_casm_program,
                 })
@@ -171,7 +173,7 @@ impl Node {
                     )
                     .unwrap();
 
-                ExecutionProgram::Sierra(SierraExecutionProgram {
+                ExecutionEngine::Sierra(CairoNativeExecutionProgram {
                     fib_program: fib_sierra_program,
                     fact_program: fact_sierra_program,
                 })
