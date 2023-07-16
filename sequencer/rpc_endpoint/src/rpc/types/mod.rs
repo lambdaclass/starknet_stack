@@ -1,5 +1,6 @@
 use cairo_felt::Felt252;
 use serde::{Deserialize, Serialize};
+
 use serde_with::serde_as;
 
 // TODO: better namespacing of exports?
@@ -35,7 +36,7 @@ pub enum MaybePendingBlockWithTxHashes {
     PendingBlock(PendingBlockWithTxHashes),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type")]
 pub enum MaybePendingBlockWithTxs {
     Block(BlockWithTxs),
@@ -121,12 +122,18 @@ pub struct DeployAccountTransactionResult {
     pub contract_address: Felt252,
 }
 
+#[serde_as]
 /// Block hash, number or tag
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlockId {
+    #[serde(rename = "block_hash")]
     Hash(Felt252),
+    #[serde(rename = "block_number")]
     Number(u64),
-    Tag(BlockTag),
+    #[serde(rename = "latest")]
+    Latest,
+    #[serde(rename = "pending")]
+    Pending,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

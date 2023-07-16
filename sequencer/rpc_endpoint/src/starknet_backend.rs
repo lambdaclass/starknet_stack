@@ -2,9 +2,9 @@ use crate::rpc::{
     serializable_types::FeltParam, BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
-    EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
-    MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt,
-    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
+    EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionReceipt,
+    InvokeTransactionResult, MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs,
+    MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -12,7 +12,7 @@ use jsonrpsee::{
     types::{error::ErrorCode, ErrorObject},
 };
 use log::{error, info};
-use sequencer::store::{Store, StoreEngine};
+use sequencer::store::Store;
 
 pub struct StarknetBackend {
     pub(crate) store: Store,
@@ -22,8 +22,7 @@ pub struct StarknetBackend {
 #[allow(unused_variables)]
 impl StarknetRpcApiServer for StarknetBackend {
     fn block_number(&self) -> RpcResult<u64> {
-        // TODO: Hardcoded for now, replace with actual query
-        Ok(1)
+        Ok(self.store.get_height().expect("Heigh not found"))
     }
 
     fn block_hash_and_number(&self) -> RpcResult<BlockHashAndNumber> {
@@ -102,13 +101,19 @@ impl StarknetRpcApiServer for StarknetBackend {
 
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
-        let id = match block_id {
-            BlockId::Number(number) => number.to_be_bytes(),
-            BlockId::Hash(_) => todo!(),
-            BlockId::Tag(_) => todo!(),
+        let block_bytes = match block_id {
+            BlockId::Number(height) => {
+                info!("block number requested is {}", &height);
+                self.store.get_block_by_height(height).unwrap()
+            }
+            BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()).unwrap(),
+            BlockId::Latest => self
+                .store
+                .get_block_by_height(self.store.get_height().expect("Height not found"))
+                .unwrap(),
+            _ => todo!(),
         };
-        let serialized_block =
-            String::from_utf8_lossy(&self.store.get_block(id.to_vec()).unwrap()).into_owned();
+        let serialized_block = String::from_utf8(block_bytes).unwrap();
         serde_json::from_str(&serialized_block).map_err(|e| {
             error!("error {}", e);
             ErrorObject::from(ErrorCode::ParseError)
@@ -224,10 +229,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         // necessary destructuring so that we can use a hex felt as a param
         let transaction_hash = transaction_hash.0;
 
-        match &self
-            .store
-            .get_transaction(transaction_hash.to_be_bytes().to_vec())
-        {
+        match &self.store.get_transaction(transaction_hash.to_bytes_be()) {
             Some(tx) => {
                 let deserialized_tx: Transaction =
                     serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
@@ -254,6 +256,26 @@ impl StarknetRpcApiServer for StarknetBackend {
         &self,
         transaction_hash: FeltParam,
     ) -> RpcResult<MaybePendingTransactionReceipt> {
-        unimplemented!();
+        // necessary destructuring so that we can use a hex felt as a param
+        let deserialized_tx = self.get_transaction_by_hash(transaction_hash);
+
+        match deserialized_tx {
+            Ok(Transaction::Invoke(InvokeTransaction::V1(tx))) => {
+                let invoke_tx_receipt = InvokeTransactionReceipt {
+                    transaction_hash: tx.transaction_hash,
+                    actual_fee: tx.max_fee,
+                    status: crate::rpc::TransactionStatus::AcceptedOnL2,
+                    block_hash: Felt252::new(12315),
+                    block_number: 24123u64,
+                    messages_sent: vec![],
+                    events: vec![],
+                };
+
+                Ok(MaybePendingTransactionReceipt::Receipt(
+                    crate::rpc::TransactionReceipt::Invoke(invoke_tx_receipt),
+                ))
+            }
+            _ => todo!("Transaction receipts or transaction not found"),
+        }
     }
 }
