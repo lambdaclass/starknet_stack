@@ -6,10 +6,10 @@ defmodule WatcherProver.Rpc do
   def last_block_number(), do: send_request("starknet_blockNumber", [])
 
   def get_block_by_number(number) when is_integer(number),
-    do: send_request("starknet_getBlockWithTxs", [%{Number: number}])
+    do: send_request("starknet_getBlockWithTxs", [%{block_number: number}])
 
   def get_block_by_hash(number) when is_binary(number),
-    do: send_request("starknet_getBlockWithTxs", [%{Hash: number}])
+    do: send_request("starknet_getBlockWithTxs", [%{block_hash: number}])
 
   def get_transaction(transaction_hash),
     do: send_request("starknet_getTransactionByHash", [transaction_hash])

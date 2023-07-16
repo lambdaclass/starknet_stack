@@ -15,7 +15,7 @@ def local(ctx):
         'faults': 0,
         'nodes': 4,
         'rate': 1_000,
-        'tx_size': 512,
+        'tx_size': 256,
         'duration': 20,
     }
     node_params = {
@@ -27,7 +27,7 @@ def local(ctx):
             'gc_depth': 50,
             'sync_retry_delay': 5_000,
             'sync_retry_nodes': 3,
-            'batch_size': 512,
+            'batch_size': 4096,
             'max_batch_delay': 10
         },
         'execution': "cairo_native"

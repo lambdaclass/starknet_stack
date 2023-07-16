@@ -18,9 +18,11 @@ use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
 use rpc_endpoint::new_server;
 use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
-use sequencer::store::StoreEngine;
-use serde_json::json;
+use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
+use std::hash::{Hash, Hasher};
+use std::time::{SystemTime, UNIX_EPOCH};
+use serde_json::json;
 use std::path::Path;
 use std::sync::Arc;
 use store::Store;
@@ -269,9 +271,12 @@ impl Node {
                             let tx_bytes = &tx_bytes[9..];
 
                             let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
-                            info!("Message {i} in {:?} is of tx_type {:?}", p, starknet_tx);
                             let n = 10_usize;
 
+                            info!(
+                                "Message {i} in {:?} is of tx_type {:?}, executing",
+                                p, starknet_tx
+                            );
                             // TODO create a execution engine structure to improve code quality
                             let is_fib = true;
                             if is_fib {
@@ -292,7 +297,7 @@ impl Node {
                                     );
 
                                     let _ = self.external_store.add_transaction(
-                                        tx.transaction_hash.to_be_bytes().to_vec(),
+                                        tx.transaction_hash.to_bytes_be(),
                                         starknet_tx_string.into_bytes(),
                                     );
                                 }
@@ -302,27 +307,7 @@ impl Node {
                             transactions.push(starknet_tx);
                         }
 
-                        // TODO create a correct Block Structure instad of a hardcoded one
-                        let block = rpc::BlockWithTxs {
-                            status: rpc_endpoint::rpc::BlockStatus::AcceptedOnL2,
-                            block_hash: Felt252::new(11239218),
-                            parent_hash: Felt252::new(19203123),
-                            block_number: 1,
-                            new_root: Felt252::new(938938281),
-                            timestamp: 1688498274,
-                            sequencer_address: Felt252::new(12039102),
-                            transactions,
-                        };
-                        let block_id = block.block_number;
-                        let block_serialized: Vec<u8> =
-                            serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block))
-                                .unwrap()
-                                .as_bytes()
-                                .to_vec();
-
-                        let _ = self
-                            .external_store
-                            .add_block(block_id.to_be_bytes().to_vec(), block_serialized);
+                        self.create_and_store_new_block(transactions);
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
@@ -330,6 +315,79 @@ impl Node {
                 }
             }
         }
+    }
+
+    fn create_and_store_new_block(&mut self, transactions: Vec<Transaction>) {
+        let height = self
+            .external_store
+            .get_height()
+            .expect("Height value not found")
+            + 1;
+
+        let status = rpc_endpoint::rpc::BlockStatus::AcceptedOnL2;
+        // TODO: store deserialization should be managed in store logic.
+        let parent_block =
+            self.external_store
+                .get_block_by_height(height - 1)
+                .map(|serialized_block| {
+                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
+                        &String::from_utf8(serialized_block).unwrap(),
+                    )
+                });
+
+        let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
+            rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
+            _ => Felt252::new(0),
+        });
+        let new_root = Felt252::new(938938281);
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Timestamp failed")
+            .as_millis();
+
+        let sequencer_address = Felt252::new(12039102);
+
+        // TODO: This is quick and dirty hashing,
+        //       Block hashing should be done in it's own module
+        let mut state = DefaultHasher::new();
+        status.hash(&mut state);
+        parent_hash.hash(&mut state);
+        height.hash(&mut state);
+        new_root.hash(&mut state);
+        timestamp.hash(&mut state);
+        sequencer_address.hash(&mut state);
+        transactions.iter().for_each(|tx| match tx {
+            Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => invoke_tx.hash(&mut state),
+            _ => todo!(),
+        });
+        let block_hash = Felt252::new(state.finish());
+
+        let block_with_txs = rpc::BlockWithTxs {
+            status,
+            block_hash: block_hash.clone(),
+            parent_hash,
+            block_number: height,
+            new_root,
+            timestamp,
+            sequencer_address,
+            transactions,
+        };
+
+        let block_serialized: Vec<u8> =
+            serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block_with_txs))
+                .unwrap()
+                .as_bytes()
+                .to_vec();
+
+        info!("Storing block: {} at height {}", block_hash, height);
+
+        _ = self.external_store.add_block(
+            block_hash.to_bytes_be(),
+            height.to_be_bytes().to_vec(),
+            block_serialized,
+        );
+        _ = self.external_store.set_height(height);
     }
 }
 
@@ -479,11 +537,6 @@ fn execute_fibonacci_cairo_native(
     b: Vec<u32>,
     n: Vec<u32>,
 ) -> u64 {
-    std::env::set_var(
-        "CARGO_MANIFEST_DIR",
-        format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
-    );
-
     let program = sierra_program;
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);
@@ -547,6 +600,7 @@ fn execute_fact_cairo_native(
 
 #[cfg(test)]
 mod test {
+    use serde::{Deserialize, Serialize};
     use std::path::Path;
 
     use cairo_lang_compiler::CompilerConfig;
