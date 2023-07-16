@@ -124,11 +124,23 @@ impl StoreEngine for Store {
         reply_receiver.recv().expect("error").expect("Other error")
     }
 
-    fn add_block(&mut self, _block_id: Key, _block: Value) -> Result<()> {
+    fn add_block(&mut self, _block_hash: Key, _block_height: Key, _block: Value) -> Result<()> {
         todo!()
     }
 
-    fn get_block(&self, _block_id: Key) -> Option<Value> {
+    fn get_block_by_hash(&self, _block_hash: Key) -> Option<Value> {
+        todo!()
+    }
+
+    fn get_block_by_height(&self, _block_height: Key) -> Option<Value> {
+        todo!()
+    }
+
+    fn set_value(&mut self, _key: Key, _value: Value) -> Result<()> {
+        todo!()
+    }
+
+    fn get_value(&self, _key: Key) -> Option<Value> {
         todo!()
     }
 }
