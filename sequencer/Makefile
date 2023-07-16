@@ -5,11 +5,11 @@ init:
 	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
 
 bench:
-	cd benchmark && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && fab local
+	cd benchmark && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && export RUST_LOG=info,salsa=off,cairo_native=off && fab local
 
 node:
 #	./client 127.0.0.1:9006 --size 512 --rate 250 --timeout 1000
-	cargo run --bin node --release -- -vvv run --keys ./benchmark/.node-$(N).json --committee ./benchmark/.committee.json --store .db-$(N) --parameters ./benchmark/.parameters.json
+	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo run --bin node --release -- -vvv run --keys ./benchmark/.node-$(N).json --committee ./benchmark/.committee.json --store .db-$(N) --parameters ./benchmark/.parameters.json
 
 install-cairo-native:
 	brew install llvm@16
