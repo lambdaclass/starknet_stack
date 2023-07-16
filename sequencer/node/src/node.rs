@@ -22,9 +22,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
 use std::hash::{Hash, Hasher};
 use std::time::{SystemTime, UNIX_EPOCH};
-use sequencer::store::StoreEngine;
 use serde_json::json;
-use std::convert::TryInto;
 use std::path::Path;
 use std::sync::Arc;
 use store::Store;
@@ -452,11 +450,6 @@ fn execute_fibonacci_cairo_native(
     b: Vec<u32>,
     n: Vec<u32>,
 ) -> u64 {
-    std::env::set_var(
-        "CARGO_MANIFEST_DIR",
-        format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
-    );
-
     let program = sierra_program;
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);
