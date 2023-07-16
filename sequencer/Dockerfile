@@ -33,14 +33,18 @@ RUN cargo +nightly-2023-06-19 build --release
 
 FROM debian:bullseye-slim as sequencer
 
+# Copy built binaries and libs
 COPY --from=builder /sequencer/target/release /sequencer/
+# Copy cairo_programs
+COPY --from=builder /sequencer/cairo_programs /cairo_programs
 
-WORKDIR /sequencer/
+WORKDIR /
 
-RUN apt update -y && apt install -y git
+RUN apt update -y && \
+    apt install -y git
 
-RUN git clone \
-              --depth 1 \
+# Download cairo corelib
+RUN git clone --depth 1 \
               --branch v2.0.1 \
               https://github.com/starkware-libs/cairo.git \
               starkware-cairo
