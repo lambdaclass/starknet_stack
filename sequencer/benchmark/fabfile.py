@@ -29,7 +29,8 @@ def local(ctx):
             'sync_retry_nodes': 3,
             'batch_size': 512,
             'max_batch_delay': 10
-        }
+        },
+        'execution': "cairo_native"
     }
     try:
         ret = LocalBench(bench_params, node_params).run(debug=True).result()

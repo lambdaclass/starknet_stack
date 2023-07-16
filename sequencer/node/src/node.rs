@@ -1,5 +1,5 @@
-use crate::config::Export as _;
 use crate::config::{Committee, ConfigError, Parameters, Secret};
+use crate::config::{ExecutionParameters, Export as _};
 use cairo_felt::Felt252;
 use cairo_lang_compiler::CompilerConfig;
 use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
@@ -45,12 +45,12 @@ struct SierraExecutionProgram {
 impl SierraExecutionProgram {
     fn execute_fibonacci(&self, a: Vec<u32>, b: Vec<u32>, n: Vec<u32>) {
         let ret = execute_fibonacci_cairo_native(&self.fib_program, a, b, n);
-        info!("Output: ret is {:?}", ret)
+        info!("Output Fib Cairo Native: ret is {:?}", ret)
     }
 
     fn execute_factorial(&self, n: Vec<u32>) {
         let ret = execute_fact_cairo_native(&self.fact_program, n);
-        info!("Output: ret is {:?}", ret)
+        info!("Output Fact Cairo Native: ret is {:?}", ret)
     }
 }
 
@@ -61,7 +61,7 @@ impl CairoVMExecutionProgram {
             0,
             &[0_usize.into(), 1_usize.into(), n.into()],
         );
-        info!("Output: ret is {:?}", ret)
+        info!("Output Fib CairoVM: ret is {:?}", ret)
     }
 
     fn execute_factorial(&self, n: usize) {
@@ -70,7 +70,7 @@ impl CairoVMExecutionProgram {
             0,
             &[0_usize.into(), 1_usize.into(), n.into()],
         );
-        info!("Output: ret is {:?}", ret)
+        info!("Output Fact CairoVM: ret is {:?}", ret)
     }
 }
 
@@ -139,41 +139,43 @@ impl Node {
         let store = Store::new(store_path).expect("Failed to create store");
         let external_store =
             sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
-        let is_cairovm = false;
-        let execution_program = if is_cairovm {
-            let fib_casm_program: Vec<u8> =
-                include_bytes!("../../cairo_programs/fib_contract.casm").to_vec();
-            let fact_casm_program: Vec<u8> =
-                include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
-            ExecutionProgram::Cairo(CairoVMExecutionProgram {
-                fib_program: fib_casm_program,
-                fact_program: fact_casm_program,
-            })
-        } else {
-            let fact_sierra_program: Arc<cairo_lang_sierra::program::Program> =
-                cairo_lang_compiler::compile_cairo_project_at_path(
-                    Path::new("../cairo_programs/fact_contract.cairo"),
-                    CompilerConfig {
-                        replace_ids: true,
-                        ..Default::default()
-                    },
-                )
-                .unwrap();
-            // Compile fibonacci to Sierra
-            let fib_sierra_program: Arc<cairo_lang_sierra::program::Program> =
-                cairo_lang_compiler::compile_cairo_project_at_path(
-                    Path::new("../cairo_programs/fib_contract.cairo"),
-                    CompilerConfig {
-                        replace_ids: true,
-                        ..Default::default()
-                    },
-                )
-                .unwrap();
+        let execution_program = match parameters.execution {
+            ExecutionParameters::CairoVM => {
+                let fib_casm_program: Vec<u8> =
+                    include_bytes!("../../cairo_programs/fib_contract.casm").to_vec();
+                let fact_casm_program: Vec<u8> =
+                    include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
+                ExecutionProgram::Cairo(CairoVMExecutionProgram {
+                    fib_program: fib_casm_program,
+                    fact_program: fact_casm_program,
+                })
+            }
+            ExecutionParameters::CairoNative => {
+                let fact_sierra_program: Arc<cairo_lang_sierra::program::Program> =
+                    cairo_lang_compiler::compile_cairo_project_at_path(
+                        Path::new("../cairo_programs/fact_contract.cairo"),
+                        CompilerConfig {
+                            replace_ids: true,
+                            ..Default::default()
+                        },
+                    )
+                    .unwrap();
+                // Compile fibonacci to Sierra
+                let fib_sierra_program: Arc<cairo_lang_sierra::program::Program> =
+                    cairo_lang_compiler::compile_cairo_project_at_path(
+                        Path::new("../cairo_programs/fib_contract.cairo"),
+                        CompilerConfig {
+                            replace_ids: true,
+                            ..Default::default()
+                        },
+                    )
+                    .unwrap();
 
-            ExecutionProgram::Sierra(SierraExecutionProgram {
-                fib_program: fib_sierra_program,
-                fact_program: fact_sierra_program,
-            })
+                ExecutionProgram::Sierra(SierraExecutionProgram {
+                    fib_program: fib_sierra_program,
+                    fact_program: fact_sierra_program,
+                })
+            }
         };
 
         // Run the signature service.
