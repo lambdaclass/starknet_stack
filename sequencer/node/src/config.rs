@@ -48,9 +48,19 @@ pub trait Export: Serialize + DeserializeOwned {
 }
 
 #[derive(Serialize, Deserialize, Default)]
+pub enum ExecutionParameters {
+    #[serde(rename = "cairovm")]
+    CairoVM,
+    #[default]
+    #[serde(rename = "cairo_native")]
+    CairoNative,
+}
+
+#[derive(Serialize, Deserialize, Default)]
 pub struct Parameters {
     pub consensus: ConsensusParameters,
     pub mempool: MempoolParameters,
+    pub execution: ExecutionParameters,
 }
 
 impl Export for Parameters {}
