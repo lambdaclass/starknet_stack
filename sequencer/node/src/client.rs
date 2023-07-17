@@ -118,8 +118,11 @@ impl Client {
 
                 let execute_fib: bool = rand::random();
                 let program_input: u8 = rand::thread_rng().gen();
-                let bytes =
-                    Transaction::new_invoke_as_bytes(counter + internal_counter, program_input, execute_fib);
+                let bytes = Transaction::new_invoke_as_bytes(
+                    counter + internal_counter,
+                    program_input,
+                    execute_fib,
+                );
                 for b in bytes {
                     tx.put_u8(b);
                 }
