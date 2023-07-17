@@ -13,11 +13,12 @@ services:
         ipv4_address: 172.27.0.10
     ports:
       - 10000:10008
+      - 9000:9004
     volumes:
       - ./sequencer/config/sequencer_node0.json:/sequencer/config/sequencer_node0.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
       - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
-    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node0.json --committee /sequencer/config/committee.json --store /sequencer/db0 # --parameters /sequencer/config/parameters.json
+    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node0.json --committee /sequencer/config/committee.json --store /sequencer/db0 --parameters /sequencer/config/parameters.json
 
   sequencer_node1:
     build:
@@ -27,11 +28,12 @@ services:
         ipv4_address: 172.27.0.11
     ports:
       - 10001:10008
+      - 9001:9004
     volumes:
       - ./sequencer/config/sequencer_node1.json:/sequencer/config/sequencer_node1.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
       - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
-    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node1.json --committee /sequencer/config/committee.json --store /sequencer/db1 # --parameters /sequencer/config/parameters.json
+    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node1.json --committee /sequencer/config/committee.json --store /sequencer/db1 --parameters /sequencer/config/parameters.json
 
   sequencer_node2:
     build:
@@ -41,11 +43,12 @@ services:
         ipv4_address: 172.27.0.12
     ports:
       - 10002:10008
+      - 9002:9004
     volumes:
       - ./sequencer/config/sequencer_node2.json:/sequencer/config/sequencer_node2.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
       - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
-    command: /sequencer/node -vvv run --keys /sequencer/config/sequencer_node2.json --committee /sequencer/config/committee.json --store /sequencer/db2 # --parameters /sequencer/config/parameters.json
+    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node2.json --committee /sequencer/config/committee.json --store /sequencer/db2 --parameters /sequencer/config/parameters.json
 
   sequencer_node3:
     build:
@@ -55,11 +58,12 @@ services:
         ipv4_address: 172.27.0.13
     ports:
       - 10003:10008
+      - 9003:9004
     volumes:
       - ./sequencer/config/sequencer_node3.json:/sequencer/config/sequencer_node3.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
       - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
-    command: /sequencer/node -vvv run --keys /sequencer/config/sequencer_node3.json --committee /sequencer/config/committee.json --store /sequencer/db3 # --parameters /sequencer/config/parameters.json
+    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node3.json --committee /sequencer/config/committee.json --store /sequencer/db3 --parameters /sequencer/config/parameters.json
 
   watcher_prover:
     build: ./watcher_prover
