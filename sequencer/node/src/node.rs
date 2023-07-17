@@ -351,7 +351,7 @@ impl Node {
         let timestamp: u128 = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Timestamp failed")
-            .as_millis()
+            .as_secs()
             .into();
 
         let sequencer_address = Felt252::new(12039102);
