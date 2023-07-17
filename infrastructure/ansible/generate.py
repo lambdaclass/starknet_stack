@@ -20,5 +20,5 @@ for i in range(0, len(ip_list)):
     for key in node:
         obj["nodes"]["hosts"]["node_%s" % i][key] = node[key].format(ip = ip_list[i])
 
-with open("inventory.yaml", "w") as file:
+with open("ansible/inventory.yaml", "w") as file:
     file.write(dump(obj))
