@@ -34,8 +34,6 @@
           - mlir-16-tools
           - libpolly-16-dev
 
-    - name: Clone starknet stack sequencer
-
     - name: Add deploy group
       ansible.builtin.group:
         name: deploy
@@ -68,4 +66,15 @@
       ansible.builtin.hostname:
         name: '{{ inventory_hostname }}'
 
+    - name: Clone starknet_stack repo
+      ansible.builtin.git:
+        repo: https://github.com/lambdaclass/starknet_stack.git
+        version: main
+        dest: /home/sequencer/starknet_stack
 
+    - name: Build starknet_stack sequencer
+      ansible.builtin.shell: |
+        set -ex
+        export PATH="~/.cargo/bin:${PATH}"
+        cargo +nightly-2023-06-19 build --features benchmark --release
+        cargo +nightly-2023-06-19 build --bin client --features benchmark --release
