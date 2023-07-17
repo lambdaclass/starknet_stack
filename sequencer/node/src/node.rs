@@ -33,6 +33,7 @@ pub const CHANNEL_CAPACITY: usize = 1_000;
 
 /// Default port offset for RPC endpoint
 const RPC_PORT_OFFSET: u16 = 1000;
+const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1500;
 
 struct CairoVMExecutionProgram {
     // TODO: change this to a reference to a program and the casm contract class
@@ -59,7 +60,7 @@ impl CairoNativeExecutionProgram {
 }
 
 impl CairoVMExecutionProgram {
-    fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
+    fn execute_fibonacci(&self, n: usize) {
         let ret = run_cairo_1_entrypoint(
             self.fib_program.as_slice(),
             0,
@@ -87,7 +88,7 @@ impl ExecutionEngine {
     fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
         match self {
             ExecutionEngine::Cairo(execution_program) => {
-                execution_program.execute_fibonacci(a, b, n)
+                execution_program.execute_fibonacci(n)
             }
             ExecutionEngine::Sierra(execution_program) => execution_program.execute_fibonacci(
                 get_input_value_cairo_native(a as u32),
@@ -107,13 +108,12 @@ impl ExecutionEngine {
     }
 }
 
-// What type is V1(InvokeTransactionV1)?
-
 pub struct Node {
     pub commit: Receiver<Block>,
     pub store: Store,
     pub external_store: sequencer::store::Store,
     execution_program: ExecutionEngine,
+    last_committed_round: u64
 }
 
 impl Node {
@@ -233,6 +233,7 @@ impl Node {
             store,
             external_store,
             execution_program,
+            last_committed_round: 0u64
         })
     }
 
@@ -242,6 +243,8 @@ impl Node {
 
     pub async fn analyze_block(&mut self) {
         while let Some(block) = self.commit.recv().await {
+            let mut transactions = vec![];
+
             // This is where we can further process committed block.
             for p in block.payload {
                 let tx_batch = self.store.read(p.to_vec()).await.unwrap().unwrap();
@@ -258,7 +261,6 @@ impl Node {
                             batch_txs.len()
                         );
 
-                        let mut transactions = vec![];
                         for (i, tx_bytes) in batch_txs.into_iter().enumerate() {
                             // Consensus codebase uses the first 9 bytes to track the transaction like this:
                             //
@@ -277,13 +279,6 @@ impl Node {
                                 "Message {i} in {:?} is of tx_type {:?}, executing",
                                 p, starknet_tx
                             );
-                            // TODO create a execution engine structure to improve code quality
-                            let is_fib = true;
-                            if is_fib {
-                                self.execution_program.execute_fibonacci(0, 1, n);
-                            } else {
-                                self.execution_program.execute_factorial(n);
-                            }
 
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
 
@@ -296,6 +291,14 @@ impl Node {
                                         &tx.transaction_hash.to_str_radix(16)
                                     );
 
+                                    // last call being Felt252::new(0) means we want to execute fibonacci
+                                    let is_fib = Felt252::new(0) == *tx.calldata.last().expect("calldata was not correctly set");
+                                    if is_fib {
+                                        self.execution_program.execute_fibonacci(0, 1, n);
+                                    } else {
+                                        self.execution_program.execute_factorial(n);
+                                    }
+
                                     let _ = self.external_store.add_transaction(
                                         tx.transaction_hash.to_bytes_be(),
                                         starknet_tx_string.into_bytes(),
@@ -307,12 +310,16 @@ impl Node {
                             transactions.push(starknet_tx);
                         }
 
-                        self.create_and_store_new_block(transactions);
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
                     }
                 }
+            }
+            if !transactions.is_empty() || (block.round - self.last_committed_round) > ROUND_TIMEOUT_FOR_EMPTY_BLOCKS {
+                info!("About to store block from round {}", block.round);
+                self.last_committed_round = block.round;
+                self.create_and_store_new_block(transactions);
             }
         }
     }
@@ -355,7 +362,6 @@ impl Node {
         parent_hash.hash(&mut state);
         height.hash(&mut state);
         new_root.hash(&mut state);
-        timestamp.hash(&mut state);
         sequencer_address.hash(&mut state);
         transactions.iter().for_each(|tx| match tx {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => invoke_tx.hash(&mut state),
@@ -567,11 +573,6 @@ fn execute_fact_cairo_native(
     sierra_program: &Arc<cairo_lang_sierra::program::Program>,
     n: Vec<u32>,
 ) -> u64 {
-    std::env::set_var(
-        "CARGO_MANIFEST_DIR",
-        format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
-    );
-
     let program = sierra_program;
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);

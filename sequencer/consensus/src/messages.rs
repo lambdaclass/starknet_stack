@@ -72,6 +72,7 @@ impl Block {
         if let Some(ref tc) = self.tc {
             tc.verify(committee)?;
         }
+        
         Ok(())
     }
 }
