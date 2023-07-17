@@ -117,7 +117,16 @@ impl Client {
                 };
 
                 let execute_fib: bool = rand::random();
-                let program_input: u8 = rand::thread_rng().gen();
+                let rand_program_input: u16 = rand::thread_rng().gen();
+
+                // This is done to avoid error while executing big numbers in the contract.
+                // It should change in the future
+                let program_input: u16 = if execute_fib {
+                    rand_program_input % 10000 + 1
+                } else {
+                    rand_program_input % 2000 + 1
+                };
+
                 let bytes = Transaction::new_invoke_as_bytes(
                     counter + internal_counter,
                     program_input,
