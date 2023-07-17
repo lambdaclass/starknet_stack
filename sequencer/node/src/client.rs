@@ -93,7 +93,9 @@ impl Client {
         let burst = self.rate / PRECISION;
         let mut tx = BytesMut::with_capacity(self.size);
         let mut counter = 0;
-        let mut r = rand::thread_rng().gen();
+        // TODO: improve the random input sent to execute the fact/fib functions.
+        let small_r: u8 = rand::thread_rng().gen();
+        let mut r: u64 = small_r.into();
         let mut transport = Framed::new(stream, LengthDelimitedCodec::new());
         let interval = interval(Duration::from_millis(BURST_DURATION));
         tokio::pin!(interval);
@@ -121,7 +123,8 @@ impl Client {
                 };
 
                 let execute_fib: bool = rand::random();
-                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
+                let bytes =
+                    Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
                 for b in bytes {
                     tx.put_u8(b);
                 }
@@ -136,7 +139,7 @@ impl Client {
                     warn!("Failed to send transaction: {}", e);
                     break 'main;
                 }
-                internal_counter +=1;
+                internal_counter += 1;
             }
             if now.elapsed().as_millis() > BURST_DURATION as u128 {
                 // NOTE: This log entry is used to compute performance.
@@ -178,7 +181,8 @@ mod test {
         let size = 1000;
         let mut tx = BytesMut::with_capacity(size);
         let counter = 0;
-        let mut r: u64 = rand::thread_rng().gen();
+        let mut small_r: u8 = rand::thread_rng().gen();
+        let mut r: u64 = small_r.into();
 
         for x in 0..burst {
             if x == counter % burst {
@@ -190,7 +194,7 @@ mod test {
                 tx.put_u8(1u8); // Standard txs start with 1.
                 tx.put_u64(r); // Ensures all clients send different txs.
             };
-            let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371);
+            let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371, true);
             for b in bytes {
                 tx.put_u8(b);
             }
