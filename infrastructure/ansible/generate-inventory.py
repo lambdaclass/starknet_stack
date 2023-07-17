@@ -9,7 +9,7 @@ node = {
     "ansible_host": "{ip}",
     "ansible_user": "admin", 
     "ansible_python_interpreter": "/usr/bin/python3",
-    "ansible_ssh_private_key_file": "",
+    "ansible_ssh_private_key_file": "{{ lookup(\"env\",\"ANSIBLE_SSH_PKEY\") }}",
     "ansible_ssh_extra_args": "-o StrictHostKeyChecking=no"
 }
 
