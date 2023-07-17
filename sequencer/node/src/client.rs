@@ -105,8 +105,8 @@ impl Client {
             interval.as_mut().tick().await;
             let now = Instant::now();
 
+            let mut internal_counter = 0;
             for x in 0..burst {
-                let mut internal_counter = 0;
                 if x == counter % burst {
                     // NOTE: This log entry is used to compute performance.
                     info!("Sending sample transaction {}", counter);
