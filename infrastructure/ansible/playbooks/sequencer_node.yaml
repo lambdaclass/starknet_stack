@@ -1,0 +1,45 @@
+- name: Sequencer node
+  hosts: nodes
+  any_errors_fatal: true
+
+
+  pre_tasks:
+    - name: Install apt dependencies
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - curl
+          - gcc
+          - libclang-dev
+          - g++
+          - gnupg
+          - wget
+          - ufw
+
+    - name: Add deploy group
+      ansible.builtin.group:
+        name: deploy
+        state: present
+
+    - name: Add sequencer user
+      ansible.builtin.user:
+        name: sequencer
+        shell: /bin/bash
+        groups: deploy
+
+    - name: Enable systemd linger for sequencer user
+      ansible.builtin.shell: |
+        loginctl enable-linger sequencer
+
+    - name: Create .ssh for sequencer user
+      ansible.builtin.file:
+        state: directory
+        owner: sequencer
+        group: deploy
+        path: /home/sequencer/.ssh
+
+    - name: Set server hostname
+      ansible.builtin.hostname:
+        name: '{{ inventory_hostname }}'
+
+
