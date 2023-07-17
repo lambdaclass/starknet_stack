@@ -33,6 +33,7 @@ pub const CHANNEL_CAPACITY: usize = 1_000;
 
 /// Default port offset for RPC endpoint
 const RPC_PORT_OFFSET: u16 = 1000;
+const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1000;
 
 struct CairoVMExecutionProgram {
     // TODO: change this to a reference to a program and the casm contract class
@@ -107,13 +108,12 @@ impl ExecutionEngine {
     }
 }
 
-// What type is V1(InvokeTransactionV1)?
-
 pub struct Node {
     pub commit: Receiver<Block>,
     pub store: Store,
     pub external_store: sequencer::store::Store,
     execution_program: ExecutionEngine,
+    last_committed_round: u64
 }
 
 impl Node {
@@ -233,6 +233,7 @@ impl Node {
             store,
             external_store,
             execution_program,
+            last_committed_round: 0u64
         })
     }
 
@@ -315,9 +316,11 @@ impl Node {
                     }
                 }
             }
-            //if !transactions.is_empty(){
+            if !transactions.is_empty() || (block.round - self.last_committed_round) > ROUND_TIMEOUT_FOR_EMPTY_BLOCKS {
+                info!("About to store block from round {}", block.round);
+                self.last_committed_round = block.round;
                 self.create_and_store_new_block(transactions);
-            //}
+            }
         }
     }
 

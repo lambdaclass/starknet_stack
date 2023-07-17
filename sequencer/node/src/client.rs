@@ -125,11 +125,11 @@ impl Client {
                 for b in bytes {
                     tx.put_u8(b);
                 }
-                //if self.size < tx.len() {
-                //    warn!("Transaction size too big");
-                //    break 'main;
-                //}
-                //tx.resize(self.size, 0u8);
+                if self.size < tx.len() {
+                    warn!("Transaction size too big");
+                    break 'main;
+                }
+                tx.resize(self.size, 0u8);
                 let bytes = tx.split().freeze();
 
                 if let Err(e) = transport.send(bytes).await {
