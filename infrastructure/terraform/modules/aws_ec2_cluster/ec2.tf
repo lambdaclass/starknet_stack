@@ -1,11 +1,11 @@
-data "aws_ami" "debian_latest" {
+data "aws_ami" "debian_11_latest" {
   most_recent = true
 
-  owners = ["099720109477"]
+  owners = ["136693071363"]
 
   filter {
     name = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+    values = ["debian-11-arm64-*"]
   }
 }
 
@@ -27,7 +27,7 @@ resource "aws_launch_template" "nodes" {
   }
 
   instance_type = var.instance_type
-  image_id = data.aws_ami.debian_latest.id
+  image_id = data.aws_ami.debian_11_latest.id
 
   key_name = var.ssh_key_name
 
