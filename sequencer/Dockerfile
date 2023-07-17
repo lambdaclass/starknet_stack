@@ -29,7 +29,7 @@ COPY . /sequencer/
 
 # Compile sequencer
 WORKDIR /sequencer/
-RUN cargo +nightly-2023-06-19 build --release
+RUN cargo +nightly-2023-06-19 build --features benchmark --release
 
 FROM debian:bullseye-slim as sequencer
 
