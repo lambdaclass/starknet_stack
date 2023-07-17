@@ -33,7 +33,7 @@ pub const CHANNEL_CAPACITY: usize = 1_000;
 
 /// Default port offset for RPC endpoint
 const RPC_PORT_OFFSET: u16 = 1000;
-const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1000;
+const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1500;
 
 struct CairoVMExecutionProgram {
     // TODO: change this to a reference to a program and the casm contract class
