@@ -140,7 +140,7 @@ impl Core {
         // Send all the newly committed blocks to the node's application layer.
         while let Some(block) = to_commit.pop_back() {
             if !block.payload.is_empty() {
-                info!("Committed {}", block);
+                info!("Committed {} and updated last round since valid block", block);
 
                 #[cfg(feature = "benchmark")]
                 for x in &block.payload {

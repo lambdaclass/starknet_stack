@@ -105,7 +105,7 @@ impl Client {
             interval.as_mut().tick().await;
             let now = Instant::now();
 
-            let internal_counter = 0;
+            let mut internal_counter = 0;
             for x in 0..burst {
                 if x == counter % burst {
                     // NOTE: This log entry is used to compute performance.
@@ -119,15 +119,17 @@ impl Client {
                     tx.put_u8(1u8); // Standard txs start with 1.
                     tx.put_u64(r); // Ensures all clients send different txs.
                 };
-                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r);
+
+                let execute_fib: bool = rand::random();
+                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
                 for b in bytes {
                     tx.put_u8(b);
                 }
-                //if self.size < tx.len() {
-                //    warn!("Transaction size too big");
-                //    break 'main;
-                //}
-                //tx.resize(self.size, 0u8);
+                if self.size < tx.len() {
+                    warn!("Transaction size too big");
+                    break 'main;
+                }
+                tx.resize(self.size, 0u8);
                 let bytes = tx.split().freeze();
 
                 if let Err(e) = transport.send(bytes).await {
