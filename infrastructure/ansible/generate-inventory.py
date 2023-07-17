@@ -18,7 +18,7 @@ obj = {"nodes": {"hosts": {}}}
 for i in range(0, len(ip_list)):
     obj["nodes"]["hosts"]["node_%s" % i] = dict()
     for key in node:
-        obj["nodes"]["hosts"]["node_%s" % i][key] = node[key].format(IP = ip_list[i], ANSIBLE_SSH_PKEY = "{{ lookup('env','ANSIBLE_SSH_PKEY') }}")
+        obj["nodes"]["hosts"]["node_%s" % i][key] = node[key].format(IP = ip_list[i], ANSIBLE_SSH_PKEY = "{{ lookup(\"env\",\"ANSIBLE_SSH_PKEY\") }}")
 
 with open("inventory.yaml", "w") as file:
     file.write(dump(obj))
