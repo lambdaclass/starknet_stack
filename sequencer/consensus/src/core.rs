@@ -136,11 +136,13 @@ impl Core {
 
         // Save the last committed block.
         self.last_committed_round = block.round;
+        self.update_last_round_since_valid_block(block.round).await;
 
         // Send all the newly committed blocks to the node's application layer.
         while let Some(block) = to_commit.pop_back() {
+
             if !block.payload.is_empty() {
-                info!("Committed {}", block);
+                info!("Committed {} and updated last round since valid block", block);
 
                 #[cfg(feature = "benchmark")]
                 for x in &block.payload {
@@ -283,6 +285,14 @@ impl Core {
     async fn generate_proposal(&mut self, tc: Option<TC>) {
         self.tx_proposer
             .send(ProposerMessage::Make(self.round, self.high_qc.clone(), tc))
+            .await
+            .expect("Failed to send message to proposer");
+    }
+
+    #[async_recursion]
+    async fn update_last_round_since_valid_block(&mut self, round: Round) {
+        self.tx_proposer
+            .send(ProposerMessage::UpdateLastRoundWithValidBlock(round))
             .await
             .expect("Failed to send message to proposer");
     }

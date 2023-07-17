@@ -59,7 +59,7 @@ impl CairoNativeExecutionProgram {
 }
 
 impl CairoVMExecutionProgram {
-    fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
+    fn execute_fibonacci(&self, n: usize) {
         let ret = run_cairo_1_entrypoint(
             self.fib_program.as_slice(),
             0,
@@ -87,7 +87,7 @@ impl ExecutionEngine {
     fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
         match self {
             ExecutionEngine::Cairo(execution_program) => {
-                execution_program.execute_fibonacci(a, b, n)
+                execution_program.execute_fibonacci(n)
             }
             ExecutionEngine::Sierra(execution_program) => execution_program.execute_fibonacci(
                 get_input_value_cairo_native(a as u32),
@@ -278,13 +278,6 @@ impl Node {
                                 "Message {i} in {:?} is of tx_type {:?}, executing",
                                 p, starknet_tx
                             );
-                            // TODO create a execution engine structure to improve code quality
-                            let is_fib = true;
-                            if is_fib {
-                                self.execution_program.execute_fibonacci(0, 1, n);
-                            } else {
-                                self.execution_program.execute_factorial(n);
-                            }
 
                             let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
 
@@ -296,6 +289,14 @@ impl Node {
                                         &tx.transaction_hash,
                                         &tx.transaction_hash.to_str_radix(16)
                                     );
+
+                                    // last call being Felt252::new(0) means we want to execute fibonacci
+                                    let is_fib = Felt252::new(0) == *tx.calldata.last().expect("calldata was not correctly set");
+                                    if is_fib {
+                                        self.execution_program.execute_fibonacci(0, 1, n);
+                                    } else {
+                                        self.execution_program.execute_factorial(n);
+                                    }
 
                                     let _ = self.external_store.add_transaction(
                                         tx.transaction_hash.to_bytes_be(),
@@ -314,9 +315,9 @@ impl Node {
                     }
                 }
             }
-            if (!transactions.is_empty()){
+            //if !transactions.is_empty(){
                 self.create_and_store_new_block(transactions);
-            }
+            //}
         }
     }
 
@@ -358,7 +359,6 @@ impl Node {
         parent_hash.hash(&mut state);
         height.hash(&mut state);
         new_root.hash(&mut state);
-        timestamp.hash(&mut state);
         sequencer_address.hash(&mut state);
         transactions.iter().for_each(|tx| match tx {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => invoke_tx.hash(&mut state),
@@ -570,11 +570,6 @@ fn execute_fact_cairo_native(
     sierra_program: &Arc<cairo_lang_sierra::program::Program>,
     n: Vec<u32>,
 ) -> u64 {
-    std::env::set_var(
-        "CARGO_MANIFEST_DIR",
-        format!("{}/a", std::env::var("CARGO_MANIFEST_DIR").unwrap()),
-    );
-
     let program = sierra_program;
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);

@@ -10,11 +10,14 @@ use network::{CancelHandler, ReliableSender};
 use std::collections::HashSet;
 use tokio::sync::mpsc::{Receiver, Sender};
 
+const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 75;
 #[derive(Debug)]
 pub enum ProposerMessage {
     Make(Round, QC, Option<TC>),
+    UpdateLastRoundWithValidBlock(Round),
     Cleanup(Vec<Digest>),
 }
+
 
 pub struct Proposer {
     name: PublicKey,
@@ -25,6 +28,7 @@ pub struct Proposer {
     tx_loopback: Sender<Block>,
     buffer: HashSet<Digest>,
     network: ReliableSender,
+    last_round_with_valid_block: Round,
 }
 
 impl Proposer {
@@ -46,6 +50,7 @@ impl Proposer {
                 tx_loopback,
                 buffer: HashSet::new(),
                 network: ReliableSender::new(),
+                last_round_with_valid_block: 0
             }
             .run()
             .await;
@@ -57,8 +62,21 @@ impl Proposer {
         let _ = wait_for.await;
         deliver
     }
+    
+    fn update_last_round_since_valid_block(&mut self, r: Round) {
+        self.last_round_with_valid_block = r;
+    }
 
     async fn make_block(&mut self, round: Round, qc: QC, tc: Option<TC>) {
+        if self.buffer.is_empty() {
+            if tc.is_none() && (round - self.last_round_with_valid_block) < ROUND_TIMEOUT_FOR_EMPTY_BLOCKS {
+                info!("Not proposing a new block, empty buffer and enough time has not passed");
+                return;
+            } else {
+                info!("Proposing empty block since buffer is empty and enough time has passed");
+            }
+        }
+
         // Generate a new block.
         let block = Block::new(
             qc,
@@ -82,7 +100,7 @@ impl Proposer {
         debug!("Created {:?}", block);
 
         // Broadcast our new block.
-        debug!("Broadcasting {:?}", block);
+        info!("Broadcasting {:?}", block);
         let (names, addresses): (Vec<_>, _) = self
             .committee
             .broadcast_addresses(&self.name)
@@ -131,6 +149,7 @@ impl Proposer {
                 },
                 Some(message) = self.rx_message.recv() => match message {
                     ProposerMessage::Make(round, qc, tc) => self.make_block(round, qc, tc).await,
+                    ProposerMessage::UpdateLastRoundWithValidBlock(round) => self.update_last_round_since_valid_block(round),
                     ProposerMessage::Cleanup(digests) => {
                         for x in &digests {
                             self.buffer.remove(x);

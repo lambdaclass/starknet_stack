@@ -106,7 +106,7 @@ impl Client {
             let now = Instant::now();
 
             for x in 0..burst {
-                let internal_counter = 0;
+                let mut internal_counter = 0;
                 if x == counter % burst {
                     // NOTE: This log entry is used to compute performance.
                     info!("Sending sample transaction {}", counter);
@@ -119,7 +119,9 @@ impl Client {
                     tx.put_u8(1u8); // Standard txs start with 1.
                     tx.put_u64(r); // Ensures all clients send different txs.
                 };
-                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r);
+
+                let execute_fib: bool = rand::random();
+                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
                 for b in bytes {
                     tx.put_u8(b);
                 }
