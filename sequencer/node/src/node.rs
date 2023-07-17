@@ -268,7 +268,7 @@ impl Node {
                             // If it's a benchmarked tx, it then gets tracked in logs to compute metrics
                             // So we need to strip that section in order to get the starknet transaction to execute
                             #[cfg(feature = "benchmark")]
-                            let tx_bytes = &tx_bytes[9..];
+                            let tx_bytes = &tx_bytes[1..];
 
                             let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
 

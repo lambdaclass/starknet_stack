@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
+use cairo_lang_sierra::program;
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
@@ -94,8 +95,6 @@ impl Client {
         let mut tx = BytesMut::with_capacity(self.size);
         let mut counter = 0;
         // TODO: improve the random input sent to execute the fact/fib functions.
-        let small_r: u8 = rand::thread_rng().gen();
-        let mut r: u64 = small_r.into();
         let mut transport = Framed::new(stream, LengthDelimitedCodec::new());
         let interval = interval(Duration::from_millis(BURST_DURATION));
         tokio::pin!(interval);
@@ -112,19 +111,15 @@ impl Client {
                 if x == counter % burst {
                     // NOTE: This log entry is used to compute performance.
                     info!("Sending sample transaction {}", counter);
-
                     tx.put_u8(0u8); // Sample txs start with 0.
-                    tx.put_u64(counter); // This counter identifies the tx.
                 } else {
-                    r += 1;
-
                     tx.put_u8(1u8); // Standard txs start with 1.
-                    tx.put_u64(r); // Ensures all clients send different txs.
                 };
 
                 let execute_fib: bool = rand::random();
+                let program_input: u8 = rand::thread_rng().gen();
                 let bytes =
-                    Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
+                    Transaction::new_invoke_as_bytes(counter + internal_counter, program_input, execute_fib);
                 for b in bytes {
                     tx.put_u8(b);
                 }
@@ -187,12 +182,8 @@ mod test {
         for x in 0..burst {
             if x == counter % burst {
                 tx.put_u8(0u8); // Sample txs start with 0.
-                tx.put_u64(counter); // This counter identifies the tx.
             } else {
-                r += 1;
-
                 tx.put_u8(1u8); // Standard txs start with 1.
-                tx.put_u64(r); // Ensures all clients send different txs.
             };
             let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371, true);
             for b in bytes {
