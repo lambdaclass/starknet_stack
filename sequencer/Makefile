@@ -9,8 +9,8 @@ bench:
 
 N:=0
 node: 
-	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && 
-	cd benchmark && 
+	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && \
+	cd benchmark && \
 	RUST_LOG=info,salsa=off,cairo_native=off,sled=off cargo run --bin node --features benchmark -- -vvv run --keys ./.node-$(N).json --committee ./.committee.json --parameters ./.parameters.json --store ./.db-$(N)
 
 reset:
