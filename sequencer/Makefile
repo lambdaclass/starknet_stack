@@ -48,5 +48,5 @@ generate-nodes-keys: setup-python
 	done
 
 generate-commitee-for-docker: generate-nodes-keys
-	@echo "Generating sequencer committee: config/committee.json
+	@echo "Generating sequencer committee: config/committee.json"
 	cd benchmark && fab config "172.27.0.10, 172.27.0.11, 172.27.0.12, 172.27.0.13"
