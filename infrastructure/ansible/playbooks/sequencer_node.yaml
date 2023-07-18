@@ -97,6 +97,17 @@
         - src: sequencer_{{ inventory_hostname }}.json
           dest: /home/{{ ansible_user }}/config/sequencer_{{ inventory_hostname }}.json
 
+    - name: Download cairo corelib
+      args:
+        chdir: /home/{{ ansible_user }}/starknet_stack/sequencer/
+      ansible.builtin.shell: |
+        git clone --depth 1 \
+                  --branch v2.0.1 \
+                  https://github.com/starkware-libs/cairo.git \
+                  starkware-cairo && \
+                  cp -r starkware-cairo/corelib . && \
+                  rm -rf starkware-cairo/
+
     - name: Create {{ ansible_user }} user systemd directory
       ansible.builtin.file:
         state: directory
