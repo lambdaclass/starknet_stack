@@ -74,6 +74,7 @@
       ansible.builtin.shell: |
         set -ex
         export PATH="/home/{{ ansible_user }}/.cargo/bin:${PATH}"
+        export MLIR_SYS_160_PREFIX=/usr/lib/llvm-16
         cargo +nightly-2023-06-19 build --features benchmark --release
         cargo +nightly-2023-06-19 build --bin client --features benchmark --release
 
