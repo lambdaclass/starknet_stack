@@ -80,8 +80,24 @@
         dest: /home/sequencer/starknet_stack
 
     - name: Build starknet_stack sequencer
+      become: true
+      become_user: sequencer
       ansible.builtin.shell: |
         set -ex
         export PATH="~/.cargo/bin:${PATH}"
         cargo +nightly-2023-06-19 build --features benchmark --release
         cargo +nightly-2023-06-19 build --bin client --features benchmark --release
+
+    - name: Create sequencer user systemd directory
+      become: true
+      become_user: sequencer
+      ansible.builtin.file:
+        state: directory
+        path: /home/sequencer/.config/systemd/user
+
+    - name: Install systemd service
+      become: true
+      become_user: sequencer
+      ansible.builtin.template:
+        src: sequencer.service.j2
+        dest: /home/sequencer/.config/systemd/user/sequencer.service
