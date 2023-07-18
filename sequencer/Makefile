@@ -35,16 +35,16 @@ build:
 test:
 	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo test
 
-build-docker:
-	docker build -t sequencer:latest .
+setup-python:
+	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark     && pip install -r requirements.txt
 
-generate-nodes-keys: init build-docker
+generate-nodes-keys: setup-python
 	if [ ! -d config/ ]; then \
 		mkdir config/; \
 	fi
 	@for node in $(shell seq 0 3); do \
 		echo Generating keys for sequencer node $${node}: config/sequencer_node$${node}.json; \
-		docker run sequencer:latest bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
+		docker run starknet_stack_sequencer_node0 bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
 	done
 
 generate-commitee-for-docker: generate-nodes-keys
