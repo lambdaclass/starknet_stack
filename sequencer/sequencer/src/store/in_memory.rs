@@ -1,12 +1,13 @@
 use super::{Key, StoreEngine, Value};
 use anyhow::Result;
-use types::MaybePendingBlockWithTxs;
+use cairo_felt::Felt252;
 use std::{collections::HashMap, fmt::Debug};
+use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction};
 
 #[derive(Clone)]
 pub struct Store {
     programs: HashMap<Key, Value>,
-    transactions: HashMap<Key, Value>,
+    transactions: HashMap<Felt252, Transaction>,
 }
 
 impl Store {
@@ -28,13 +29,18 @@ impl StoreEngine for Store {
         self.programs.get(&program_id).cloned()
     }
 
-    fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
-        self.transactions.insert(transaction_id, transaction);
-        Ok(())
+    fn add_transaction(&mut self, tx: Transaction) -> Result<()> {
+        match tx.clone() {
+            Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {
+                let _ = self.transactions.insert(invoke_tx.transaction_hash, tx);
+                Ok(())
+            }
+            _ => todo!(),
+        }
     }
 
-    fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
-        self.transactions.get(&transaction_id).cloned()
+    fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>> {
+        Ok(self.transactions.get(&tx_hash).cloned())
     }
 
     fn add_block(&mut self, _block: MaybePendingBlockWithTxs) -> Result<()> {

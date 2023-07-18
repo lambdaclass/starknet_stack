@@ -647,7 +647,11 @@ impl Transaction {
     /// A vector of bytes representing the transaction.
     /// if `send_fib` is true, then the execution represents fib(), otherwise it represents fact()
     pub fn new_invoke_as_bytes(nonce: u64, arbitrary_calldata: u64, send_fib: bool) -> Vec<u8> {
-        let send_fib_felt = if send_fib {Felt252::new(0)} else {Felt252::new(1)};
+        let send_fib_felt = if send_fib {
+            Felt252::new(0)
+        } else {
+            Felt252::new(1)
+        };
 
         // TODO: these are default values, need to be changed
         let mut invoke_tx_v1 = InvokeTransactionV1 {

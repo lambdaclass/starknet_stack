@@ -278,8 +278,6 @@ impl Node {
                                 p, starknet_tx
                             );
 
-                            let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
-
                             match &starknet_tx {
                                 Transaction::Invoke(InvokeTransaction::V1(tx)) => {
                                     info!(
@@ -301,10 +299,8 @@ impl Node {
                                         self.execution_program.execute_factorial(n);
                                     }
 
-                                    let _ = self.external_store.add_transaction(
-                                        tx.transaction_hash.to_bytes_be(),
-                                        starknet_tx_string.into_bytes(),
-                                    );
+                                    let _ =
+                                        self.external_store.add_transaction(starknet_tx.clone());
                                 }
                                 _ => todo!(),
                             }

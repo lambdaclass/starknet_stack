@@ -121,7 +121,8 @@ impl Client {
                 };
 
                 let execute_fib: bool = rand::random();
-                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
+                let bytes =
+                    Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
                 for b in bytes {
                     tx.put_u8(b);
                 }
@@ -136,7 +137,7 @@ impl Client {
                     warn!("Failed to send transaction: {}", e);
                     break 'main;
                 }
-                internal_counter +=1;
+                internal_counter += 1;
             }
             if now.elapsed().as_millis() > BURST_DURATION as u128 {
                 // NOTE: This log entry is used to compute performance.

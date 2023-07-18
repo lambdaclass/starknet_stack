@@ -2,9 +2,10 @@ use self::in_memory::Store as InMemoryStore;
 use self::rocksdb::Store as RocksDBStore;
 use self::sled::Store as SledStore;
 use anyhow::Result;
-use types::MaybePendingBlockWithTxs;
+use cairo_felt::Felt252;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
+use types::{MaybePendingBlockWithTxs, Transaction};
 
 pub mod in_memory;
 pub mod rocksdb;
@@ -20,8 +21,8 @@ const BLOCK_HEIGHT: &str = "height";
 pub trait StoreEngine: Debug + Send {
     fn add_program(&mut self, program_id: Key, program: Value) -> Result<()>;
     fn get_program(&self, program_id: Key) -> Option<Value>;
-    fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()>;
-    fn get_transaction(&self, transaction_id: Key) -> Option<Value>;
+    fn add_transaction(&mut self, transaction: Transaction) -> Result<()>;
+    fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>>;
     fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()>;
     fn get_block_by_hash(&self, block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>>;
     fn get_block_by_height(&self, block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>>;
@@ -79,31 +80,26 @@ impl Store {
         self.engine.clone().lock().unwrap().get_program(program_id)
     }
 
-    pub fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
+    pub fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
         self.engine
             .clone()
             .lock()
             .unwrap()
-            .add_transaction(transaction_id, transaction)
+            .add_transaction(transaction)
     }
 
-    pub fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
-        self.engine
-            .clone()
-            .lock()
-            .unwrap()
-            .get_transaction(transaction_id)
+    pub fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>> {
+        self.engine.clone().lock().unwrap().get_transaction(tx_hash)
     }
 
     pub fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()> {
-        self.engine
-            .clone()
-            .lock()
-            .unwrap()
-            .add_block(block)
+        self.engine.clone().lock().unwrap().add_block(block)
     }
 
-    pub fn get_block_by_height(&self, block_height: u64) -> Result<Option<MaybePendingBlockWithTxs>> {
+    pub fn get_block_by_height(
+        &self,
+        block_height: u64,
+    ) -> Result<Option<MaybePendingBlockWithTxs>> {
         self.engine
             .clone()
             .lock()

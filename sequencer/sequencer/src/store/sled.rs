@@ -1,8 +1,9 @@
 use super::{Key, StoreEngine, Value};
 use anyhow::Result;
+use cairo_felt::Felt252;
 use sled::Db;
 use std::fmt::Debug;
-use types::MaybePendingBlockWithTxs;
+use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction};
 
 #[derive(Clone)]
 pub struct Store {
@@ -38,16 +39,27 @@ impl StoreEngine for Store {
             .map(|value| value.to_vec())
     }
 
-    fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
-        let _ = self.transactions.insert(transaction_id, transaction);
-        Ok(())
+    fn add_transaction(&mut self, tx: Transaction) -> Result<()> {
+        let tx_serialized: Vec<u8> = serde_json::to_string(&tx).unwrap().as_bytes().to_vec();
+        match tx {
+            Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {
+                let _ = self
+                    .transactions
+                    .insert(invoke_tx.transaction_hash.to_bytes_be(), tx_serialized);
+                Ok(())
+            }
+            _ => todo!(),
+        }
     }
 
-    fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
+    fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>> {
         self.transactions
-            .get(transaction_id)
-            .unwrap()
-            .map(|value| value.to_vec())
+            .get(tx_hash.to_bytes_be())?
+            .map_or(Ok(None), |value| {
+                Ok(Some(serde_json::from_str::<Transaction>(
+                    &String::from_utf8(value.to_vec())?,
+                )?))
+            })
     }
 
     fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()> {

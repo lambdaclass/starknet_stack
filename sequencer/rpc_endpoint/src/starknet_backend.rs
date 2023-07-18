@@ -102,9 +102,7 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
         let block = match block_id {
-            BlockId::Number(0) => {
-                self.store.get_block_by_height(1)
-            },
+            BlockId::Number(0) => self.store.get_block_by_height(1),
             BlockId::Number(height) => {
                 info!("block number requested is {}", &height);
                 self.store.get_block_by_height(height)
@@ -117,7 +115,7 @@ impl StarknetRpcApiServer for StarknetBackend {
         };
         block
             .map(|option| option.expect("Block not found"))
-            .map_err( |e| {
+            .map_err(|e| {
                 error!("error {}", e);
                 ErrorObject::from(ErrorCode::InternalError)
             })
@@ -230,24 +228,13 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_by_hash(&self, transaction_hash: FeltParam) -> RpcResult<Transaction> {
         // necessary destructuring so that we can use a hex felt as a param
-        let transaction_hash = transaction_hash.0;
-
-        match &self.store.get_transaction(transaction_hash.to_bytes_be()) {
-            Some(tx) => {
-                let deserialized_tx: Transaction =
-                    serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
-                info!("tx json: {:?}", deserialized_tx);
-                match &deserialized_tx {
-                    Transaction::Invoke(InvokeTransaction::V1(t)) => {
-                        info!("tx_hash {}", t.transaction_hash);
-                    }
-                    _ => todo!(),
-                }
-
-                Ok(deserialized_tx)
-            }
-            None => todo!(),
-        }
+        self.store
+            .get_transaction(transaction_hash.0)
+            .map(|option| option.expect("Transaction not found"))
+            .map_err(|e| {
+                error!("error {}", e);
+                ErrorObject::from(ErrorCode::InternalError)
+            })
     }
 
     /// Returns the receipt of a transaction by transaction hash.
