@@ -5,6 +5,7 @@
 
   pre_tasks:
     - name: Install apt dependencies
+      become: true
       become_user: root
       ansible.builtin.apt:
         update_cache: true
@@ -18,6 +19,7 @@
           - ufw
 
     - name: Install LLVM 16 sources
+      become: true
       become_user: root
       ansible.builtin.shell: |
         echo "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-16 main" > /etc/apt/sources.list.d/llvm-16.list
@@ -26,6 +28,7 @@
 
     - name: Install LLVM 16
       become_user: root
+      become: true
       ansible.builtin.apt:
         update_cache: true
         pkg:
@@ -46,11 +49,13 @@
         groups: deploy
 
     - name: Install rust
+      become: true
       become_user: sequencer
       ansible.builtin.shell: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=nightly-2023-06-19
 
     - name: Enable systemd linger for sequencer user
+      become: true
       become_user: root
       ansible.builtin.shell: |
         loginctl enable-linger sequencer
@@ -63,6 +68,8 @@
         path: /home/sequencer/.ssh
 
     - name: Set server hostname
+      become: true
+      become_user: root
       ansible.builtin.hostname:
         name: '{{ inventory_hostname }}'
 
