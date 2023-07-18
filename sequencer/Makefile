@@ -2,7 +2,7 @@
 
 init: install-cairo-native
 	rustup override set nightly-2023-06-19-aarch64-apple-darwin
-	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
+	python3 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
 
 bench:
 	cd benchmark && export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && export RUST_LOG=info,salsa=off,cairo_native=off && fab local
@@ -36,7 +36,7 @@ test:
 	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo test
 
 setup-python:
-	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark     && pip install -r requirements.txt
+	python3 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark     && pip install -r requirements.txt
 
 generate-nodes-keys: setup-python
 	if [ ! -d config/ ]; then \
@@ -44,7 +44,7 @@ generate-nodes-keys: setup-python
 	fi
 	@for node in $(shell seq 0 3); do \
 		echo Generating keys for sequencer node $${node}: sequencer/config/sequencer_node$${node}.json; \
-		docker run starknet_stack_sequencer_node0 bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
+		docker run starknet_stack-sequencer_node0 bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
 	done
 
 generate-commitee-for-docker: generate-nodes-keys
