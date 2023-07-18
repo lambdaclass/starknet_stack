@@ -31,10 +31,26 @@ Additionally, you can also explore the blockchain with [Starknet Stack Explorer]
 
 ## Quick start
 
+To run this locally through Docker, do:
 
+```
+make run-local
+```
+
+This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints to check if they are up. You can also access the explorer at {} and see the blockchain populating with empty blocks. 
+
+### Send transactions
+
+### Flow
+
+- The client sends random invoke transactions (either a fibonacci or factorial execution) to the consensus nodes
+- Consensus nodes vote on blocks and commit them accordingly. If no transactions are sent, empty blocks are created regularly
+- The watcher-prover is querying the RPC endpoints and checking transactions on blocks
+- When the watcher-prover gets a new block/transaction, it proves the execution through the CairoVM and the LambdaWorks prover
+- Proofs get committed either on the file system or on S3 (by default, the filesystem) 
 
 ## Trust assumptions
 
-- Currently there is no way to validate whether a proof of an execution is related to a specific transaction. There are currently plans to enable this.
-- The fact that the prover pool requests the blocks/transactions from the sequencer means there needs to be trust between them. Running a trusted node alongside the proving pool is encouraged for this. Notice that because we use BFT consensus, the alternative could be to query 2/3 of the nodes in order to ensure consensus, but this has its own set of downsides.
+- There is currently no way to validate whether a proof of an execution is related to a specific transaction. This is planned for the future
+- The fact that the prover pool requests the blocks/transactions from the sequencer means that there needs to be trust between them, which is why running a trusted node alongside the proving pool is encouraged. Because we use BFT consensus, the alternative could be to query 2/3 of the nodes in order to ensure consensus (although this has its own set of downsides)
 
