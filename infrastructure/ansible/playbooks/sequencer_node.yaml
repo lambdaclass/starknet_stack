@@ -78,6 +78,13 @@
         cargo +nightly-2023-06-19 build --features benchmark --release
         cargo +nightly-2023-06-19 build --bin client --features benchmark --release
 
+    - name: Create config dir for {{ ansible_user }} user
+      ansible.builtin.file:
+        state: directory
+        owner: '{{ ansible_user }}'
+        group: '{{ ansible_user }}'
+        path: /home/{{ ansible_user }}/config
+
     - name: Copy sequencer config files
       ansible.builtin.copy:
         src: '{{ item.src }}'
