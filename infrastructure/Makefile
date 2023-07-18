@@ -1,6 +1,8 @@
 infrastructure:
 	@terraform -chdir=terraform/example_sequencer_nodes/ init
 	@terraform -chdir=terraform/example_sequencer_nodes/ apply
+	@sleep 45
+	echo "Waiting for instances to be ready"
 
 ansible-inventory:
 	cd ansible/ && \
