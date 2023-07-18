@@ -78,6 +78,18 @@
         cargo +nightly-2023-06-19 build --features benchmark --release
         cargo +nightly-2023-06-19 build --bin client --features benchmark --release
 
+    - name: Copy sequencer config files
+      ansible.builtin.copy:
+        src: '{{ item.src }}'
+        dest: '{{ item.dest }}'
+      loop:
+        - src: committee.json
+          dest: /home/{{ ansible_user }}/config/committee.json
+        - src: parameters.json
+          dest: /home/{{ ansible_user }}/config/parameters.json
+        - src: sequencer_{{ inventory_hostname }}.json
+          dest: /home/{{ ansible_user }}/config/sequencer_{{ inventory_hostname }}.json
+
     - name: Create {{ ansible_user }} user systemd directory
       ansible.builtin.file:
         state: directory
