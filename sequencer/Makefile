@@ -43,10 +43,10 @@ generate-nodes-keys: setup-python
 		mkdir config/; \
 	fi
 	@for node in $(shell seq 0 3); do \
-		echo Generating keys for sequencer node $${node}: config/sequencer_node$${node}.json; \
+		echo Generating keys for sequencer node $${node}: sequencer/config/sequencer_node$${node}.json; \
 		docker run starknet_stack_sequencer_node0 bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
 	done
 
 generate-commitee-for-docker: generate-nodes-keys
-	@echo "Generating sequencer committee: config/committee.json"
+	@echo "Generating sequencer committee: sequencer/config/committee.json"
 	cd benchmark && fab config "172.27.0.10, 172.27.0.11, 172.27.0.12, 172.27.0.13"
