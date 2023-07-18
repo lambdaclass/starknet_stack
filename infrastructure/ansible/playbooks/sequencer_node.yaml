@@ -117,3 +117,11 @@
       ansible.builtin.template:
         src: sequencer.service.j2
         dest: /home/{{ ansible_user }}/.config/systemd/user/sequencer.service
+
+    - name: Start sequencer service
+      ansible.builtin.systemd:
+        scope: user
+        state: started
+        daemon_reload: true
+        enabled: true
+        name: sequencer
