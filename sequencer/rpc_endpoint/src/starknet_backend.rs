@@ -101,26 +101,26 @@ impl StarknetRpcApiServer for StarknetBackend {
 
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
-        let block_bytes = match block_id {
+        let block = match block_id {
             BlockId::Number(0) => {
-                self.store.get_block_by_height(1).unwrap()
+                self.store.get_block_by_height(1)
             },
             BlockId::Number(height) => {
                 info!("block number requested is {}", &height);
-                self.store.get_block_by_height(height).unwrap()
+                self.store.get_block_by_height(height)
             }
-            BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()).unwrap(),
+            BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()),
             BlockId::Latest => self
                 .store
-                .get_block_by_height(self.store.get_height().expect("Height not found"))
-                .unwrap(),
+                .get_block_by_height(self.store.get_height().expect("Height not found")),
             _ => todo!(),
         };
-        let serialized_block = String::from_utf8(block_bytes).unwrap();
-        serde_json::from_str(&serialized_block).map_err(|e| {
-            error!("error {}", e);
-            ErrorObject::from(ErrorCode::ParseError)
-        })
+        block
+            .map(|option| option.expect("Block not found"))
+            .map_err( |e| {
+                error!("error {}", e);
+                ErrorObject::from(ErrorCode::InternalError)
+            })
     }
 
     /// Returns the chain id.

@@ -4,9 +4,10 @@ members = [
     "store", 
     "crypto", 
     "network", 
-    "mempool", 
+    "mempool",
     "consensus", 
     "node",
     "sequencer",
+    "types",
 ]
 resolver = "2"

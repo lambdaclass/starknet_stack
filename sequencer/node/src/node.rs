@@ -18,13 +18,13 @@ use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
 use rpc_endpoint::new_server;
 use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
+use serde_json::json;
 use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
 use std::hash::{Hash, Hasher};
-use std::time::{SystemTime, UNIX_EPOCH};
-use serde_json::json;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -87,9 +87,7 @@ enum ExecutionEngine {
 impl ExecutionEngine {
     fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
         match self {
-            ExecutionEngine::Cairo(execution_program) => {
-                execution_program.execute_fibonacci(n)
-            }
+            ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
             ExecutionEngine::Sierra(execution_program) => execution_program.execute_fibonacci(
                 get_input_value_cairo_native(a as u32),
                 get_input_value_cairo_native(b as u32),
@@ -113,7 +111,7 @@ pub struct Node {
     pub store: Store,
     pub external_store: sequencer::store::Store,
     execution_program: ExecutionEngine,
-    last_committed_round: u64
+    last_committed_round: u64,
 }
 
 impl Node {
@@ -233,7 +231,7 @@ impl Node {
             store,
             external_store,
             execution_program,
-            last_committed_round: 0u64
+            last_committed_round: 0u64,
         })
     }
 
@@ -292,7 +290,11 @@ impl Node {
                                     );
 
                                     // last call being Felt252::new(0) means we want to execute fibonacci
-                                    let is_fib = Felt252::new(0) == *tx.calldata.last().expect("calldata was not correctly set");
+                                    let is_fib = Felt252::new(0)
+                                        == *tx
+                                            .calldata
+                                            .last()
+                                            .expect("calldata was not correctly set");
                                     if is_fib {
                                         self.execution_program.execute_fibonacci(0, 1, n);
                                     } else {
@@ -309,14 +311,15 @@ impl Node {
 
                             transactions.push(starknet_tx);
                         }
-
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
                     }
                 }
             }
-            if !transactions.is_empty() || (block.round - self.last_committed_round) > ROUND_TIMEOUT_FOR_EMPTY_BLOCKS {
+            if !transactions.is_empty()
+                || (block.round - self.last_committed_round) > ROUND_TIMEOUT_FOR_EMPTY_BLOCKS
+            {
                 info!("About to store block from round {}", block.round);
                 self.last_committed_round = block.round;
                 self.create_and_store_new_block(transactions);
@@ -333,18 +336,13 @@ impl Node {
 
         let status = rpc_endpoint::rpc::BlockStatus::AcceptedOnL2;
         // TODO: store deserialization should be managed in store logic.
-        let parent_block =
-            self.external_store
-                .get_block_by_height(height - 1)
-                .map(|serialized_block| {
-                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
-                        &String::from_utf8(serialized_block).unwrap(),
-                    )
-                });
+        let parent_block = self.external_store.get_block_by_height(height - 1);
 
-        let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
-            rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
-            _ => Felt252::new(0),
+        let parent_hash = parent_block.map_or(Felt252::new(0), |maybe_block| {
+            maybe_block.map_or(Felt252::new(0), |block| match block {
+                rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
+                _ => Felt252::new(0),
+            })
         });
         let new_root = Felt252::new(938938281);
 
@@ -370,7 +368,7 @@ impl Node {
         });
         let block_hash = Felt252::new(state.finish());
 
-        let block_with_txs = rpc::BlockWithTxs {
+        let block_with_txs = rpc::MaybePendingBlockWithTxs::Block(rpc::BlockWithTxs {
             status,
             block_hash: block_hash.clone(),
             parent_hash,
@@ -379,21 +377,9 @@ impl Node {
             timestamp,
             sequencer_address,
             transactions,
-        };
+        });
 
-        let block_serialized: Vec<u8> =
-            serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block_with_txs))
-                .unwrap()
-                .as_bytes()
-                .to_vec();
-
-        info!("Storing block: {} at height {}", block_hash, height);
-
-        _ = self.external_store.add_block(
-            block_hash.to_bytes_be(),
-            height.to_be_bytes().to_vec(),
-            block_serialized,
-        );
+        _ = self.external_store.add_block(block_with_txs);
         _ = self.external_store.set_height(height);
     }
 }

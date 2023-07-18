@@ -165,7 +165,7 @@ impl<'de> Deserialize<'de> for MaybePendingBlockWithTxs {
 
 #[cfg(test)]
 mod tests {
-    use crate::rpc::{
+    use crate::{
         BlockWithTxs, InvokeTransaction, InvokeTransactionV1, MaybePendingBlockWithTxs, Transaction,
     };
 

@@ -1,5 +1,6 @@
 use super::{Key, StoreEngine, Value};
 use anyhow::Result;
+use types::MaybePendingBlockWithTxs;
 use std::{collections::HashMap, fmt::Debug};
 
 #[derive(Clone)]
@@ -36,15 +37,15 @@ impl StoreEngine for Store {
         self.transactions.get(&transaction_id).cloned()
     }
 
-    fn add_block(&mut self, _block_hash: Key, _block_height: Key, _block: Value) -> Result<()> {
+    fn add_block(&mut self, _block: MaybePendingBlockWithTxs) -> Result<()> {
         todo!()
     }
 
-    fn get_block_by_hash(&self, _block_hash: Key) -> Option<Value> {
+    fn get_block_by_hash(&self, _block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
         todo!()
     }
 
-    fn get_block_by_height(&self, _block_height: Key) -> Option<Value> {
+    fn get_block_by_height(&self, _block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
         todo!()
     }
 
