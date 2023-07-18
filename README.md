@@ -47,7 +47,8 @@ This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explo
 - Consensus nodes vote on blocks and commit them accordingly. If no transactions are sent, empty blocks are created regularly
 - The watcher-prover is querying the RPC endpoints and checking transactions on blocks
 - When the watcher-prover gets a new block/transaction, it proves the execution through the CairoVM and the LambdaWorks prover
-- Proofs get committed either on the file system or on S3 (by default, the filesystem) 
+- Proofs get saved either on the file system or on S3 (by default, the filesystem)
+- On the explorer, you can browse blocks and see the transactions they include. The Lambdaworks verifier is connected 
 
 ## Trust assumptions
 
