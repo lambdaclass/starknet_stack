@@ -69,6 +69,8 @@
         dest: /home/{{ ansible_user }}/starknet_stack
 
     - name: Build starknet_stack sequencer
+      args:
+        chdir: /home/{{ ansible_user }}/starknet_stack/sequencer
       ansible.builtin.shell: |
         set -ex
         export PATH="/home/{{ ansible_user }}/.cargo/bin:${PATH}"
