@@ -37,11 +37,13 @@ To run this locally through Docker, do:
 make run-local
 ```
 
-This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints to check if they are up. You can also access the explorer at {} and see the blockchain populating with empty blocks. 
+This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints to check if they are up. You can also access the Madara explorer at http://localhost:4000/ and see the blockchain populating with empty blocks. 
 
 When finished, don't forget to stop the containers by doing `make stop`.
 
 ### Send transactions
+
+By default, as part of `make run-local`, a client that sends random transactions to the sequencer will run for a short while in order to populate the blockchain. You can also run the client (found in the [sequencer](/sequencer) dir) by hand, (e.g, `./client 127.0.0.1:9004 --size 256 --rate 40 --timeout 1000 --running-time 5`).
 
 ### Flow
 
