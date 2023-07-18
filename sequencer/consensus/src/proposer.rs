@@ -16,6 +16,7 @@ pub enum ProposerMessage {
     Cleanup(Vec<Digest>),
 }
 
+
 pub struct Proposer {
     name: PublicKey,
     committee: Committee,
@@ -59,7 +60,7 @@ impl Proposer {
     }
 
     async fn make_block(&mut self, round: Round, qc: QC, tc: Option<TC>) {
-        // Generate a new block.
+         // Generate a new block.
         let block = Block::new(
             qc,
             tc,
@@ -82,7 +83,7 @@ impl Proposer {
         debug!("Created {:?}", block);
 
         // Broadcast our new block.
-        debug!("Broadcasting {:?}", block);
+        info!("Broadcasting {:?}", block);
         let (names, addresses): (Vec<_>, _) = self
             .committee
             .broadcast_addresses(&self.name)

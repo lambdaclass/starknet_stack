@@ -108,6 +108,7 @@ impl Client {
             interval.as_mut().tick().await;
             let now = Instant::now();
 
+            let mut internal_counter = 0;
             for x in 0..burst {
                 if x == counter % burst {
                     // NOTE: This log entry is used to compute performance.
@@ -121,7 +122,9 @@ impl Client {
                     tx.put_u8(1u8); // Standard txs start with 1.
                     tx.put_u64(r); // Ensures all clients send different txs.
                 };
-                let bytes = Transaction::new_invoke_as_bytes(counter, r);
+
+                let execute_fib: bool = rand::random();
+                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
                 for b in bytes {
                     tx.put_u8(b);
                 }
@@ -136,6 +139,7 @@ impl Client {
                     warn!("Failed to send transaction: {}", e);
                     break 'main;
                 }
+                internal_counter +=1;
             }
             if now.elapsed().as_millis() > BURST_DURATION as u128 {
                 // NOTE: This log entry is used to compute performance.

@@ -140,14 +140,14 @@ impl Core {
         // Send all the newly committed blocks to the node's application layer.
         while let Some(block) = to_commit.pop_back() {
             if !block.payload.is_empty() {
-                info!("Committed {}", block);
+                info!("Committed {} and updated last round since valid block", block);
 
                 #[cfg(feature = "benchmark")]
                 for x in &block.payload {
                     // NOTE: This log entry is used to compute performance.
                     info!("Committed {} -> {:?}", block, x);
                 }
-            }
+            } 
             debug!("Committed {:?}", block);
             if let Err(e) = self.tx_commit.send(block).await {
                 warn!("Failed to send block through the commit channel: {}", e);
