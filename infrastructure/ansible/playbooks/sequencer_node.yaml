@@ -12,6 +12,7 @@
         pkg:
           - curl
           - gcc
+          - git
           - libclang-dev
           - g++
           - gnupg
