@@ -38,35 +38,23 @@
           - mlir-16-tools
           - libpolly-16-dev
 
-    - name: Add deploy group
-      ansible.builtin.group:
-        name: deploy
-        state: present
-
-    - name: Add sequencer user
-      ansible.builtin.user:
-        name: sequencer
-        shell: /bin/bash
-        groups: deploy
 
     - name: Install rust
-      become: true
-      become_user: sequencer
       ansible.builtin.shell: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=nightly-2023-06-19
 
-    - name: Enable systemd linger for sequencer user
+    - name: Enable systemd linger for {{ ansible_user }} user
       become: true
       become_user: root
       ansible.builtin.shell: |
-        loginctl enable-linger sequencer
+        loginctl enable-linger {{ ansible_user }}
 
-    - name: Create .ssh for sequencer user
+    - name: Create .ssh for {{ ansible_user }} user
       ansible.builtin.file:
         state: directory
-        owner: sequencer
-        group: deploy
-        path: /home/sequencer/.ssh
+        owner: '{{ ansible_user }}'
+        group: '{{ ansible_user }}'
+        path: /home/{{ ansible_user }}/.ssh
 
     - name: Set server hostname
       become: true
@@ -78,27 +66,21 @@
       ansible.builtin.git:
         repo: https://github.com/lambdaclass/starknet_stack.git
         version: main
-        dest: /home/sequencer/starknet_stack
+        dest: /home/{{ ansible_user }}/starknet_stack
 
     - name: Build starknet_stack sequencer
-      become: true
-      become_user: sequencer
       ansible.builtin.shell: |
         set -ex
-        export PATH="~/.cargo/bin:${PATH}"
+        export PATH="/home/{{ ansible_user }}/.cargo/bin:${PATH}"
         cargo +nightly-2023-06-19 build --features benchmark --release
         cargo +nightly-2023-06-19 build --bin client --features benchmark --release
 
-    - name: Create sequencer user systemd directory
-      become: true
-      become_user: sequencer
+    - name: Create {{ ansible_user }} user systemd directory
       ansible.builtin.file:
         state: directory
-        path: /home/sequencer/.config/systemd/user
+        path: /home/{{ ansible_user }}/.config/systemd/user
 
     - name: Install systemd service
-      become: true
-      become_user: sequencer
       ansible.builtin.template:
         src: sequencer.service.j2
-        dest: /home/sequencer/.config/systemd/user/sequencer.service
+        dest: /home/{{ ansible_user }}/.config/systemd/user/sequencer.service
