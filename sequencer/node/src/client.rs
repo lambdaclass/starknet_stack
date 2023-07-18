@@ -36,6 +36,9 @@ struct Cli {
     /// Network addresses that must be reachable before starting the benchmark.
     #[clap(short, long, value_parser, value_name = "[Addr]", multiple = true)]
     nodes: Vec<SocketAddr>,
+    /// Running time of the client in seconds.
+    #[clap(short, long, value_parser, value_name = "INT")]
+    running_time: u8,
 }
 
 #[tokio::main]
@@ -61,7 +64,7 @@ async fn main() -> Result<()> {
     client.wait().await;
 
     // Start the benchmark.
-    client.send().await.context("Failed to submit transactions")
+    client.send(cli.running_time).await.context("Failed to submit transactions")
 }
 
 struct Client {
@@ -73,7 +76,7 @@ struct Client {
 }
 
 impl Client {
-    pub async fn send(&self) -> Result<()> {
+    pub async fn send(&self, running_time_seconds: u8) -> Result<()> {
         const PRECISION: u64 = 20; // Sample precision.
         const BURST_DURATION: u64 = 1000 / PRECISION;
 
@@ -100,7 +103,7 @@ impl Client {
 
         // NOTE: This log entry is used to compute performance.
         info!("Start sending transactions");
-
+        let starting_time = Instant::now();
         'main: loop {
             interval.as_mut().tick().await;
             let now = Instant::now();
@@ -137,6 +140,9 @@ impl Client {
             if now.elapsed().as_millis() > BURST_DURATION as u128 {
                 // NOTE: This log entry is used to compute performance.
                 warn!("Transaction rate too high for this client");
+            }
+            if (starting_time.elapsed().as_secs() > running_time_seconds) {
+                Ok(());
             }
             counter += 1;
         }
