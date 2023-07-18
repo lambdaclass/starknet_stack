@@ -39,6 +39,8 @@ make run-local
 
 This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints to check if they are up. You can also access the explorer at {} and see the blockchain populating with empty blocks. 
 
+When finished, don't forget to stop the containers by doing `make stop`.
+
 ### Send transactions
 
 ### Flow
