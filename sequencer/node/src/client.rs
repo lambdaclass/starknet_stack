@@ -38,7 +38,7 @@ struct Cli {
     nodes: Vec<SocketAddr>,
     /// Running time of the client in seconds.
     #[clap(short, long, value_parser, value_name = "INT")]
-    running_time: u8,
+    running_time: Option<u8>,
 }
 
 #[tokio::main]
@@ -76,7 +76,7 @@ struct Client {
 }
 
 impl Client {
-    pub async fn send(&self, running_time_seconds: u8) -> Result<()> {
+    pub async fn send(&self, running_time_seconds: Option<u8>) -> Result<()> {
         const PRECISION: u64 = 20; // Sample precision.
         const BURST_DURATION: u64 = 1000 / PRECISION;
 
@@ -145,8 +145,10 @@ impl Client {
                 // NOTE: This log entry is used to compute performance.
                 warn!("Transaction rate too high for this client");
             }
-            if (starting_time.elapsed().as_secs() > running_time_seconds) {
-                Ok(());
+            if let Some(time) = running_time_seconds  {
+                if starting_time.elapsed().as_secs() > time as u64 {
+                    return Ok(());
+                }
             }
             counter += 1;
         }
@@ -178,6 +180,8 @@ mod test {
     use rand::Rng;
     use rpc_endpoint::rpc::Transaction;
 
+    use crate::Client;
+
     #[test]
     fn test_serialize_transaction() {
         let burst = 12;
@@ -196,7 +200,7 @@ mod test {
                 tx.put_u8(1u8); // Standard txs start with 1.
                 tx.put_u64(r); // Ensures all clients send different txs.
             };
-            let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371);
+            let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371, true);
             for b in bytes {
                 tx.put_u8(b);
             }
