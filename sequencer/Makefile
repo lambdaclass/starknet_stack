@@ -34,3 +34,19 @@ build:
 
 test:
 	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo test
+
+setup-python:
+	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark     && pip install -r requirements.txt
+
+generate-nodes-keys: setup-python
+	if [ ! -d config/ ]; then \
+		mkdir config/; \
+	fi
+	@for node in $(shell seq 0 3); do \
+		echo Generating keys for sequencer node $${node}: sequencer/config/sequencer_node$${node}.json; \
+		docker run starknet_stack_sequencer_node0 bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
+	done
+
+generate-commitee-for-docker: generate-nodes-keys
+	@echo "Generating sequencer committee: sequencer/config/committee.json"
+	cd benchmark && fab config "172.27.0.10, 172.27.0.11, 172.27.0.12, 172.27.0.13"
