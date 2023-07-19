@@ -97,4 +97,4 @@
 
     - name: Configure postgres database password
       ansible.builtin.shell: |
-        sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+        sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '{{ lookup('ansible.builtin.env', 'POSTGRES_PASSWORD') }}';"
