@@ -2,8 +2,7 @@
 Description={{ inventory_hostname }}
 
 [Service]
-User=sequencer
-WorkingDirectory=/home/sequencer/
+WorkingDirectory=/home/{{ ansible_user }}/starknet_stack/sequencer/target
 Restart=on-failure
 ExecStart=/home/{{ ansible_user }}/starknet_stack/sequencer/target/release/node -vv run --keys /home/{{ ansible_user }}/config/sequencer_{{ inventory_hostname }}.json --committee /home/{{ ansible_user }}/config/committee.json --store /home/{{ ansible_user }}/db-{{ inventory_hostname }} --parameters /home/{{ ansible_user }}/config/parameters.json
 ExecReload=/bin/kill -HUP
