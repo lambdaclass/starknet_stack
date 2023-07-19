@@ -1,0 +1,101 @@
+- name: Install dependencies on watcher_prover server(s)
+  hosts: watcher_prover
+  any_errors_fatal: true
+  become: true
+  become_user: root
+
+  pre_tasks:
+    - name: Install apt dependencies
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - curl
+          - git
+          - vim
+          - telnet
+          - build-essential
+          - htop
+          - libncurses5-dev
+          - libssl-dev
+          - openssl
+          - libssh-dev
+          - autoconf
+          - automake
+          - zip
+          - unzip
+          - gnupg2
+          - wget
+          - certbot
+          - ufw
+
+    - name: Download Erlang
+      ansible.builtin.get_url:
+        url: https://github.com/erlang/otp/releases/download/OTP-25.3.2.4/otp_src_25.3.2.4.tar.gz
+        dest: /root/otp_src_25.3.2.4.tar.gz
+
+    - name: Download Elixir
+      ansible.builtin.get_url:
+        url: https://github.com/elixir-lang/elixir/archive/refs/tags/v1.14.5.tar.gz
+        dest: /root/v1.14.5.tar.gz
+
+    - name: Extract Elixir
+      ansible.builtin.unarchive:
+        src: /root/otp_src_25.3.2.4.tar.gz
+        dest: /root/
+        remote_src: yes
+
+    - name: Extract Erlang
+      ansible.builtin.unarchive:
+        src: /root/v1.14.5.tar.gz
+        dest: /root/
+        remote_src: yes
+
+    - name: Enable systemd linger for {{ ansible_user }} user
+      ansible.builtin.shell: |
+        loginctl enable-linger {{ ansible_user }}
+
+    - name: Add postgres source repo
+      ansible.builtin.shell:
+        cmd: |
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+
+
+  tasks:
+    - name: Install rust
+      become: true
+      become_user: admin
+      ansible.builtin.shell: |
+        curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+    - name: Compile and install Erlang
+      ansible.builtin.shell:
+        chdir: /root/otp_src_25.3.2.4
+        cmd: |
+          ./configure
+          make
+          make install
+
+    - name: Compile and install Elixir
+      ansible.builtin.shell:
+        chdir: /root/elixir-1.14.5/
+        cmd: |
+          make
+          make install
+
+    - name: Install postres 15
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - postgresql-15
+
+    - name: Restart postgres
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: true
+        enabled: true
+        name: postgresql
+
+    - name: Configure postgres database password
+      ansible.builtin.shell:
+        cmd: sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
