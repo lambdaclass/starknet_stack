@@ -60,7 +60,6 @@
           echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 
-
   tasks:
     - name: Install rust
       become: true
@@ -97,5 +96,5 @@
         name: postgresql
 
     - name: Configure postgres database password
-      ansible.builtin.shell:
-        cmd: sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+      ansible.builtin.shell: |
+        sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"

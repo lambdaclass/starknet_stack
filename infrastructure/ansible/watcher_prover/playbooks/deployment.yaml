@@ -36,7 +36,7 @@
     environment:
       MIX_ENV: prod
     args:
-      chdir: /home/{{ ansible_user }}/tmp/starknet_stack
+      chdir: /home/{{ ansible_user }}/tmp/starknet_stack/watcher_prover
     register: build_output
 
   - debug: msg="{{ build_output.stdout_lines + [ build_output.stderr_lines ] }}"
