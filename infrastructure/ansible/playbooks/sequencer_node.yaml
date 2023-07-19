@@ -97,9 +97,15 @@
         - src: sequencer_{{ inventory_hostname }}.json
           dest: /home/{{ ansible_user }}/config/sequencer_{{ inventory_hostname }}.json
 
+    - name: Move cairo_programs
+      ansible.builtin.copy:
+        remote_src: true
+        src: /home/{{ ansible_user }}/starknet_stack/sequencer/cairo_programs
+        dest: /home/{{ ansible_user }}/starknet_stack/sequencer/target/
+
     - name: Download cairo corelib
       args:
-        chdir: /home/{{ ansible_user }}/starknet_stack/sequencer/
+        chdir: /home/{{ ansible_user }}/starknet_stack/sequencer/target
       ansible.builtin.shell: |
         git clone --depth 1 \
                   --branch v2.0.1 \
