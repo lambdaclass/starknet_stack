@@ -51,7 +51,7 @@
     ansible.builtin.copy:
       remote_src: true
       src: /home/{{ ansible_user }}/tmp/starknet_stack
-      dest: /home/{{ ansible_user }}/starknet_stack/
+      dest: /home/{{ ansible_user }}/
 
   - name: Create .env file
     ansible.builtin.template:
