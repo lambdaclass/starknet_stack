@@ -24,6 +24,7 @@
   - name: Build
     ansible.builtin.shell: |
       set -ex
+      export PATH=${PATH}:/home/admin/.cargo/bin
       mix local.hex --force
       mix local.rebar --force
       mix deps.get --only $MIX_ENV
