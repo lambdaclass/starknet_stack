@@ -98,7 +98,7 @@ resource "aws_security_group_rule" "watcher_prover_to_starknet_sequencer" {
 
 resource "aws_instance" "watcher_prover" {
   ami           = "${data.aws_ami.debian_11_latest_arm64.id}"
-  instance_type = "m7g.large"
+  instance_type = "m7g.xlarge"
   key_name      = "klaus"
 
   subnet_id              = "subnet-0b86c41d31a517d60"
