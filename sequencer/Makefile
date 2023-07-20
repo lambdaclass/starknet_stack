@@ -41,7 +41,7 @@ generate-nodes-keys:
 	fi
 	@for node in $(shell seq 0 3); do \
 		echo Generating keys for sequencer node $${node}: sequencer/config/sequencer_node$${node}.json; \
-		docker run starknet_stack-sequencer_node0 bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
+		docker compose run sequencer_node0 bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
 	done
 
 generate-committee-for-docker: generate-nodes-keys
