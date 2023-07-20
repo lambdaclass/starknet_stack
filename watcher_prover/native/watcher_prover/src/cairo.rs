@@ -11,6 +11,10 @@ use rustler::Binary;
 
 #[rustler::nif]
 /// Loads the program in path, runs it with the Cairo VM, and makes a proof of it
+///
+/// # Returns
+///
+/// (proof_bytes, public_inputs_bytes)
 pub fn run_program_and_get_proof(program_content_binary: Binary) -> (Vec<u8>, Vec<u8>) {
     let program_content: &[u8] = &*program_content_binary;
     run_program_and_get_proof_internal(program_content)
