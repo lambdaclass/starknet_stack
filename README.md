@@ -37,13 +37,13 @@ To run this locally through Docker, do:
 make run-local
 ```
 
-This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints to check if they are up. You can also access the Madara explorer at http://localhost:4000/ and see the blockchain populating with empty blocks. 
+This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. Before finishing, a client that sends a bunch of transactions is executed. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints appropriately. You can also access the Madara explorer at http://localhost:4000/ and check out the blockchain. 
 
 When finished, don't forget to stop the containers by doing `make stop`.
 
 ### Send transactions
 
-By default, as part of `make run-local`, a client that sends random transactions to the sequencer will run for a short while in order to populate the blockchain. You can also run the client (found in the [sequencer](/sequencer) dir) by hand, (e.g, `./client 127.0.0.1:9004 --size 256 --rate 40 --timeout 1000 --running-time 5`).
+A mentioned above, as part of `make run-local`, a client that sends random transactions to the sequencer will run for a short while in order to populate the blockchain. You can also run the client on demand (`make run-client`).
 
 ### Flow
 
@@ -52,7 +52,7 @@ By default, as part of `make run-local`, a client that sends random transactions
 - In parallel, the watcher-prover is querying the RPC endpoints and checking transactions on blocks
 - When the watcher-prover gets a new block/transaction, it proves the execution through the CairoVM and the LambdaWorks prover
 - Proofs get saved either on the file system or on S3 (by default, the filesystem)
-- On the explorer, you can browse blocks and see the transactions they include. The Lambdaworks verifier is connected 
+- On the explorer, you can browse blocks and see the transactions they include. Additionally, {add proof verification explanation}
 
 ## Trust assumptions
 
