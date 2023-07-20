@@ -5,9 +5,10 @@ networks:
         - subnet: 172.27.0.0/24
 
 services:
-  sequencer_node0:
+  sequencer_node0: &sequencer
     build:
       context: ./sequencer/
+    container_name: sequencer_node0
     networks:
       frontend:
         ipv4_address: 172.27.0.10
@@ -23,8 +24,8 @@ services:
     command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node0.json --committee /sequencer/config/committee.json --store /sequencer/db0 --parameters /sequencer/config/parameters.json
 
   sequencer_node1:
-    build:
-      context: ./sequencer/
+    <<: *sequencer
+    container_name: sequencer_node1
     networks:
       frontend:
         ipv4_address: 172.27.0.11
@@ -35,13 +36,11 @@ services:
       - ./sequencer/config/sequencer_node1.json:/sequencer/config/sequencer_node1.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
       - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
-    environment:
-      - RUST_LOG=info,salsa=off,cairo_native=off,sled=off
     command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node1.json --committee /sequencer/config/committee.json --store /sequencer/db1 --parameters /sequencer/config/parameters.json
 
   sequencer_node2:
-    build:
-      context: ./sequencer/
+    <<: *sequencer
+    container_name: sequencer_node2
     networks:
       frontend:
         ipv4_address: 172.27.0.12
@@ -52,13 +51,11 @@ services:
       - ./sequencer/config/sequencer_node2.json:/sequencer/config/sequencer_node2.json
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
       - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
-    environment:
-      - RUST_LOG=info,salsa=off,cairo_native=off,sled=off
     command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node2.json --committee /sequencer/config/committee.json --store /sequencer/db2 --parameters /sequencer/config/parameters.json
 
   sequencer_node3:
-    build:
-      context: ./sequencer/
+    <<: *sequencer
+    container_name: sequencer_node3
     networks:
       frontend:
         ipv4_address: 172.27.0.13
