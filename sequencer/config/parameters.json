@@ -1,0 +1,14 @@
+{
+    "consensus": {
+        "sync_retry_delay": 10000,
+        "timeout_delay": 1000
+    },
+    "mempool": {
+        "batch_size": 4096,
+        "gc_depth": 50,
+        "max_batch_delay": 10,
+        "sync_retry_delay": 5000,
+        "sync_retry_nodes": 3
+    },
+    "execution": "cairo_native"
+}
