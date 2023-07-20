@@ -107,17 +107,19 @@ impl Client {
         // NOTE: This log entry is used to compute performance.
         info!("Start sending transactions");
         let starting_time = Instant::now();
+        let mut internal_counter = 0;
+
         'main: loop {
             interval.as_mut().tick().await;
             let now = Instant::now();
-
-            let mut internal_counter = 0;
+            internal_counter = 0;
+            
             for x in 0..burst {
                 let execute_fib: bool = rand::random();
                 let invoke_transaction = Transaction::new_invoke(counter + internal_counter, r, execute_fib);
                 if let Transaction::Invoke(InvokeTransaction::V1(transaction)) = &invoke_transaction {
                     if x == counter % burst {
-                        info!("Sending sample transaction {} - Transaction ID: 0x{}", counter, transaction.transaction_hash.to_str_radix(16));
+                        info!("Sending sampled transaction - Transaction ID: 0x{}", transaction.transaction_hash.to_str_radix(16));
     
                         // NOTE: This log entry is used to compute performance.
     
@@ -160,6 +162,7 @@ impl Client {
             }
             counter += 1;
         }
+        info!("Sent {} transactions to node", internal_counter + counter);
         Ok(())
     }
 

@@ -26,5 +26,8 @@ run-local: clone-madara-explorer docker-build-all
 	@sleep 5
 	@echo "Access Madara Explorer in http://localhost:4000/"
 
+run-client:
+	docker run --network="starknet_stack_frontend" starknet_stack-sequencer_node1 /sequencer/client 172.27.0.10:9004 --size 256 --rate 250 --timeout 1000 --running-time 10
+
 stop:
 	docker compose down
