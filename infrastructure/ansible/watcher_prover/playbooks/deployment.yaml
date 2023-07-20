@@ -65,6 +65,8 @@
       prover_storage: "{{ lookup('ansible.builtin.env', 'PROVER_STORAGE') }}"
       phx_host: "{{ lookup('ansible.builtin.env', 'PHX_HOST') }}"
       phx_server: "{{ lookup('ansible.builtin.env', 'PHX_SERVER') }}"
+      aws_access_key_id: "{{ lookup('ansible.builtin.env', 'AWS_ACCESS_KEY_ID') }}"
+      aws_secret_access_key: "{{ lookup('ansible.builtin.env', 'AWS_SECRET_ACCESS_KEY') }}"
 
   - name: Create user systemd directory
     ansible.builtin.file:

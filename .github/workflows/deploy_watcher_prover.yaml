@@ -40,6 +40,8 @@ jobs:
         PROVER_STORAGE: ${{ vars.WATCHER_PROVER_STORAGE }}
         PHX_HOST: ${{ vars.WATCHER_PROVER_PHX_HOST }}
         PHX_SERVER: ${{ vars.WATCHER_PROVER_PHX_SERVER }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.WATCHER_PROVER_AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.WATCHER_PROVER_AWS_SECRET_ACCESS_KEY }}
         GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
         INVENTORY_PATH: "infrastructure/ansible/watcher_prover/inventory.yaml"
         PLAYBOOK_PATH: "infrastructure/ansible/watcher_prover/playbooks/deployment.yaml"
