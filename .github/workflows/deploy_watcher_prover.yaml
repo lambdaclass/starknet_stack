@@ -1,0 +1,47 @@
+name: Deploy watcher_prover
+on:
+  push:
+    branches:
+      - watcher_prover_deployment
+  workflow_dispatch:
+
+jobs:
+
+  build-deploy:
+    name: Build and deploy watcher_prover
+    runs-on: ubuntu-latest
+    environment:
+      name: aws
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3.3.0
+
+    - name: Create ssh private key file from env var
+      env:
+        SSH_KEY: ${{ secrets.WATCHER_PROVER_SSH_KEY }}
+      run: |
+        set -ex
+        sed -E 's/(-+(BEGIN|END) OPENSSH PRIVATE KEY-+) *| +/\1\n/g' <<< "$SSH_KEY" > id_ed25519
+        chmod 400 id_ed25519
+
+    - name: Install ansible
+      run: |
+        pip install ansible
+
+    - name: "Deploy with ansible"
+      env:
+        WATCHER_PROVER_HOST: ${{ secrets.WATCHER_PROVER_HOST }}
+        ANSIBLE_SSH_PKEY: "./id_ed25519"
+        SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+        DATABASE_URL: ${{ secrets.WATCHER_PROVER_DATABASE_URL }}
+        RPC_HOST: ${{ vars.WATCHER_PROVER_RPC_HOST }}
+        RPC_PORT: ${{ vars.WATCHER_PROVER_RPC_PORT }}
+        PROVER_STORAGE: ${{ vars.WATCHER_PROVER_STORAGE }}
+        PHX_HOST: ${{ vars.WATCHER_PROVER_PHX_HOST }}
+        PHX_SERVER: ${{ vars.WATCHER_PROVER_PHX_SERVER }}
+        GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+        INVENTORY_PATH: "infrastructure/ansible/watcher_prover/inventory.yaml"
+        PLAYBOOK_PATH: "infrastructure/ansible/watcher_prover/playbooks/deployment.yaml"
+      run: |
+        ansible-playbook -i ${INVENTORY_PATH} ${PLAYBOOK_PATH}
