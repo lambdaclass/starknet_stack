@@ -17,7 +17,7 @@ docker-build-explorer:
 docker-build-all: docker-build-sequencer docker-build-watcher docker-build-explorer
 
 run-local: clone-madara-explorer docker-build-all
-	cd sequencer && make generate-commitee-for-docker
+	cd sequencer && make generate-committee-for-docker
 	docker compose up -d
 	@echo "Populating sequencer with sample transactions..."
 	@sleep 20
