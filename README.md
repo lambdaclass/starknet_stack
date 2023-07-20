@@ -67,5 +67,6 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 - Prove CairoOS
 - Native tokens for Proof of Stake
 - Support for multiple Consensus Algorithms (Review)
+- Add generalized program support for the Sequencer. Programs are not saved, there is only execution of fibonacci with a specific input. (Review)
 
 
