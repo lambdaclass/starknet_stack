@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - watcher_prover_deployment
+    paths:
+      - watcher_prover/**
+      - infrastructure/ansible/watcher_prover/**
   workflow_dispatch:
 
 jobs:
