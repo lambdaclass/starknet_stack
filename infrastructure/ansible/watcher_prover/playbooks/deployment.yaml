@@ -67,6 +67,7 @@
       phx_server: "{{ lookup('ansible.builtin.env', 'PHX_SERVER') }}"
       aws_access_key_id: "{{ lookup('ansible.builtin.env', 'AWS_ACCESS_KEY_ID') }}"
       aws_secret_access_key: "{{ lookup('ansible.builtin.env', 'AWS_SECRET_ACCESS_KEY') }}"
+      aws_region: "{{ lookup('ansible.builtin.env', 'AWS_REGION') }}"
 
   - name: Create user systemd directory
     ansible.builtin.file:
