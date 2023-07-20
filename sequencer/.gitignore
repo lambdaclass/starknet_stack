@@ -46,3 +46,8 @@ corelib/
 
 .assets
 .elixir_ls
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
