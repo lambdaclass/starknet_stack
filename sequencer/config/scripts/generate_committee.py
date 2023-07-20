@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import subprocess, sys, ipaddress
+import sys, ipaddress
 
 from config import RemoteCommittee, Key
 
