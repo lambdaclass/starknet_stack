@@ -291,7 +291,7 @@ impl Node {
                                         &tx.transaction_hash.to_str_radix(16)
                                     );
 
-                                    // last call being Felt252::new(0) means we want to execute fibonacci
+                                    // last call data being Felt252::new(0) means we want to execute fibonacci
                                     let is_fib = Felt252::new(0) == *tx.calldata.last().expect("calldata was not correctly set");
                                     if is_fib {
                                         self.execution_program.execute_fibonacci(0, 1, n);
