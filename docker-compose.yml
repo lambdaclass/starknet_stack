@@ -70,6 +70,17 @@ services:
       - RUST_LOG=info,salsa=off,cairo_native=off,sled=off
     command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node3.json --committee /sequencer/config/committee.json --store /sequencer/db3 --parameters /sequencer/config/parameters.json
 
+  sequencer_client0:
+    <<: *sequencer
+    container_name: sequencer_client0
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.14
+    ports: []
+    depends_on:
+      - sequencer_node0
+    command: /sequencer/client 172.27.0.10:9004 --size 256 --rate 250 --timeout 1000 --running-time 10
+
   watcher_prover:
     build: ./watcher_prover
     environment:
