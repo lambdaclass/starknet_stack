@@ -26,7 +26,7 @@ def generate_config(ips):
 
     names = [x.name for x in keys]
     committee = RemoteCommittee(names, base_port, ip_list)
-    committee.print('./committee.json')
+    committee.print('../committee.json')
 
 if len(sys.argv) != 2:
     print("You need to pass 1 argument: a quoted string with a list of comma-separated IPs")
