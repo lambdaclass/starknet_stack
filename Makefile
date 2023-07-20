@@ -20,7 +20,7 @@ run-local: clone-madara-explorer docker-build-all
 	cd sequencer && make generate-committee-for-docker
 	docker compose up -d
 	@echo "Populating sequencer with sample transactions..."
-	@sleep 20
+	docker compose logs -f sequencer_client0
 	@echo Restarting Madara Explorer
 	docker compose restart madara_explorer
 	@sleep 5

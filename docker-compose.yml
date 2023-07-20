@@ -77,9 +77,11 @@ services:
       frontend:
         ipv4_address: 172.27.0.14
     ports: []
+    volumes: []
+    environment: []
     depends_on:
       - sequencer_node0
-    command: /sequencer/client 172.27.0.10:9004 --size 256 --rate 250 --timeout 1000 --running-time 10
+    command: sh -c 'sleep 15 && /sequencer/client 172.27.0.10:9004 --size 256 --rate 250 --timeout 1000 --running-time 10'
 
   watcher_prover:
     build: ./watcher_prover
