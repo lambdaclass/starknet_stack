@@ -45,6 +45,7 @@ jobs:
         PHX_SERVER: ${{ vars.WATCHER_PROVER_PHX_SERVER }}
         AWS_ACCESS_KEY_ID: ${{ secrets.WATCHER_PROVER_AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.WATCHER_PROVER_AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ vars.WATCHER_PROVER_AWS_REGION }}
         GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
         INVENTORY_PATH: "infrastructure/ansible/watcher_prover/inventory.yaml"
         PLAYBOOK_PATH: "infrastructure/ansible/watcher_prover/playbooks/deployment.yaml"
