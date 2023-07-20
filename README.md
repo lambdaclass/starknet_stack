@@ -52,7 +52,7 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 - In parallel, the watcher-prover is querying the RPC endpoints and checking transactions on blocks
 - When the watcher-prover gets a new block/transaction, it proves the execution through the CairoVM and the LambdaWorks prover
 - Proofs get saved either on the file system or on S3 (by default, the filesystem)
-- On the explorer, you can browse blocks and see the transactions they include. Additionally, {add proof verification explanation}
+- On the explorer, you can browse blocks and see the transactions they include
 
 ## Trust assumptions
 
