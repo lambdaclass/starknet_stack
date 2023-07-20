@@ -2,7 +2,7 @@ name: Deploy watcher_prover
 on:
   push:
     branches:
-      - watcher_prover_deployment
+      - main
     paths:
       - watcher_prover/**
       - infrastructure/ansible/watcher_prover/**
