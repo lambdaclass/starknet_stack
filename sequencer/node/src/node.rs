@@ -18,13 +18,13 @@ use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
 use rpc_endpoint::new_server;
 use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
+use serde_json::json;
 use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
 use std::hash::{Hash, Hasher};
-use std::time::{SystemTime, UNIX_EPOCH};
-use serde_json::json;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -43,8 +43,8 @@ struct CairoVMExecutionProgram {
 }
 
 struct CairoNativeExecutionProgram {
-    fib_program: Arc<cairo_lang_sierra::program::Program>,
-    fact_program: Arc<cairo_lang_sierra::program::Program>,
+    fib_program: cairo_lang_sierra::program::Program,
+    fact_program: cairo_lang_sierra::program::Program,
 }
 
 impl CairoNativeExecutionProgram {
@@ -87,9 +87,7 @@ enum ExecutionEngine {
 impl ExecutionEngine {
     fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
         match self {
-            ExecutionEngine::Cairo(execution_program) => {
-                execution_program.execute_fibonacci(n)
-            }
+            ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
             ExecutionEngine::Sierra(execution_program) => execution_program.execute_fibonacci(
                 get_input_value_cairo_native(a as u32),
                 get_input_value_cairo_native(b as u32),
@@ -113,7 +111,7 @@ pub struct Node {
     pub store: Store,
     pub external_store: sequencer::store::Store,
     execution_program: ExecutionEngine,
-    last_committed_round: u64
+    last_committed_round: u64,
 }
 
 impl Node {
@@ -155,7 +153,7 @@ impl Node {
                 })
             }
             ExecutionParameters::CairoNative => {
-                let fact_sierra_program: Arc<cairo_lang_sierra::program::Program> =
+                let fact_sierra_program: cairo_lang_sierra::program::Program = Arc::try_unwrap(
                     cairo_lang_compiler::compile_cairo_project_at_path(
                         Path::new("../cairo_programs/fact_contract.cairo"),
                         CompilerConfig {
@@ -163,9 +161,11 @@ impl Node {
                             ..Default::default()
                         },
                     )
-                    .unwrap();
+                    .unwrap(),
+                )
+                .unwrap();
                 // Compile fibonacci to Sierra
-                let fib_sierra_program: Arc<cairo_lang_sierra::program::Program> =
+                let fib_sierra_program: cairo_lang_sierra::program::Program = Arc::try_unwrap(
                     cairo_lang_compiler::compile_cairo_project_at_path(
                         Path::new("../cairo_programs/fib_contract.cairo"),
                         CompilerConfig {
@@ -173,8 +173,9 @@ impl Node {
                             ..Default::default()
                         },
                     )
-                    .unwrap();
-
+                    .unwrap(),
+                )
+                .unwrap();
                 ExecutionEngine::Sierra(CairoNativeExecutionProgram {
                     fib_program: fib_sierra_program,
                     fact_program: fact_sierra_program,
@@ -233,7 +234,7 @@ impl Node {
             store,
             external_store,
             execution_program,
-            last_committed_round: 0u64
+            last_committed_round: 0u64,
         })
     }
 
@@ -292,7 +293,11 @@ impl Node {
                                     );
 
                                     // last call being Felt252::new(0) means we want to execute fibonacci
-                                    let is_fib = Felt252::new(0) == *tx.calldata.last().expect("calldata was not correctly set");
+                                    let is_fib = Felt252::new(0)
+                                        == *tx
+                                            .calldata
+                                            .last()
+                                            .expect("calldata was not correctly set");
                                     if is_fib {
                                         self.execution_program.execute_fibonacci(0, 1, n);
                                     } else {
@@ -309,14 +314,15 @@ impl Node {
 
                             transactions.push(starknet_tx);
                         }
-
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
                     }
                 }
             }
-            if !transactions.is_empty() || (block.round - self.last_committed_round) > ROUND_TIMEOUT_FOR_EMPTY_BLOCKS {
+            if !transactions.is_empty()
+                || (block.round - self.last_committed_round) > ROUND_TIMEOUT_FOR_EMPTY_BLOCKS
+            {
                 info!("About to store block from round {}", block.round);
                 self.last_committed_round = block.round;
                 self.create_and_store_new_block(transactions);
@@ -539,7 +545,7 @@ fn get_input_value_cairo_native(n: u32) -> Vec<u32> {
 }
 
 fn execute_fibonacci_cairo_native(
-    sierra_program: &Arc<cairo_lang_sierra::program::Program>,
+    sierra_program: &cairo_lang_sierra::program::Program,
     a: Vec<u32>,
     b: Vec<u32>,
     n: Vec<u32>,
@@ -571,7 +577,7 @@ fn execute_fibonacci_cairo_native(
 }
 
 fn execute_fact_cairo_native(
-    sierra_program: &Arc<cairo_lang_sierra::program::Program>,
+    sierra_program: &cairo_lang_sierra::program::Program,
     n: Vec<u32>,
 ) -> u64 {
     let program = sierra_program;
