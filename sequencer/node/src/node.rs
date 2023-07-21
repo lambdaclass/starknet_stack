@@ -1,5 +1,5 @@
+use crate::config::Export as _;
 use crate::config::{Committee, ConfigError, Parameters, Secret};
-use crate::config::{ExecutionParameters, Export as _};
 use cairo_felt::Felt252;
 use cairo_lang_compiler::CompilerConfig;
 use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
@@ -17,14 +17,17 @@ use log::info;
 use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
 use rpc_endpoint::new_server;
-use rpc_endpoint::rpc::{self, InvokeTransaction, Transaction};
+use rpc_endpoint::rpc::{
+    self, InvokeTransaction, InvokeTransactionReceipt, MaybePendingTransactionReceipt, Transaction,
+    TransactionReceipt,
+};
+use serde_json::json;
 use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
 use std::hash::{Hash, Hasher};
-use std::time::{SystemTime, UNIX_EPOCH};
-use serde_json::json;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -87,9 +90,7 @@ enum ExecutionEngine {
 impl ExecutionEngine {
     fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
         match self {
-            ExecutionEngine::Cairo(execution_program) => {
-                execution_program.execute_fibonacci(n)
-            }
+            ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
             ExecutionEngine::Sierra(execution_program) => execution_program.execute_fibonacci(
                 get_input_value_cairo_native(a as u32),
                 get_input_value_cairo_native(b as u32),
@@ -113,7 +114,7 @@ pub struct Node {
     pub store: Store,
     pub external_store: sequencer::store::Store,
     execution_program: ExecutionEngine,
-    last_committed_round: u64
+    last_committed_round: u64,
 }
 
 impl Node {
@@ -143,43 +144,15 @@ impl Node {
         let store = Store::new(store_path).expect("Failed to create store");
         let external_store =
             sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
-        let execution_program = match parameters.execution {
-            ExecutionParameters::CairoVM => {
-                let fib_casm_program: Vec<u8> =
-                    include_bytes!("../../cairo_programs/fib_contract.casm").to_vec();
-                let fact_casm_program: Vec<u8> =
-                    include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
-                ExecutionEngine::Cairo(CairoVMExecutionProgram {
-                    fib_program: fib_casm_program,
-                    fact_program: fact_casm_program,
-                })
-            }
-            ExecutionParameters::CairoNative => {
-                let fact_sierra_program: Arc<cairo_lang_sierra::program::Program> =
-                    cairo_lang_compiler::compile_cairo_project_at_path(
-                        Path::new("../cairo_programs/fact_contract.cairo"),
-                        CompilerConfig {
-                            replace_ids: true,
-                            ..Default::default()
-                        },
-                    )
-                    .unwrap();
-                // Compile fibonacci to Sierra
-                let fib_sierra_program: Arc<cairo_lang_sierra::program::Program> =
-                    cairo_lang_compiler::compile_cairo_project_at_path(
-                        Path::new("../cairo_programs/fib_contract.cairo"),
-                        CompilerConfig {
-                            replace_ids: true,
-                            ..Default::default()
-                        },
-                    )
-                    .unwrap();
-
-                ExecutionEngine::Sierra(CairoNativeExecutionProgram {
-                    fib_program: fib_sierra_program,
-                    fact_program: fact_sierra_program,
-                })
-            }
+        let execution_program = {
+            let fib_casm_program: Vec<u8> =
+                include_bytes!("../../cairo_programs/fib_contract.casm").to_vec();
+            let fact_casm_program: Vec<u8> =
+                include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
+            ExecutionEngine::Cairo(CairoVMExecutionProgram {
+                fib_program: fib_casm_program,
+                fact_program: fact_casm_program,
+            })
         };
 
         // Run the signature service.
@@ -233,7 +206,7 @@ impl Node {
             store,
             external_store,
             execution_program,
-            last_committed_round: 0u64
+            last_committed_round: 0u64,
         })
     }
 
@@ -292,7 +265,11 @@ impl Node {
                                     );
 
                                     // last call data being Felt252::new(0) means we want to execute fibonacci
-                                    let is_fib = Felt252::new(0) == *tx.calldata.last().expect("calldata was not correctly set");
+                                    let is_fib = Felt252::new(0)
+                                        == *tx
+                                            .calldata
+                                            .last()
+                                            .expect("calldata was not correctly set");
                                     if is_fib {
                                         self.execution_program.execute_fibonacci(0, 1, n);
                                     } else {
@@ -309,14 +286,15 @@ impl Node {
 
                             transactions.push(starknet_tx);
                         }
-
                     }
                     MempoolMessage::BatchRequest(_, _) => {
                         info!("Batch Request message confirmed")
                     }
                 }
             }
-            if !transactions.is_empty() || (block.round - self.last_committed_round) > ROUND_TIMEOUT_FOR_EMPTY_BLOCKS {
+            if !transactions.is_empty()
+                || (block.round - self.last_committed_round) > ROUND_TIMEOUT_FOR_EMPTY_BLOCKS
+            {
                 info!("About to store block from round {}", block.round);
                 self.last_committed_round = block.round;
                 self.create_and_store_new_block(transactions);
@@ -364,7 +342,7 @@ impl Node {
         height.hash(&mut state);
         new_root.hash(&mut state);
         sequencer_address.hash(&mut state);
-        transactions.iter().for_each(|tx| match tx {
+        transactions.iter().for_each(|tx| match &tx {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => invoke_tx.hash(&mut state),
             _ => todo!(),
         });
@@ -378,7 +356,7 @@ impl Node {
             new_root,
             timestamp,
             sequencer_address,
-            transactions,
+            transactions: transactions.clone(),
         };
 
         let block_serialized: Vec<u8> =
@@ -387,14 +365,39 @@ impl Node {
                 .as_bytes()
                 .to_vec();
 
-        info!("Storing block: {} at height {}", block_hash, height);
+        info!("Storing block: {} at height {}", &block_hash, height);
 
         _ = self.external_store.add_block(
-            block_hash.to_bytes_be(),
+            block_hash.clone().to_bytes_be(),
             height.to_be_bytes().to_vec(),
             block_serialized,
         );
         _ = self.external_store.set_height(height);
+
+        transactions.iter().for_each(|tx| match tx {
+            Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {
+                let tx_receipt: InvokeTransactionReceipt = InvokeTransactionReceipt {
+                    transaction_hash: invoke_tx.transaction_hash.clone(),
+                    actual_fee: invoke_tx.max_fee.clone(),
+                    status: rpc::TransactionStatus::AcceptedOnL2,
+                    block_hash: block_hash.clone(),
+                    block_number: height,
+                    messages_sent: vec![],
+                    events: vec![],
+                };
+
+                _ = self.external_store.add_transaction_receipt(
+                    invoke_tx.transaction_hash.to_bytes_be(),
+                    serde_json::to_string(&MaybePendingTransactionReceipt::Receipt(
+                        TransactionReceipt::Invoke(tx_receipt),
+                    ))
+                    .expect("Error serializing tx receipt")
+                    .as_bytes()
+                    .to_vec(),
+                );
+            }
+            _ => todo!(),
+        });
     }
 }
 
