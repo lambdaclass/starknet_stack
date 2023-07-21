@@ -10,7 +10,6 @@ use log::{info, warn};
 use rand::Rng;
 use rpc_endpoint::rpc::InvokeTransaction;
 use rpc_endpoint::rpc::Transaction;
-use std::hash::Hash;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use tokio::time::{interval, sleep, Duration, Instant};
@@ -110,7 +109,7 @@ impl Client {
         // NOTE: This log entry is used to compute performance.
         info!("Start sending transactions");
         let starting_time = Instant::now();
-        let mut internal_counter = 0;
+        let mut internal_counter: u64;
 
         'main: loop {
             interval.as_mut().tick().await;
