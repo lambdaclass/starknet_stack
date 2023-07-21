@@ -1,3 +1,7 @@
+<div align="center">
+<img src="./kraken.png" height="250">
+</div>
+
 # Starknet Stack
 
 `````mermaid
@@ -58,4 +62,15 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 
 - There is currently no way to validate whether a proof of an execution is related to a specific transaction. This is planned for the future
 - The fact that the prover pool requests the blocks/transactions from the sequencer means that there needs to be trust between them, which is why running a trusted node alongside the proving pool is encouraged. Alternatively, because we use BFT consensus, the user could also query 2/3 of the nodes in order to validate consensus (although this has its own set of downsides)
+
+## Missing Features
+- Support for ERC-20 using Starknet in Rust with Cairo Native
+- One proof per block including all transactions
+- Include missing builtins to the Stark Prover
+- Account Support
+- Prove StarknetOS
+- Native tokens for Proof of Stake
+- Support for multiple Consensus Algorithms
+- Add generalized program support (programs are not currently stored, only fibonacci/factorial are executed)
+
 
