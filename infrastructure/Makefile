@@ -1,8 +1,8 @@
 infrastructure:
-	@terraform -chdir=terraform/example_sequencer_nodes/ init
-	@terraform -chdir=terraform/example_sequencer_nodes/ apply
+	terraform -chdir=terraform/example_sequencer_nodes/ init
+	terraform -chdir=terraform/example_sequencer_nodes/ apply
 	@echo "Waiting for instances to be ready"
-	@sleep 45
+	@sleep 30
 
 ansible-inventory:
 	cd ansible/ && \
@@ -10,6 +10,9 @@ ansible-inventory:
 
 setup-nodes:
 	cd ansible/ && \
-	ansible-playbook -i inventory.yaml playbooks/sequencer_node.yaml
+	ansible-playbook -vv -i inventory.yaml playbooks/sequencer_node.yaml
 
 all: infrastructure ansible-inventory setup-nodes
+
+destroy:
+	terraform -chdir=terraform/example_sequencer_nodes/ destroy
