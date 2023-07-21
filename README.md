@@ -66,10 +66,10 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 - Support for ERC-20 using Starknet in Rust with Cairo Native
 - One proof per block including all transactions
 - Include missing builtins to the Stark Prover
-- Account Support (Review)
+- Account Support
 - Prove StarknetOS
 - Native tokens for Proof of Stake
-- Support for multiple Consensus Algorithms (Review)
+- Support for multiple Consensus Algorithms
 - Add generalized program support (programs are not currently stored, only fibonacci/factorial are executed)
 
 
