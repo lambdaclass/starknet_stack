@@ -1,37 +1,149 @@
+networks:
+  frontend:
+    ipam:
+      config:
+        - subnet: 172.27.0.0/24
+
 services:
+  sequencer_node0: &sequencer
+    build:
+      context: ./sequencer/
+    container_name: sequencer_node0
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.10
+    ports:
+      - 10000:10008
+      - 9000:9004
+    volumes:
+      - ./sequencer/config/sequencer_node0.json:/sequencer/config/sequencer_node0.json
+      - ./sequencer/config/committee.json:/sequencer/config/committee.json
+      - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
+    environment:
+      - RUST_LOG=info,salsa=off,cairo_native=off,sled=off
+    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node0.json --committee /sequencer/config/committee.json --store /sequencer/db0 --parameters /sequencer/config/parameters.json
+
+  sequencer_node1:
+    <<: *sequencer
+    container_name: sequencer_node1
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.11
+    ports:
+      - 10001:10008
+      - 9001:9004
+    volumes:
+      - ./sequencer/config/sequencer_node1.json:/sequencer/config/sequencer_node1.json
+      - ./sequencer/config/committee.json:/sequencer/config/committee.json
+      - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
+    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node1.json --committee /sequencer/config/committee.json --store /sequencer/db1 --parameters /sequencer/config/parameters.json
+
+  sequencer_node2:
+    <<: *sequencer
+    container_name: sequencer_node2
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.12
+    ports:
+      - 10002:10008
+      - 9002:9004
+    volumes:
+      - ./sequencer/config/sequencer_node2.json:/sequencer/config/sequencer_node2.json
+      - ./sequencer/config/committee.json:/sequencer/config/committee.json
+      - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
+    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node2.json --committee /sequencer/config/committee.json --store /sequencer/db2 --parameters /sequencer/config/parameters.json
+
+  sequencer_node3:
+    <<: *sequencer
+    container_name: sequencer_node3
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.13
+    ports:
+      - 10003:10008
+      - 9003:9004
+    volumes:
+      - ./sequencer/config/sequencer_node3.json:/sequencer/config/sequencer_node3.json
+      - ./sequencer/config/committee.json:/sequencer/config/committee.json
+      - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
+    environment:
+      - RUST_LOG=info,salsa=off,cairo_native=off,sled=off
+    command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node3.json --committee /sequencer/config/committee.json --store /sequencer/db3 --parameters /sequencer/config/parameters.json
+
+  sequencer_client0:
+    <<: *sequencer
+    container_name: sequencer_client0
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.14
+    ports: []
+    volumes: []
+    environment: []
+    depends_on:
+      - sequencer_node0
+    command: sh -c 'sleep 15 && /sequencer/client 172.27.0.10:9004 --size 256 --rate 250 --timeout 1000 --running-time 10'
+
   watcher_prover:
     build: ./watcher_prover
-    ports:
-      - "4000:4000"
     environment:
-      - DATABASE_URL=ecto://postgres:postgres@postgres:5432/watcher_prover_dev
+      - DATABASE_URL=ecto://postgres:postgres@postgres_watcher_prover:5432/watcher_prover_dev
       - SECRET_KEY_BASE=IVx1FJb5Fg34MApqVRoSOFx/2PdNTnJRU5w1X/2A1G3E8qJKhLMGI5GJGPYglP1e
       - RPC_HOST=sequencer_node0
       - RPC_PORT=10008
       - PROVER_STORAGE=local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      - postgres
+      - postgres_watcher_prover
+      - sequencer_node0
     networks:
-      default:
+      frontend:
         aliases:
           - watcher
 
-  postgres:
+  postgres_watcher_prover:
     container_name: watcher_prover_dev_db
     image: postgres:15.3
-    ports:
-      - 5432:5432
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=watcher_prover_dev_db
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-      - pg_data:/var/lib/postgresql/data/
+      - pg_data_watcher_prover:/var/lib/postgresql/data/
+    ports:
+      - 5433:5432
     networks:
-      default:
+      frontend:
         aliases:
-          - postgres
+          - postgres_watcher_prover
+
+  madara_explorer:
+    build: ./madara_explorer
+    ports:
+      - "4000:4000"
+    environment:
+      - RPC_API_HOST=http://sequencer_node0:10008
+      - DATABASE_URL=ecto://postgres:postgres@172.27.0.30:5432/starknet_explorer_dev
+      - SECRET_KEY_BASE=IVx1FJb5Fg34MApqVRoSOFx/2PdNTnJRU5w1X/2A1G3E8qJKhLMGI5GJGPYglP1e
+      - PHX_HOST=localhost
+    depends_on:
+      - postgres_madara_explorer
+    networks:
+      frontend:
+        aliases:
+          - explorer
+
+  postgres_madara_explorer:
+    extends:
+      file: ./madara_explorer/docker-compose.yml
+      service: postgres
+    volumes:
+      - pg_data_madara_explorer:/var/lib/postgresql/data/
+    networks:
+      frontend:
+        ipv4_address: 172.27.0.30
 
 volumes:
-  pg_data:
+  pg_data_watcher_prover:
+  pg_data_madara_explorer:

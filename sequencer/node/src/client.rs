@@ -1,3 +1,4 @@
+use anyhow::bail;
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
@@ -7,7 +8,9 @@ use futures::future::join_all;
 use futures::sink::SinkExt as _;
 use log::{info, warn};
 use rand::Rng;
+use rpc_endpoint::rpc::InvokeTransaction;
 use rpc_endpoint::rpc::Transaction;
+use std::hash::Hash;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use tokio::time::{interval, sleep, Duration, Instant};
@@ -36,6 +39,9 @@ struct Cli {
     /// Network addresses that must be reachable before starting the benchmark.
     #[clap(short, long, value_parser, value_name = "[Addr]", multiple = true)]
     nodes: Vec<SocketAddr>,
+    /// Running time of the client in seconds.
+    #[clap(short, long, value_parser, value_name = "INT")]
+    running_time: Option<u8>,
 }
 
 #[tokio::main]
@@ -61,7 +67,7 @@ async fn main() -> Result<()> {
     client.wait().await;
 
     // Start the benchmark.
-    client.send().await.context("Failed to submit transactions")
+    client.send(cli.running_time).await.context("Failed to submit transactions")
 }
 
 struct Client {
@@ -73,7 +79,7 @@ struct Client {
 }
 
 impl Client {
-    pub async fn send(&self) -> Result<()> {
+    pub async fn send(&self, running_time_seconds: Option<u8>) -> Result<()> {
         const PRECISION: u64 = 20; // Sample precision.
         const BURST_DURATION: u64 = 1000 / PRECISION;
 
@@ -100,31 +106,38 @@ impl Client {
 
         // NOTE: This log entry is used to compute performance.
         info!("Start sending transactions");
+        let starting_time = Instant::now();
+        let mut internal_counter = 0;
 
         'main: loop {
             interval.as_mut().tick().await;
             let now = Instant::now();
-
-            let mut internal_counter = 0;
+            internal_counter = 0;
+            
             for x in 0..burst {
-                if x == counter % burst {
-                    // NOTE: This log entry is used to compute performance.
-                    info!("Sending sample transaction {}", counter);
-
-                    tx.put_u8(0u8); // Sample txs start with 0.
-                    tx.put_u64(counter); // This counter identifies the tx.
+                let execute_fib: bool = rand::random();
+                let invoke_transaction = Transaction::new_invoke(counter + internal_counter, r, execute_fib);
+                if let Transaction::Invoke(InvokeTransaction::V1(transaction)) = &invoke_transaction {
+                    if x == counter % burst {
+                        info!("Sending sampled transaction - Transaction ID: 0x{}", transaction.transaction_hash.to_str_radix(16));
+    
+                        // NOTE: This log entry is used to compute performance.
+    
+                        tx.put_u8(0u8); // Sample txs start with 0.
+                        tx.put_u64(counter); // This counter identifies the tx.
+                    } else {
+                        r += 1;
+    
+                        tx.put_u8(1u8); // Standard txs start with 1.
+                        tx.put_u64(r); // Ensures all clients send different txs.
+                    };
+                    for b in invoke_transaction.as_bytes() {
+                        tx.put_u8(b);
+                    }
                 } else {
-                    r += 1;
-
-                    tx.put_u8(1u8); // Standard txs start with 1.
-                    tx.put_u64(r); // Ensures all clients send different txs.
+                    bail!("Expected transaction to be InvokeTransaction::V1");
                 };
 
-                let execute_fib: bool = rand::random();
-                let bytes = Transaction::new_invoke_as_bytes(counter + internal_counter, r, execute_fib);
-                for b in bytes {
-                    tx.put_u8(b);
-                }
                 if self.size < tx.len() {
                     warn!("Transaction size too big");
                     break 'main;
@@ -141,6 +154,13 @@ impl Client {
             if now.elapsed().as_millis() > BURST_DURATION as u128 {
                 // NOTE: This log entry is used to compute performance.
                 warn!("Transaction rate too high for this client");
+            }
+            if let Some(time) = running_time_seconds  {
+                if starting_time.elapsed().as_secs() > time as u64 {
+                    info!("Sent {} transactions to node", internal_counter + counter);
+                
+                    return Ok(());
+                }
             }
             counter += 1;
         }
@@ -172,6 +192,8 @@ mod test {
     use rand::Rng;
     use rpc_endpoint::rpc::Transaction;
 
+    use crate::Client;
+
     #[test]
     fn test_serialize_transaction() {
         let burst = 12;
@@ -190,7 +212,7 @@ mod test {
                 tx.put_u8(1u8); // Standard txs start with 1.
                 tx.put_u64(r); // Ensures all clients send different txs.
             };
-            let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371);
+            let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371, true);
             for b in bytes {
                 tx.put_u8(b);
             }

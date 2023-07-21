@@ -32,3 +32,9 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+docker_volumes/
+
+madara_explorer/
+
+.DS_Store
