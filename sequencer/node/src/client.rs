@@ -67,7 +67,10 @@ async fn main() -> Result<()> {
     client.wait().await;
 
     // Start the benchmark.
-    client.send(cli.running_time).await.context("Failed to submit transactions")
+    client
+        .send(cli.running_time)
+        .await
+        .context("Failed to submit transactions")
 }
 
 struct Client {
@@ -113,21 +116,27 @@ impl Client {
             interval.as_mut().tick().await;
             let now = Instant::now();
             internal_counter = 0;
-            
+
             for x in 0..burst {
                 let execute_fib: bool = rand::random();
-                let invoke_transaction = Transaction::new_invoke(counter + internal_counter, r, execute_fib);
-                if let Transaction::Invoke(InvokeTransaction::V1(transaction)) = &invoke_transaction {
+                let invoke_transaction =
+                    Transaction::new_invoke(counter + internal_counter, r, execute_fib);
+                if let Transaction::Invoke(InvokeTransaction::V1(transaction)) = &invoke_transaction
+                {
                     if x == counter % burst {
-                        info!("Sending sampled transaction - Transaction ID: 0x{}", transaction.transaction_hash.to_str_radix(16));
-    
+                        info!(
+                            "Sending sample transaction {} - Transaction ID: 0x{}",
+                            counter,
+                            transaction.transaction_hash.to_str_radix(16)
+                        );
+
                         // NOTE: This log entry is used to compute performance.
-    
+
                         tx.put_u8(0u8); // Sample txs start with 0.
                         tx.put_u64(counter); // This counter identifies the tx.
                     } else {
                         r += 1;
-    
+
                         tx.put_u8(1u8); // Standard txs start with 1.
                         tx.put_u64(r); // Ensures all clients send different txs.
                     };
@@ -149,13 +158,13 @@ impl Client {
                     warn!("Failed to send transaction: {}", e);
                     break 'main;
                 }
-                internal_counter +=1;
+                internal_counter += 1;
             }
             if now.elapsed().as_millis() > BURST_DURATION as u128 {
                 // NOTE: This log entry is used to compute performance.
                 warn!("Transaction rate too high for this client");
             }
-            if let Some(time) = running_time_seconds  {
+            if let Some(time) = running_time_seconds {
                 if starting_time.elapsed().as_secs() > time as u64 {
                     info!("Sent {} transactions to node", internal_counter + counter);
                 
