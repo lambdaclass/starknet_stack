@@ -36,13 +36,16 @@ test:
 	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo test
 
 generate-nodes-keys:
-	if [ ! -d config/ ]; then \
-		mkdir config/; \
+	@if [ -d ./config/committee.json ]; then \
+		rm -r ./config/committee.json; \
 	fi
 	@for node in $(shell seq 0 3); do \
 		echo Generating keys for sequencer node $${node}: sequencer/config/sequencer_node$${node}.json; \
 		docker compose run sequencer_node0 bash -c "/sequencer/node keys --filename ./sequencer_node$${node}.json && cat ./sequencer_node$${node}.json" > ./config/sequencer_node$${node}.json; \
 	done
+	@if [ -d ./config/committee.json ]; then \
+		rm -r ./config/committee.json; \
+	fi
 
 generate-committee-for-docker: generate-nodes-keys
 	@echo "Generating sequencer committee: sequencer/config/committee.json"
