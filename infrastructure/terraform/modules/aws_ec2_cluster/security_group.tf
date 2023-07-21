@@ -16,17 +16,6 @@ resource "aws_security_group_rule" "outbound_traffic" {
   ipv6_cidr_blocks = ["::/0"]
 }
 
-resource "aws_security_group_rule" "ssh" {
-  security_group_id = aws_security_group.nodes.id
-
-  description = "Allow SSH access"
-  type        = "ingress"
-  from_port   = 22
-  to_port     = 22
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-}
-
 resource "aws_security_group_rule" "internal_traffic" {
   security_group_id = aws_security_group.nodes.id
 
@@ -38,13 +27,35 @@ resource "aws_security_group_rule" "internal_traffic" {
   source_security_group_id = aws_security_group.nodes.id
 }
 
-resource "aws_security_group_rule" "other_port" {
+resource "aws_security_group_rule" "ssh" {
   security_group_id = aws_security_group.nodes.id
 
-  description = "Other open port"
+  description = "Allow SSH access"
   type        = "ingress"
-  from_port   = 1234
-  to_port     = 1234
+  from_port   = 22
+  to_port     = 22
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "rpc" {
+  security_group_id = aws_security_group.nodes.id
+
+  description = "Allow RPC access"
+  type        = "ingress"
+  from_port   = 10008
+  to_port     = 10008
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "transaction" {
+  security_group_id = aws_security_group.nodes.id
+
+  description = "Allow transaction address access"
+  type        = "ingress"
+  from_port   = 9004
+  to_port     = 9004
   protocol    = "tcp"
   cidr_blocks = ["0.0.0.0/0"]
 }
