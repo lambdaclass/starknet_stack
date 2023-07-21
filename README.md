@@ -1,5 +1,6 @@
 <div align="center">
 <img src="./kraken.png" height="150">
+</div>
 
 # Starknet Stack
 
