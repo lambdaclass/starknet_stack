@@ -7,7 +7,7 @@ ip_list = argv[1:]
 
 node = {
     "ansible_host": "{IP}",
-    "ansible_user": "admin", 
+    "ansible_user": "admin",
     "ansible_python_interpreter": "/usr/bin/python3",
     "ansible_ssh_private_key_file": "{ANSIBLE_SSH_PKEY}",
     "ansible_ssh_extra_args": "-o StrictHostKeyChecking=no"
