@@ -2,7 +2,7 @@
 
 clone-madara-explorer:
 	if [ ! -d "madara_explorer" ]; then \
-		git clone --recurse-submodules https://github.com/lambdaclass/madara_explorer.git --branch main; \
+		git clone --recurse-submodules https://github.com/lambdaclass/madara_explorer.git --branch main && git submodule update; \
 	fi
 
 docker-build-sequencer:
