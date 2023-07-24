@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./kraken.jpeg" height="250">
+<img src="./kraken.jpeg" height="275">
 </div>
 
 # Starknet Stack
@@ -18,7 +18,7 @@ flowchart LR
 		C("Consensus") ==x|"tx settlement"| B("Cairo Native")
 		B -.->|"tx execution info"| C
 	end
-    Sequencer <===>|"Blockchain data"| Explorer("Web explorer + verifier")
+    Sequencer ===>|"Blockchain data"| Explorer("Web explorer + verifier")
     Db <-.-> |"Verifiable proofs"| Explorer
     
 `````
