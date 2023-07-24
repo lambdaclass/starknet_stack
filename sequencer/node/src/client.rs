@@ -153,16 +153,11 @@ impl Client {
                         tx.put_u8(b);
                     }
                 } else {
-                    r += 1;
-                    tx.put_u8(1u8); // Standard txs start with 1.
-                    tx.put_u64(r)
+                    bail!("Expected transaction to be InvokeTransaction::V1");
                 };
-
-                for b in invoke_transaction.as_bytes() {
-                    tx.put_u8(b);
-                }
+                
                 if self.size < tx.len() {
-                    warn!("Transaction size too big");
+                    warn!("Transaction size too big. Tx size is: {}", tx.len());
                     break 'main;
                 }
                 tx.resize(self.size, 0u8);
