@@ -646,7 +646,7 @@ impl Transaction {
     ///
     /// A vector of bytes representing the transaction.
     /// if `send_fib` is true, then the execution represents fib(), otherwise it represents fact()
-    pub fn new_invoke_as_bytes(nonce: u64, arbitrary_calldata: u16, send_fib: bool) -> Vec<u8> {
+    pub fn new_invoke(nonce: u64, arbitrary_calldata: u64, send_fib: bool) -> Transaction {
         let send_fib_felt = if send_fib {
             Felt252::new(0)
         } else {
@@ -663,7 +663,7 @@ impl Transaction {
             calldata: vec![Felt252::new(arbitrary_calldata), send_fib_felt],
         };
         invoke_tx_v1.transaction_hash = Felt252::new(invoke_tx_v1.calculate_hash());
-        Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1)).as_bytes()
+        Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1))
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {

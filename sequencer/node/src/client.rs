@@ -11,7 +11,6 @@ use log::{info, warn};
 use rand::Rng;
 use rpc_endpoint::rpc::InvokeTransaction;
 use rpc_endpoint::rpc::Transaction;
-use std::hash::Hash;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use tokio::time::{interval, sleep, Duration, Instant};
@@ -111,7 +110,7 @@ impl Client {
         // NOTE: This log entry is used to compute performance.
         info!("Start sending transactions");
         let starting_time = Instant::now();
-        let mut internal_counter = 0;
+        let mut internal_counter: u64;
 
         'main: loop {
             interval.as_mut().tick().await;
@@ -119,20 +118,8 @@ impl Client {
             internal_counter = 0;
 
             for x in 0..burst {
-                if x == counter % burst {
-                    // NOTE: This log entry is used to compute performance.
-                    info!("Sending sample transaction {}", counter);
-                    tx.put_u8(0u8); // Sample txs start with 0.
-                    tx.put_u64(counter)
-                } else {
-                    r += 1;
-                    tx.put_u8(1u8); // Standard txs start with 1.
-                    tx.put_u64(r)
-                };
-
                 let execute_fib: bool = rand::random();
                 let rand_program_input: u16 = rand::thread_rng().gen();
-
                 // This is done to avoid error while executing big numbers in the contract.
                 // It should change in the future
                 let program_input: u16 = if execute_fib {
@@ -141,12 +128,37 @@ impl Client {
                     rand_program_input % 2000 + 1
                 };
 
-                let bytes = Transaction::new_invoke_as_bytes(
-                    counter + internal_counter,
-                    program_input,
-                    execute_fib,
-                );
-                for b in bytes {
+                let invoke_transaction =
+                    Transaction::new_invoke(counter + internal_counter, program_input.into(), execute_fib);
+                if let Transaction::Invoke(InvokeTransaction::V1(transaction)) = &invoke_transaction
+                {
+                    if x == counter % burst {
+                        info!(
+                            "Sending sample transaction {} - Transaction ID: 0x{}",
+                            counter,
+                            transaction.transaction_hash.to_str_radix(16)
+                        );
+
+                        // NOTE: This log entry is used to compute performance.
+
+                        tx.put_u8(0u8); // Sample txs start with 0.
+                        tx.put_u64(counter); // This counter identifies the tx.
+                    } else {
+                        r += 1;
+
+                        tx.put_u8(1u8); // Standard txs start with 1.
+                        tx.put_u64(r); // Ensures all clients send different txs.
+                    };
+                    for b in invoke_transaction.as_bytes() {
+                        tx.put_u8(b);
+                    }
+                } else {
+                    r += 1;
+                    tx.put_u8(1u8); // Standard txs start with 1.
+                    tx.put_u64(r)
+                };
+
+                for b in invoke_transaction.as_bytes() {
                     tx.put_u8(b);
                 }
                 if self.size < tx.len() {

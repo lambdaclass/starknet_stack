@@ -2,9 +2,9 @@ use crate::rpc::{
     serializable_types::FeltParam, BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
-    EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionReceipt,
-    InvokeTransactionResult, MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs,
-    MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
+    EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
+    MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt,
+    StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
 };
 use cairo_felt::Felt252;
 use jsonrpsee::{
@@ -258,25 +258,19 @@ impl StarknetRpcApiServer for StarknetBackend {
         transaction_hash: FeltParam,
     ) -> RpcResult<MaybePendingTransactionReceipt> {
         // necessary destructuring so that we can use a hex felt as a param
-        let deserialized_tx = self.get_transaction_by_hash(transaction_hash);
+        let transaction_hash = transaction_hash.0;
 
-        match deserialized_tx {
-            Ok(Transaction::Invoke(InvokeTransaction::V1(tx))) => {
-                let invoke_tx_receipt = InvokeTransactionReceipt {
-                    transaction_hash: tx.transaction_hash,
-                    actual_fee: tx.max_fee,
-                    status: crate::rpc::TransactionStatus::AcceptedOnL2,
-                    block_hash: Felt252::new(12315),
-                    block_number: 24123u64,
-                    messages_sent: vec![],
-                    events: vec![],
-                };
-
-                Ok(MaybePendingTransactionReceipt::Receipt(
-                    crate::rpc::TransactionReceipt::Invoke(invoke_tx_receipt),
-                ))
+        let invoke_tx_receipt: MaybePendingTransactionReceipt = match &self
+            .store
+            .get_transaction_receipt(transaction_hash.to_bytes_be())
+        {
+            Some(tx_receipt) => {
+                let tx_receipt = String::from_utf8(tx_receipt.to_vec()).unwrap();
+                serde_json::from_str(&tx_receipt).unwrap()
             }
-            _ => todo!("Transaction receipts or transaction not found"),
-        }
+            None => todo!(),
+        };
+
+        Ok(invoke_tx_receipt)
     }
 }
