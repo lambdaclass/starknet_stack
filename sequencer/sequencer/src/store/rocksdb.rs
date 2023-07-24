@@ -153,6 +153,18 @@ impl StoreEngine for Store {
     fn get_value(&self, _key: Key) -> Option<Value> {
         todo!()
     }
+
+    fn add_transaction_receipt(
+        &mut self,
+        _transaction_id: Key,
+        _transaction_receipt: Value,
+    ) -> Result<()> {
+        todo!()
+    }
+
+    fn get_transaction_receipt(&self, _transaction_id: Key) -> Option<Value> {
+        todo!()
+    }
 }
 
 impl Debug for Store {

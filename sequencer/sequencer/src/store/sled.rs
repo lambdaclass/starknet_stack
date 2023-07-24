@@ -12,6 +12,7 @@ pub struct Store {
     blocks_by_hash: Db,
     blocks_by_height: Db,
     values: Db,
+    transaction_receipts: Db,
 }
 
 impl Store {
@@ -22,6 +23,7 @@ impl Store {
             blocks_by_hash: sled::open(format!("{path}.blocks1.db")).unwrap(),
             blocks_by_height: sled::open(format!("{path}.blocks2.db")).unwrap(),
             values: sled::open(format!("{path}.values.db")).unwrap(),
+            transaction_receipts: sled::open(format!("{path}.transaction_receipts.db")).unwrap(),
         }
     }
 }
@@ -107,6 +109,24 @@ impl StoreEngine for Store {
 
     fn get_value(&self, key: Key) -> Option<Value> {
         self.values.get(key).unwrap().map(|value| value.to_vec())
+    }
+
+    fn add_transaction_receipt(
+        &mut self,
+        transaction_receipt_id: Key,
+        transaction_receipt: Value,
+    ) -> Result<()> {
+        let _ = self
+            .transaction_receipts
+            .insert(transaction_receipt_id, transaction_receipt);
+        Ok(())
+    }
+
+    fn get_transaction_receipt(&self, transaction_receipt_id: Key) -> Option<Value> {
+        self.transaction_receipts
+            .get(transaction_receipt_id)
+            .unwrap()
+            .map(|value| value.to_vec())
     }
 }
 
