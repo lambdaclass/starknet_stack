@@ -44,7 +44,7 @@ pub enum MaybePendingBlockWithTxs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[serde(tag = "receipt_type")]
 pub enum MaybePendingTransactionReceipt {
     Receipt(TransactionReceipt),
     PendingReceipt(PendingTransactionReceipt),
@@ -206,7 +206,7 @@ pub enum BroadcastedDeclareTransaction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "transaction_type")]
 pub enum TransactionReceipt {
     #[serde(rename = "INVOKE")]
     Invoke(InvokeTransactionReceipt),
