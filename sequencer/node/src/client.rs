@@ -166,7 +166,7 @@ impl Client {
             if let Some(time) = running_time_seconds {
                 if starting_time.elapsed().as_secs() > time as u64 {
                     info!("Sent {} transactions to node", internal_counter + counter);
-                
+
                     return Ok(());
                 }
             }
