@@ -60,7 +60,7 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 - When the watcher-prover gets a new block/transaction, it proves the execution through the CairoVM and the LambdaWorks prover
 - Proofs get saved either on the file system or on S3 (by default, the filesystem)
 - On the explorer, you can browse blocks and see the transactions they include, along with the status of its proof:
-	- When looking at a block, the `Local verification` field indicates whether the proof is available and if it has been verified on the browser. If, after waiting a few seconds, the field says `Verified`, it means the explorer has retrieved the proof and it has been verified on the browser. If it's `Pending`, the proof has not been made available by the watcher prover
+	- The `Local verification` field indicates whether the proof is available and if it has been verified on the browser. If, after waiting a few seconds, the field says `Verified`, it means the explorer has retrieved the proof and it has been verified on the browser. If it's `Pending`, the proof has not been made available by the watcher prover
 
 ## Trust assumptions
 
