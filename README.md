@@ -1,3 +1,7 @@
+<div align="center">
+<img src="./kraken.jpeg" height="250">
+</div>
+
 # Starknet Stack
 
 `````mermaid
@@ -31,10 +35,42 @@ Additionally, you can also explore the blockchain with [Starknet Stack Explorer]
 
 ## Quick start
 
+To run this locally through Docker, do:
 
+```
+make run-local
+```
+
+This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. Before finishing, a client that sends a bunch of transactions is executed. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints appropriately. You can also access the Madara explorer at http://localhost:4000/ and check out the blockchain. 
+
+When finished, don't forget to stop the containers by doing `make stop`.
+
+### Send transactions
+
+A mentioned above, as part of `make run-local`, a client that sends random transactions to the sequencer will run for a short while in order to populate the blockchain. You can also run the client on demand (`make run-client`).
+
+### Flow
+
+- The client sends random invoke transactions (either a fibonacci or factorial execution) to the consensus nodes which execute them with Cairo Native
+- Consensus nodes vote on blocks and commit them accordingly. If no transactions are sent, empty blocks are created regularly
+- In parallel, the watcher-prover is querying the RPC endpoints and checking transactions on blocks
+- When the watcher-prover gets a new block/transaction, it proves the execution through the CairoVM and the LambdaWorks prover
+- Proofs get saved either on the file system or on S3 (by default, the filesystem)
+- On the explorer, you can browse blocks and see the transactions they include
 
 ## Trust assumptions
 
-- Currently there is no way to validate whether a proof of an execution is related to a specific transaction. There are currently plans to enable this.
-- The fact that the prover pool requests the blocks/transactions from the sequencer means there needs to be trust between them. Running a trusted node alongside the proving pool is encouraged for this. Notice that because we use BFT consensus, the alternative could be to query 2/3 of the nodes in order to ensure consensus, but this has its own set of downsides.
+- There is currently no way to validate whether a proof of an execution is related to a specific transaction. This is planned for the future
+- The fact that the prover pool requests the blocks/transactions from the sequencer means that there needs to be trust between them, which is why running a trusted node alongside the proving pool is encouraged. Alternatively, because we use BFT consensus, the user could also query 2/3 of the nodes in order to validate consensus (although this has its own set of downsides)
+
+## Missing Features
+- Support for ERC-20 using Starknet in Rust with Cairo Native
+- One proof per block including all transactions
+- Include missing builtins to the Stark Prover
+- Account Support
+- Prove StarknetOS
+- Native tokens for Proof of Stake
+- Support for multiple Consensus Algorithms
+- Add generalized program support (programs are not currently stored, only fibonacci/factorial are executed)
+
 

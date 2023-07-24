@@ -1,6 +1,5 @@
 use lambdaworks_math::field::fields::fft_friendly::stark_252_prime_field::Stark252PrimeField;
-use lambdaworks_math::traits::ByteConversion;
-use lambdaworks_math::traits::{Deserializable, Serializable};
+use lambdaworks_math::traits::Deserializable;
 use lambdaworks_stark::cairo::air::generate_cairo_proof;
 use lambdaworks_stark::cairo::air::verify_cairo_proof;
 use lambdaworks_stark::cairo::air::{CairoAIR, PublicInputs};
@@ -12,6 +11,10 @@ use rustler::Binary;
 
 #[rustler::nif]
 /// Loads the program in path, runs it with the Cairo VM, and makes a proof of it
+///
+/// # Returns
+///
+/// (proof_bytes, public_inputs_bytes)
 pub fn run_program_and_get_proof(program_content_binary: Binary) -> (Vec<u8>, Vec<u8>) {
     let program_content: &[u8] = &*program_content_binary;
     run_program_and_get_proof_internal(program_content)
@@ -27,17 +30,19 @@ pub fn run_program_and_get_proof_internal(program_content: &[u8]) -> (Vec<u8>, V
 
     let proof = generate_cairo_proof(&main_trace, &pub_inputs, &proof_options).unwrap();
 
-    let proof_bytes: Vec<u8> = proof.serialize();
-    let public_inputs_bytes = pub_inputs.serialize();
+    let proof_bytes = serde_cbor::to_vec(&proof).unwrap();
+    let public_inputs_bytes = serde_cbor::to_vec(&pub_inputs).unwrap();
+
     (proof_bytes, public_inputs_bytes)
 }
 
 pub fn verify_internal(proof_bytes: &[u8], public_inputs_bytes: &[u8]) -> bool {
     // At this point, the verifier only knows about the serialized proof, the proof options
     // and the public inputs.
-    let proof = StarkProof::<Stark252PrimeField>::deserialize(&proof_bytes).unwrap();
+
+    let proof: StarkProof<Stark252PrimeField> = serde_cbor::from_slice(proof_bytes).unwrap();
     let proof_options = ProofOptions::default_test_options();
-    let public_inputs = PublicInputs::deserialize(public_inputs_bytes).unwrap();
+    let public_inputs: PublicInputs = serde_cbor::from_slice(public_inputs_bytes).unwrap();
 
     verify_cairo_proof(&proof, &public_inputs, &proof_options)
 }

@@ -53,7 +53,7 @@ defmodule WatcherProver.Poller do
       # TODO: fetch executions from the invoke transactions for this block to prove
       {:ok, program} = File.read("./programs/fibonacci_cairo1.casm")
 
-      {proof, _public_inputs} = run_proofs(program)
+      {proof, public_inputs} = run_proofs(program)
 
       Logger.info("Generated block proof #{inspect(proof)}")
 
@@ -62,7 +62,14 @@ defmodule WatcherProver.Poller do
 
       case prover_storage do
         "s3" ->
-          :ok = S3.upload_object!(:erlang.list_to_binary(proof), block["block_hash"])
+          :ok = S3.upload_object!(:erlang.list_to_binary(proof), "#{block["block_hash"]}-proof")
+
+          :ok =
+            S3.upload_object!(
+              :erlang.list_to_binary(public_inputs),
+              "#{block["block_hash"]}-public_inputs"
+            )
+
           Logger.info("Uploaded proof of block with id #{block_hash}")
 
         _ ->

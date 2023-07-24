@@ -663,8 +663,11 @@ impl Transaction {
             calldata: vec![Felt252::new(arbitrary_calldata), send_fib_felt],
         };
         invoke_tx_v1.transaction_hash = Felt252::new(invoke_tx_v1.calculate_hash());
-        let full_transaction = Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1));
-        let starknet_transaction_str = serde_json::to_string(&full_transaction).unwrap();
+        Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1)).as_bytes()
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let starknet_transaction_str = serde_json::to_string(self).unwrap();
         starknet_transaction_str.as_bytes().to_owned()
     }
 }
