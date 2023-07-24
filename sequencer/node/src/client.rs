@@ -100,7 +100,7 @@ impl Client {
         let burst = self.rate / PRECISION;
         let mut tx = BytesMut::with_capacity(self.size);
         let mut counter = 0;
-        // TODO: improve the random input sent to execute the fact/fib functions.
+        let mut r: u64 = rand::thread_rng().gen();
         let mut transport = Framed::new(stream, LengthDelimitedCodec::new());
         let interval = interval(Duration::from_millis(BURST_DURATION));
         tokio::pin!(interval);
@@ -120,8 +120,12 @@ impl Client {
                     // NOTE: This log entry is used to compute performance.
                     info!("Sending sample transaction {}", counter);
                     tx.put_u8(0u8); // Sample txs start with 0.
+                    tx.put_u64(counter)
                 } else {
+                    r += 1;
                     tx.put_u8(1u8); // Standard txs start with 1.
+                    tx.put_u64(r)
+
                 };
 
                 let execute_fib: bool = rand::random();
