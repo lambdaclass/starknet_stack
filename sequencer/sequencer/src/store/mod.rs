@@ -26,6 +26,12 @@ pub trait StoreEngine: Debug + Send {
     fn get_block_by_height(&self, block_height: Key) -> Option<Value>;
     fn set_value(&mut self, key: Key, value: Value) -> Result<()>;
     fn get_value(&self, key: Key) -> Option<Value>;
+    fn add_transaction_receipt(
+        &mut self,
+        transaction_id: Key,
+        transaction_receipt: Value,
+    ) -> Result<()>;
+    fn get_transaction_receipt(&self, transaction_id: Key) -> Option<Value>;
 }
 
 #[derive(Debug, Clone)]
@@ -133,5 +139,25 @@ impl Store {
             .unwrap()
             .get_value(BLOCK_HEIGHT.into())
             .map(|value| u64::from_be_bytes(value.as_slice()[..8].try_into().unwrap()))
+    }
+
+    pub fn add_transaction_receipt(
+        &mut self,
+        transaction_receipt_id: Key,
+        transaction_receipt: Value,
+    ) -> Result<()> {
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .add_transaction_receipt(transaction_receipt_id, transaction_receipt)
+    }
+
+    pub fn get_transaction_receipt(&self, transaction_receipt_id: Key) -> Option<Value> {
+        self.engine
+            .clone()
+            .lock()
+            .unwrap()
+            .get_transaction_receipt(transaction_receipt_id)
     }
 }
