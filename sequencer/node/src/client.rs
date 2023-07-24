@@ -128,8 +128,11 @@ impl Client {
                     rand_program_input % 2000 + 1
                 };
 
-                let invoke_transaction =
-                    Transaction::new_invoke(counter + internal_counter, program_input.into(), execute_fib);
+                let invoke_transaction = Transaction::new_invoke(
+                    counter + internal_counter,
+                    program_input.into(),
+                    execute_fib,
+                );
                 if let Transaction::Invoke(InvokeTransaction::V1(transaction)) = &invoke_transaction
                 {
                     if x == counter % burst {
@@ -155,7 +158,7 @@ impl Client {
                 } else {
                     bail!("Expected transaction to be InvokeTransaction::V1");
                 };
-                
+
                 if self.size < tx.len() {
                     warn!("Transaction size too big. Tx size is: {}", tx.len());
                     break 'main;
