@@ -646,12 +646,8 @@ impl Transaction {
     ///
     /// A vector of bytes representing the transaction.
     /// if `send_fib` is true, then the execution represents fib(), otherwise it represents fact()
-    pub fn new_invoke_as_bytes(nonce: u64, arbitrary_calldata: u64, send_fib: bool) -> Vec<u8> {
-        let send_fib_felt = if send_fib {
-            Felt252::new(0)
-        } else {
-            Felt252::new(1)
-        };
+    pub fn new_invoke(nonce: u64, arbitrary_calldata: u64, send_fib: bool) -> Transaction {
+        let send_fib_felt = if send_fib {Felt252::new(0)} else {Felt252::new(1)};
 
         // TODO: these are default values, need to be changed
         let mut invoke_tx_v1 = InvokeTransactionV1 {
@@ -663,8 +659,11 @@ impl Transaction {
             calldata: vec![Felt252::new(arbitrary_calldata), send_fib_felt],
         };
         invoke_tx_v1.transaction_hash = Felt252::new(invoke_tx_v1.calculate_hash());
-        let full_transaction = Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1));
-        let starknet_transaction_str = serde_json::to_string(&full_transaction).unwrap();
+        Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1))
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let starknet_transaction_str = serde_json::to_string(self).unwrap();
         starknet_transaction_str.as_bytes().to_owned()
     }
 }

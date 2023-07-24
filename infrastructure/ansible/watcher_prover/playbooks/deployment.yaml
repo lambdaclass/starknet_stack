@@ -1,0 +1,88 @@
+- name: Deploy new version
+  hosts: watcher_prover
+  gather_facts: false
+  any_errors_fatal: true
+
+  pre_tasks:
+
+  - name: Delete tmp repo
+    file:
+      state: absent
+      path: /home/{{ ansible_user }}/tmp/starknet_stack
+
+  - name: Clone repo in tmp dir
+    ansible.builtin.git:
+      repo: https://github.com/lambdaclass/starknet_stack
+      version: "{{ lookup('ansible.builtin.env', 'GIT_BRANCH') }}"
+      dest: /home/{{ ansible_user }}/tmp/starknet_stack
+      ssh_opts: "-o StrictHostKeyChecking=no"
+    register: clone_output
+
+  - name: Print clone repo output
+    debug: msg="{{ clone_output }}"
+
+  - name: Build
+    ansible.builtin.shell: |
+      set -ex
+      export PATH=${PATH}:/home/admin/.cargo/bin
+      mix local.hex --force
+      mix local.rebar --force
+      mix deps.get --only $MIX_ENV
+      mix deps.compile
+      mix assets.deploy
+      mix phx.digest
+      mix compile
+      mix release
+      mix phx.gen.release
+    environment:
+      MIX_ENV: prod
+    args:
+      chdir: /home/{{ ansible_user }}/tmp/starknet_stack/watcher_prover
+    register: build_output
+
+  - debug: msg="{{ build_output.stdout_lines + [ build_output.stderr_lines ] }}"
+
+  - name: Delete old repo
+    ansible.builtin.file:
+      state: absent
+      path: /home/{{ ansible_user }}/starknet_stack
+
+  - name: Copy repo from tmp dir
+    ansible.builtin.copy:
+      remote_src: true
+      src: /home/{{ ansible_user }}/tmp/starknet_stack
+      dest: /home/{{ ansible_user }}/
+
+  - name: Create .env file
+    ansible.builtin.template:
+      src: .env.j2
+      dest: /home/{{ ansible_user }}/.env
+    vars:
+      secret_key_base: "{{ lookup('ansible.builtin.env', 'SECRET_KEY_BASE') }}"
+      database_url: "{{ lookup('ansible.builtin.env', 'DATABASE_URL') }}"
+      rpc_host: "{{ lookup('ansible.builtin.env', 'RPC_HOST') }}"
+      rpc_port: "{{ lookup('ansible.builtin.env', 'RPC_PORT') }}"
+      prover_storage: "{{ lookup('ansible.builtin.env', 'PROVER_STORAGE') }}"
+      phx_host: "{{ lookup('ansible.builtin.env', 'PHX_HOST') }}"
+      phx_server: "{{ lookup('ansible.builtin.env', 'PHX_SERVER') }}"
+      aws_access_key_id: "{{ lookup('ansible.builtin.env', 'AWS_ACCESS_KEY_ID') }}"
+      aws_secret_access_key: "{{ lookup('ansible.builtin.env', 'AWS_SECRET_ACCESS_KEY') }}"
+      aws_region: "{{ lookup('ansible.builtin.env', 'AWS_REGION') }}"
+
+  - name: Create user systemd directory
+    ansible.builtin.file:
+      state: directory
+      path: /home/{{ ansible_user }}/.config/systemd/user
+
+  - name: Install systemd service
+    ansible.builtin.template:
+      src: watcher_prover.service.j2
+      dest: /home/{{ ansible_user }}/.config/systemd/user/watcher_prover.service
+
+  - name: Restart watcher_prover service
+    ansible.builtin.systemd:
+      scope: user
+      state: restarted
+      daemon_reload: true
+      enabled: true
+      name: watcher_prover
