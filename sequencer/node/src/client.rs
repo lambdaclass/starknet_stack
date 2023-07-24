@@ -68,7 +68,10 @@ async fn main() -> Result<()> {
     client.wait().await;
 
     // Start the benchmark.
-    client.send(cli.running_time).await.context("Failed to submit transactions")
+    client
+        .send(cli.running_time)
+        .await
+        .context("Failed to submit transactions")
 }
 
 struct Client {
@@ -114,7 +117,7 @@ impl Client {
             interval.as_mut().tick().await;
             let now = Instant::now();
             internal_counter = 0;
-            
+
             for x in 0..burst {
                 if x == counter % burst {
                     // NOTE: This log entry is used to compute performance.
@@ -125,7 +128,6 @@ impl Client {
                     r += 1;
                     tx.put_u8(1u8); // Standard txs start with 1.
                     tx.put_u64(r)
-
                 };
 
                 let execute_fib: bool = rand::random();
@@ -164,10 +166,10 @@ impl Client {
                 // NOTE: This log entry is used to compute performance.
                 warn!("Transaction rate too high for this client");
             }
-            if let Some(time) = running_time_seconds  {
+            if let Some(time) = running_time_seconds {
                 if starting_time.elapsed().as_secs() > time as u64 {
                     info!("Sent {} transactions to node", internal_counter + counter);
-                
+
                     return Ok(());
                 }
             }
