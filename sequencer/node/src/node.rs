@@ -301,10 +301,8 @@ impl Node {
                                         .calldata
                                         .first()
                                         .expect("calldata was not correctly set");
-                                    let n_in_bytes =
-                                        program_input.to_be_bytes()[24..].try_into().unwrap();
                                     let n: usize =
-                                        u64::from_be_bytes(n_in_bytes).try_into().unwrap();
+                                        program_input.to_le_digits()[0].try_into().unwrap();
 
                                     if is_fib {
                                         self.execution_program.execute_fibonacci(0, 1, n);
