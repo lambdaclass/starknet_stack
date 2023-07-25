@@ -1,9 +1,11 @@
 use super::{Key, StoreEngine, Value};
 use anyhow::{anyhow, Result};
+use cairo_felt::Felt252;
 use std::fmt::Debug;
 use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
 use std::thread;
 use tracing::log::error;
+use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction, MaybePendingTransactionReceipt};
 
 #[derive(Debug)]
 enum StoreCommand {
@@ -96,43 +98,51 @@ impl StoreEngine for Store {
         reply_receiver.recv().expect("error").expect("Other error")
     }
 
-    fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
+    fn add_transaction(&mut self, tx: Transaction) -> Result<()> {
         let (reply_sender, reply_receiver) = sync_channel(0);
-
-        self.command_sender.send(StoreCommand::Put(
-            DbSelector::Programs,
-            transaction_id,
-            transaction,
-            reply_sender,
-        ))?;
-
-        reply_receiver.recv()?
+        let tx_serialized: Vec<u8> = serde_json::to_string(&tx).unwrap().as_bytes().to_vec();
+        match tx {
+            Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {
+                self.command_sender.send(StoreCommand::Put(
+                    DbSelector::Transactions,
+                    invoke_tx.transaction_hash.to_bytes_be(),
+                    tx_serialized,
+                    reply_sender,
+                ))?;
+                reply_receiver.recv()?
+            }
+            _ => todo!(),
+        }
     }
 
-    fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
+    fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>> {
         let (reply_sender, reply_receiver) = sync_channel(0);
 
         self.command_sender
             .send(StoreCommand::Get(
                 DbSelector::Transactions,
-                transaction_id,
+                tx_hash.to_bytes_be(),
                 reply_sender,
             ))
             .unwrap();
 
         // TODO: properly handle errors
-        reply_receiver.recv().expect("error").expect("Other error")
+        reply_receiver.recv()??.map_or(Ok(None), |value| {
+            Ok(Some(serde_json::from_str::<Transaction>(
+                &String::from_utf8(value.to_vec())?,
+            )?))
+        })
     }
 
-    fn add_block(&mut self, _block_hash: Key, _block_height: Key, _block: Value) -> Result<()> {
+    fn add_block(&mut self, _block: MaybePendingBlockWithTxs) -> Result<()> {
         todo!()
     }
 
-    fn get_block_by_hash(&self, _block_hash: Key) -> Option<Value> {
+    fn get_block_by_hash(&self, _block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
         todo!()
     }
 
-    fn get_block_by_height(&self, _block_height: Key) -> Option<Value> {
+    fn get_block_by_height(&self, _block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
         todo!()
     }
 
@@ -146,13 +156,12 @@ impl StoreEngine for Store {
 
     fn add_transaction_receipt(
         &mut self,
-        _transaction_id: Key,
-        _transaction_receipt: Value,
+        _transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
         todo!()
     }
 
-    fn get_transaction_receipt(&self, _transaction_id: Key) -> Option<Value> {
+    fn get_transaction_receipt(&self, _transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
         todo!()
     }
 }
