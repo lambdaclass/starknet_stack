@@ -2,7 +2,7 @@ use super::{Key, StoreEngine, Value};
 use anyhow::Result;
 use cairo_felt::Felt252;
 use std::{collections::HashMap, fmt::Debug};
-use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction};
+use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction, MaybePendingTransactionReceipt};
 
 #[derive(Clone)]
 pub struct Store {
@@ -65,13 +65,12 @@ impl StoreEngine for Store {
 
     fn add_transaction_receipt(
         &mut self,
-        _transaction_id: Key,
-        _transaction_receipt: Value,
+        _transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
         todo!()
     }
 
-    fn get_transaction_receipt(&self, _transaction_id: Key) -> Option<Value> {
+    fn get_transaction_receipt(&self, _transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
         todo!()
     }
 }

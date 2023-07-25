@@ -5,7 +5,7 @@ use anyhow::Result;
 use cairo_felt::Felt252;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
-use types::{MaybePendingBlockWithTxs, Transaction};
+use types::{MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transaction};
 
 pub mod in_memory;
 pub mod rocksdb;
@@ -30,10 +30,9 @@ pub trait StoreEngine: Debug + Send {
     fn get_value(&self, key: Key) -> Option<Value>;
     fn add_transaction_receipt(
         &mut self,
-        transaction_id: Key,
-        transaction_receipt: Value,
+        transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()>;
-    fn get_transaction_receipt(&self, transaction_id: Key) -> Option<Value>;
+    fn get_transaction_receipt(&self, transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>>;
 }
 
 #[derive(Debug, Clone)]
@@ -140,21 +139,20 @@ impl Store {
 
     pub fn add_transaction_receipt(
         &mut self,
-        transaction_receipt_id: Key,
-        transaction_receipt: Value,
+        transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
         self.engine
             .clone()
             .lock()
             .unwrap()
-            .add_transaction_receipt(transaction_receipt_id, transaction_receipt)
+            .add_transaction_receipt(transaction_receipt)
     }
 
-    pub fn get_transaction_receipt(&self, transaction_receipt_id: Key) -> Option<Value> {
+    pub fn get_transaction_receipt(&self, transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
         self.engine
             .clone()
             .lock()
             .unwrap()
-            .get_transaction_receipt(transaction_receipt_id)
+            .get_transaction_receipt(transaction_id)
     }
 }

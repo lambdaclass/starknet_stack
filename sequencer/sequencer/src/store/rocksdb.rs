@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
 use std::thread;
 use tracing::log::error;
-use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction};
+use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction, MaybePendingTransactionReceipt};
 
 #[derive(Debug)]
 enum StoreCommand {
@@ -156,13 +156,12 @@ impl StoreEngine for Store {
 
     fn add_transaction_receipt(
         &mut self,
-        _transaction_id: Key,
-        _transaction_receipt: Value,
+        _transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
         todo!()
     }
 
-    fn get_transaction_receipt(&self, _transaction_id: Key) -> Option<Value> {
+    fn get_transaction_receipt(&self, _transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
         todo!()
     }
 }

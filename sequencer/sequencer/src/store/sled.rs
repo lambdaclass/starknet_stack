@@ -3,7 +3,10 @@ use anyhow::Result;
 use cairo_felt::Felt252;
 use sled::Db;
 use std::fmt::Debug;
-use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction};
+use types::{
+    InvokeTransaction, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transaction,
+    TransactionReceipt,
+};
 
 #[derive(Clone)]
 pub struct Store {
@@ -113,20 +116,32 @@ impl StoreEngine for Store {
 
     fn add_transaction_receipt(
         &mut self,
-        transaction_receipt_id: Key,
-        transaction_receipt: Value,
+        transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
-        let _ = self
-            .transaction_receipts
-            .insert(transaction_receipt_id, transaction_receipt);
-        Ok(())
+        let tx_receipt_serialized = serde_json::to_string(&transaction_receipt)
+            .expect("Error serializing tx receipt")
+            .as_bytes()
+            .to_vec();
+        match transaction_receipt {
+            MaybePendingTransactionReceipt::Receipt(TransactionReceipt::Invoke(tx_receipt)) => {
+                let _ = self.transaction_receipts.insert(
+                    tx_receipt.transaction_hash.to_bytes_be(),
+                    tx_receipt_serialized,
+                );
+                Ok(())
+            }
+            _ => todo!(),
+        }
     }
 
-    fn get_transaction_receipt(&self, transaction_receipt_id: Key) -> Option<Value> {
+    fn get_transaction_receipt(&self, tx_hash: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
         self.transaction_receipts
-            .get(transaction_receipt_id)
-            .unwrap()
-            .map(|value| value.to_vec())
+            .get(tx_hash.to_bytes_be())?
+            .map_or(Ok(None), |value| {
+                Ok(Some(serde_json::from_str::<MaybePendingTransactionReceipt>(
+                    &String::from_utf8(value.to_vec())?,
+                )?))
+            })
     }
 }
 

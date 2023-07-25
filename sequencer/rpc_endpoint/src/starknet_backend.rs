@@ -247,19 +247,12 @@ impl StarknetRpcApiServer for StarknetBackend {
         transaction_hash: FeltParam,
     ) -> RpcResult<MaybePendingTransactionReceipt> {
         // necessary destructuring so that we can use a hex felt as a param
-        let transaction_hash = transaction_hash.0;
-
-        let invoke_tx_receipt: MaybePendingTransactionReceipt = match &self
-            .store
-            .get_transaction_receipt(transaction_hash.to_bytes_be())
-        {
-            Some(tx_receipt) => {
-                let tx_receipt = String::from_utf8(tx_receipt.to_vec()).unwrap();
-                serde_json::from_str(&tx_receipt).unwrap()
-            }
-            None => todo!(),
-        };
-
-        Ok(invoke_tx_receipt)
+        self.store
+            .get_transaction_receipt(transaction_hash.0)
+            .map(|option| option.expect("Transaction not found"))
+            .map_err(|e| {
+                error!("error {}", e);
+                ErrorObject::from(ErrorCode::InternalError)
+            })
     }
 }
