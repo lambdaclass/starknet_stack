@@ -2,8 +2,10 @@ use self::in_memory::Store as InMemoryStore;
 use self::rocksdb::Store as RocksDBStore;
 use self::sled::Store as SledStore;
 use anyhow::Result;
+use cairo_felt::Felt252;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
+use types::{MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transaction};
 
 pub mod in_memory;
 pub mod rocksdb;
@@ -19,19 +21,18 @@ const BLOCK_HEIGHT: &str = "height";
 pub trait StoreEngine: Debug + Send {
     fn add_program(&mut self, program_id: Key, program: Value) -> Result<()>;
     fn get_program(&self, program_id: Key) -> Option<Value>;
-    fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()>;
-    fn get_transaction(&self, transaction_id: Key) -> Option<Value>;
-    fn add_block(&mut self, block_hash: Key, block_height: Key, block: Value) -> Result<()>;
-    fn get_block_by_hash(&self, block_hash: Key) -> Option<Value>;
-    fn get_block_by_height(&self, block_height: Key) -> Option<Value>;
+    fn add_transaction(&mut self, transaction: Transaction) -> Result<()>;
+    fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>>;
+    fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()>;
+    fn get_block_by_hash(&self, block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>>;
+    fn get_block_by_height(&self, block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>>;
     fn set_value(&mut self, key: Key, value: Value) -> Result<()>;
     fn get_value(&self, key: Key) -> Option<Value>;
     fn add_transaction_receipt(
         &mut self,
-        transaction_id: Key,
-        transaction_receipt: Value,
+        transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()>;
-    fn get_transaction_receipt(&self, transaction_id: Key) -> Option<Value>;
+    fn get_transaction_receipt(&self, transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>>;
 }
 
 #[derive(Debug, Clone)]
@@ -84,31 +85,26 @@ impl Store {
         self.engine.clone().lock().unwrap().get_program(program_id)
     }
 
-    pub fn add_transaction(&mut self, transaction_id: Key, transaction: Value) -> Result<()> {
+    pub fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
         self.engine
             .clone()
             .lock()
             .unwrap()
-            .add_transaction(transaction_id, transaction)
+            .add_transaction(transaction)
     }
 
-    pub fn get_transaction(&self, transaction_id: Key) -> Option<Value> {
-        self.engine
-            .clone()
-            .lock()
-            .unwrap()
-            .get_transaction(transaction_id)
+    pub fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>> {
+        self.engine.clone().lock().unwrap().get_transaction(tx_hash)
     }
 
-    pub fn add_block(&mut self, block_hash: Key, block_height: Key, block: Value) -> Result<()> {
-        self.engine
-            .clone()
-            .lock()
-            .unwrap()
-            .add_block(block_hash, block_height, block)
+    pub fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()> {
+        self.engine.clone().lock().unwrap().add_block(block)
     }
 
-    pub fn get_block_by_height(&self, block_height: u64) -> Option<Value> {
+    pub fn get_block_by_height(
+        &self,
+        block_height: u64,
+    ) -> Result<Option<MaybePendingBlockWithTxs>> {
         self.engine
             .clone()
             .lock()
@@ -116,7 +112,7 @@ impl Store {
             .get_block_by_height(block_height.to_be_bytes().to_vec())
     }
 
-    pub fn get_block_by_hash(&self, block_hash: Key) -> Option<Value> {
+    pub fn get_block_by_hash(&self, block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
         self.engine
             .clone()
             .lock()
@@ -143,21 +139,20 @@ impl Store {
 
     pub fn add_transaction_receipt(
         &mut self,
-        transaction_receipt_id: Key,
-        transaction_receipt: Value,
+        transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
         self.engine
             .clone()
             .lock()
             .unwrap()
-            .add_transaction_receipt(transaction_receipt_id, transaction_receipt)
+            .add_transaction_receipt(transaction_receipt)
     }
 
-    pub fn get_transaction_receipt(&self, transaction_receipt_id: Key) -> Option<Value> {
+    pub fn get_transaction_receipt(&self, transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
         self.engine
             .clone()
             .lock()
             .unwrap()
-            .get_transaction_receipt(transaction_receipt_id)
+            .get_transaction_receipt(transaction_id)
     }
 }
