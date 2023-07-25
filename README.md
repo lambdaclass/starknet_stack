@@ -1,23 +1,26 @@
 <div align="center">
-<img src="./kraken.jpeg" height="250">
+<img src="./kraken.jpeg" height="275">
 </div>
 
 # Starknet Stack
 
 `````mermaid
 flowchart LR
-	A("Client") ==>|"Starknet Transactions"| subGraph0["Sequencer"]
-	subGraph0 -.->|"Blocks with txs"| 300319["Watcher prover"]
-	300319 ==>|"Request blocks through RPC "| subGraph0
-	300319 ==>|"STARK proofs"| 495216[("Proof Storage\n")]
-	style 495216 stroke-dasharray: 5
-	subgraph 300319["Watcher prover"]
-		320311("Cairo VM") ==>|"trace"| 993791("Lambdaworks Prover")
+	A("Client") ==>|"Starknet Transactions"| Sequencer
+	Sequencer -.->|"Blocks with txs"| watcher-prover["Watcher prover"]
+	watcher-prover ==>|"Request blocks through RPC "| Sequencer
+	watcher-prover ==>|"STARK proofs"| Db[("Proof Storage")]
+	style Db stroke-dasharray: 5
+	subgraph watcher-prover["Watcher prover"]
+		cairo-vm("Cairo VM") ==>|"trace"| prover("Lambdaworks Prover")
 	end
-	subgraph subGraph0["Sequencer"]
+	subgraph Sequencer
 		C("Consensus") ==x|"tx settlement"| B("Cairo Native")
 		B -.->|"tx execution info"| C
 	end
+    Sequencer ===>|"Blockchain data"| Explorer("Web explorer + verifier")
+    Db <-.-> |"Verifiable proofs"| Explorer
+    
 `````
 
 ## Overview
@@ -56,7 +59,8 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 - In parallel, the watcher-prover is querying the RPC endpoints and checking transactions on blocks
 - When the watcher-prover gets a new block/transaction, it proves the execution through the CairoVM and the LambdaWorks prover
 - Proofs get saved either on the file system or on S3 (by default, the filesystem)
-- On the explorer, you can browse blocks and see the transactions they include
+- On the explorer, you can browse blocks and see the transactions they include, along with the status of its proof:
+	- The `Local verification` field indicates whether the proof is available and if it has been verified on the browser. If, after waiting a few seconds, the field says `Verified`, it means the explorer has retrieved the proof and it has been verified on the browser. If it's `Pending`, the proof has not been made available by the watcher prover
 
 ## Trust assumptions
 
