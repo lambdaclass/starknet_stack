@@ -159,11 +159,6 @@ impl Client {
                     bail!("Expected transaction to be InvokeTransaction::V1");
                 };
 
-                if self.size < tx.len() {
-                    warn!("Transaction size too big. Tx size is: {}", tx.len());
-                    break 'main;
-                }
-                tx.resize(self.size, 0u8);
                 let bytes = tx.split().freeze();
 
                 if let Err(e) = transport.send(bytes).await {
