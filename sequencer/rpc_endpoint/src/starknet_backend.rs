@@ -227,7 +227,6 @@ impl StarknetRpcApiServer for StarknetBackend {
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_by_hash(&self, transaction_hash: FeltParam) -> RpcResult<Transaction> {
-        // necessary destructuring so that we can use a hex felt as a param
         self.store
             .get_transaction(transaction_hash.0)
             .map(|option| option.expect("Transaction not found"))
@@ -246,7 +245,6 @@ impl StarknetRpcApiServer for StarknetBackend {
         &self,
         transaction_hash: FeltParam,
     ) -> RpcResult<MaybePendingTransactionReceipt> {
-        // necessary destructuring so that we can use a hex felt as a param
         self.store
             .get_transaction_receipt(transaction_hash.0)
             .map(|option| option.expect("Transaction not found"))
