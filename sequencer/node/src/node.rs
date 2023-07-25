@@ -274,7 +274,6 @@ impl Node {
                             let tx_bytes = &tx_bytes[9..];
 
                             let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
-                            let n = 10_usize;
 
                             info!(
                                 "Message {i} in {:?} is of tx_type {:?}, executing",
@@ -296,6 +295,13 @@ impl Node {
                                             .calldata
                                             .last()
                                             .expect("calldata was not correctly set");
+                                    let program_input = tx
+                                        .calldata
+                                        .first()
+                                        .expect("calldata was not correctly set");
+                                    let n: usize =
+                                        program_input.to_le_digits()[0].try_into().unwrap();
+
                                     if is_fib {
                                         self.execution_program.execute_fibonacci(0, 1, n);
                                     } else {
