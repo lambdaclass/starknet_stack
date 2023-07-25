@@ -633,7 +633,6 @@ fn execute_fact_cairo_native(
 
 #[cfg(test)]
 mod test {
-    use serde::{Deserialize, Serialize};
     use std::path::Path;
 
     use cairo_lang_compiler::CompilerConfig;
@@ -685,10 +684,6 @@ mod test {
 
     #[test]
     fn fact_10_cairo_native() {
-        let a = super::get_input_value_cairo_native(0_u32);
-
-        let b = super::get_input_value_cairo_native(1_u32);
-
         let n = super::get_input_value_cairo_native(10_u32);
 
         let sierra_program = cairo_lang_compiler::compile_cairo_project_at_path(

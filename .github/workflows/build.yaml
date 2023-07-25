@@ -23,11 +23,14 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-
-      - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: cd sequencer && make test
+          
+      - name: Make init
+        run: make install-cairo-native-linux
+        working-directory: sequencer
+        
+      - name: Run tests
+        run: make test
+        working-directory: sequencer
 
   fmt:
     name: Lints
@@ -44,10 +47,9 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: cd sequencer && fmt --all -- --check
+      - name: Cargo fmt
+        run: cargo fmt --all -- --check
+        working-directory: sequencer
 
   clippy:
     runs-on: ubuntu-latest
@@ -57,4 +59,10 @@ jobs:
         with:
             toolchain: nightly
             components: clippy
-      - run: cd sequencer && make clippy
+            
+      - name: Make init
+        run: make install-cairo-native-linux
+        working-directory: sequencer
+        
+      - run: make clippy
+        working-directory: sequencer
