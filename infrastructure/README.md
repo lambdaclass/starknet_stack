@@ -38,14 +38,14 @@ They are set at the start of the [Makefile](./Makefile), modify them to fit your
   * SSH key name (previously created/uploaded to AWS us-west-2/Oregon region)
 * `INSTANCE_TYPE`
   * AWS instance type to use for the nodes (must be amd64/x86_64 architecture)
-* `AWS_AMI_ID`
-  * AWS AMI to use as base (currently supported: debian 11 and precompiled sequencer with debian 11)
 * `SSH_KEY_DIR`
   * local directory where your SSH private key is stored (the one that corresponds with `SSH_KEY_NAME`)
 * `S3_BUCKET`
   * S3 bucket in which to store terraform state
 * `S3_DIR`
-  * S3 directory (inside S3_BUCKET) to store the terraform state
+  * S3 directory (inside `S3_BUCKET`) to store the terraform state
+* `S3_REGION`
+  * region for the `S3_BUCKET`
 
 ### Execute deployment
 

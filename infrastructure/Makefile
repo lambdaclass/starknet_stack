@@ -58,9 +58,11 @@ setup-nodes-from-ami:
 	export ANSIBLE_SSH_PKEY=$(SSH_KEY_DIR) && \
 	ansible-playbook -v -i inventory.yaml playbooks/from_ami_sequencer_node.yaml
 
+# Deploy sequencer on AWS using custom AMI with debian 11 and precompiled sequencer from commit 3e2a28f
 sequencer-precompiled: AWS_AMI_ID=ami-0892d553b4b65e371
 sequencer-precompiled: infrastructure ansible-inventory nodes-configs setup-nodes-from-ami
 
+# Deploy sequencer on AWS using latest `main` branch commit and compiling it on each node
 sequencer: AWS_AMI_ID=ami-0acfc42b227d0b719
 sequencer: infrastructure ansible-inventory nodes-configs setup-nodes
 
