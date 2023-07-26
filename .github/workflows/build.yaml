@@ -12,7 +12,7 @@ concurrency:
 jobs:
   check:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, hetzner]
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
@@ -23,10 +23,6 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-          
-      - name: Make init
-        run: make install-cairo-native-linux
-        working-directory: sequencer
         
       - name: Run tests
         run: make test
@@ -52,7 +48,7 @@ jobs:
         working-directory: sequencer
 
   clippy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, hetzner]
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -60,9 +56,5 @@ jobs:
             toolchain: nightly
             components: clippy
             
-      - name: Make init
-        run: make install-cairo-native-linux
-        working-directory: sequencer
-        
       - run: make clippy
         working-directory: sequencer
