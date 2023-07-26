@@ -33,7 +33,13 @@ build:
 	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo build --all --release
 
 test:
-	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo test
+	@if [ $(shell uname -s) = 'Darwin' ]; then \
+		export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16; \
+	elif [ $(shell uname -s) = 'Linux' ]; then \
+		export MLIR_SYS_160_PREFIX=/usr/lib/llvm-16; \
+	fi; \
+	echo "+ cargo test"; \
+	cargo test
 
 generate-nodes-keys:
 	@if [ -d ./config/committee.json ]; then \
@@ -52,6 +58,11 @@ generate-committee-for-docker: generate-nodes-keys
 	@cd config/scripts && ./generate_committee.py "172.27.0.10, 172.27.0.11, 172.27.0.12, 172.27.0.13"
 
 clippy:
+	@if [ $(shell uname -s) = 'Darwin' ]; then \
+		export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16; \
+	elif [ $(shell uname -s) = 'Linux' ]; then \
+		export MLIR_SYS_160_PREFIX=/usr/lib/llvm-16; \
+	fi; \
 	cargo clippy --all-targets --all-features -- -D warnings
 .PHONY: clippy
 
