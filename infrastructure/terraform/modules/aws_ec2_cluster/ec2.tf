@@ -5,7 +5,7 @@ resource "aws_launch_template" "nodes" {
     device_name = "/dev/xvda"
 
     ebs {
-      volume_size = 120
+      volume_size = 300
     }
   }
 
