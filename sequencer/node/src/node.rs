@@ -273,7 +273,7 @@ impl Node {
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
-                            let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
+                            let starknet_tx = rpc::Transaction::from_bytes(tx_bytes);
                             let n = 10_usize;
 
                             info!(
@@ -396,7 +396,7 @@ impl Node {
         info!("Storing block: {} at height {}", &block_hash, height);
 
         _ = self.external_store.add_block(
-            block_hash.clone().to_bytes_be(),
+            block_hash.to_bytes_be(),
             height.to_be_bytes().to_vec(),
             block_serialized,
         );
@@ -579,7 +579,7 @@ fn execute_fibonacci_cairo_native(
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);
     compile_and_execute::<CoreType, CoreLibfunc, _, _>(
-        &program,
+        program,
         &program
             .funcs
             .iter()
@@ -609,7 +609,7 @@ fn execute_fact_cairo_native(
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);
     compile_and_execute::<CoreType, CoreLibfunc, _, _>(
-        &program,
+        program,
         &program
             .funcs
             .iter()
