@@ -50,9 +50,9 @@ setup-nodes-from-ami:
 	export ANSIBLE_SSH_PKEY=$(SSH_KEY_DIR) && \
 	ansible-playbook -v -i inventory.yaml playbooks/from_ami_sequencer_node.yaml
 
-all-precompiled: infrastructure ansible-inventory nodes-configs setup-nodes-from-ami
+sequencer-precompiled: infrastructure ansible-inventory nodes-configs setup-nodes-from-ami
 
-all: infrastructure ansible-inventory nodes-configs setup-nodes
+sequencer: infrastructure ansible-inventory nodes-configs setup-nodes
 
 destroy:
 	terraform -chdir=terraform/example_sequencer_nodes/ destroy -target module.$(CLUSTER_NAME) \
