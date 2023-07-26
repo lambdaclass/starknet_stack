@@ -273,7 +273,8 @@ impl Node {
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
-                            let starknet_tx = rpc::Transaction::from_bytes(tx_bytes);
+                            #[allow(clippy::needless_borrow)]
+                            let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
 
                             info!(
                                 "Message {i} in {:?} is of tx_type {:?}, executing",
