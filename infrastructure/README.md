@@ -62,8 +62,10 @@ make sequencer-precompiled
 make destroy-sequencer
 ```
 
-You can see the sequencer logs by logging in via SSH (admin user) to a node and executing
+To watch the sequencer logs you can do so by logging in via SSH (admin user) to a node and executing
 
 ```shell
 journalctl --user -xefu sequencer
 ```
+
+Note: remove the `f` flag to stop the tail/follow behaviour
