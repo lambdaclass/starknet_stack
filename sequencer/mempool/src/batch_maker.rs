@@ -148,7 +148,7 @@ impl BatchMaker {
         self.tx_message
             .send(QuorumWaiterMessage {
                 batch: serialized,
-                handlers: names.into_iter().zip(handlers.into_iter()).collect(),
+                handlers: names.into_iter().zip(handlers).collect(),
             })
             .await
             .expect("Failed to deliver batch");
