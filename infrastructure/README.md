@@ -16,14 +16,14 @@ Currently deploying in us-west-2a Availability Zone
 
 1. AWS account
 2. [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) configured, or AWS keys environment vars (region: us-west-2)
-  * either run `aws configure` and set your access keys, or
-  * export [AWS environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+    * either run `aws configure` and set your access keys, or
+    * export [AWS environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 3. [Terraform v1.4+](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 4. [Ansible v2.12+](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 
 5. Terraform module instantiation
-  * see [example](./terraform/example_sequencer_nodes/main.tf#L10-L27)
-    * you can reuse this example as you don't have it in your terraform state
+    * see [example](./terraform/example_sequencer_nodes/main.tf#L10-L27)
+        * you can reuse this example as you don't have it in your terraform state
 
 6. Makefile env vars:
 
