@@ -66,15 +66,7 @@ clippy:
 	cargo clippy --all-targets --all-features -- -D warnings
 .PHONY: clippy
 
-install-cairo-native-linux:
-	sudo echo "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-16 main" > /etc/apt/sources.list.d/llvm-16.list
-	sudo echo "deb-src http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-16 main" >> /etc/apt/sources.list.d/llvm-16.list
-	wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-	apt update -y
-	apt install -y llvm-16 \
-				libmlir-16-dev \
-				mlir-16-tools \
-				libpolly-16-dev
+install-corelibs:
 	git clone \
 		--depth 1 \
 		--branch v2.0.1 \
