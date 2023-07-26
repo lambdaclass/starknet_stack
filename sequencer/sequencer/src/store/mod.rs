@@ -32,7 +32,10 @@ pub trait StoreEngine: Debug + Send {
         &mut self,
         transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()>;
-    fn get_transaction_receipt(&self, transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>>;
+    fn get_transaction_receipt(
+        &self,
+        transaction_id: Felt252,
+    ) -> Result<Option<MaybePendingTransactionReceipt>>;
 }
 
 #[derive(Debug, Clone)]
@@ -148,7 +151,10 @@ impl Store {
             .add_transaction_receipt(transaction_receipt)
     }
 
-    pub fn get_transaction_receipt(&self, transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
+    pub fn get_transaction_receipt(
+        &self,
+        transaction_id: Felt252,
+    ) -> Result<Option<MaybePendingTransactionReceipt>> {
         self.engine
             .clone()
             .lock()

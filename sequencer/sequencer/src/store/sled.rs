@@ -134,13 +134,18 @@ impl StoreEngine for Store {
         }
     }
 
-    fn get_transaction_receipt(&self, tx_hash: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
+    fn get_transaction_receipt(
+        &self,
+        tx_hash: Felt252,
+    ) -> Result<Option<MaybePendingTransactionReceipt>> {
         self.transaction_receipts
             .get(tx_hash.to_bytes_be())?
             .map_or(Ok(None), |value| {
-                Ok(Some(serde_json::from_str::<MaybePendingTransactionReceipt>(
-                    &String::from_utf8(value.to_vec())?,
-                )?))
+                Ok(Some(
+                    serde_json::from_str::<MaybePendingTransactionReceipt>(&String::from_utf8(
+                        value.to_vec(),
+                    )?)?,
+                ))
             })
     }
 }

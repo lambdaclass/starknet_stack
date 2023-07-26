@@ -574,9 +574,7 @@ fn execute_cairo_native_program(
         &program
             .funcs
             .iter()
-            .find(|x| {
-                x.id.debug_name.as_deref() == Some(entrypoint)
-            })
+            .find(|x| x.id.debug_name.as_deref() == Some(entrypoint))
             .unwrap()
             .id,
         params,
@@ -635,7 +633,11 @@ mod test {
         )
         .unwrap();
 
-        let fib_10 = super::execute_cairo_native_program(&sierra_program, "fib_contract::fib_contract::Fibonacci::fib", vec![a, b, n]);
+        let fib_10 = super::execute_cairo_native_program(
+            &sierra_program,
+            "fib_contract::fib_contract::Fibonacci::fib",
+            vec![a, b, n],
+        );
         assert_eq!(fib_10, 55);
     }
 
@@ -652,7 +654,11 @@ mod test {
         )
         .unwrap();
 
-        let fact_10 = super::execute_cairo_native_program(&sierra_program, "fact_contract::fact_contract::Factorial::fact", vec![n]);
+        let fact_10 = super::execute_cairo_native_program(
+            &sierra_program,
+            "fact_contract::fact_contract::Factorial::fact",
+            vec![n],
+        );
         assert_eq!(fact_10, 3628800);
     }
 
