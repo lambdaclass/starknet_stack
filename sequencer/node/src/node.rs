@@ -274,7 +274,6 @@ impl Node {
                             let tx_bytes = &tx_bytes[9..];
 
                             let starknet_tx = rpc::Transaction::from_bytes(tx_bytes);
-                            let n = 10_usize;
 
                             info!(
                                 "Message {i} in {:?} is of tx_type {:?}, executing",
@@ -385,13 +384,9 @@ impl Node {
             transactions: transactions.clone(),
         });
 
-        _ = self.external_store.add_block(
-            block_hash.to_bytes_be(),
-            height.to_be_bytes().to_vec(),
-            block_serialized,
-        );
+        _ = self.external_store.add_block(block_with_txs);
 
-      _ = self.external_store.set_height(height);
+        _ = self.external_store.set_height(height);
 
         transactions.iter().for_each(|tx| match tx {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {

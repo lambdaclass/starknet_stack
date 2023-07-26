@@ -2,7 +2,7 @@ use anyhow::bail;
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
-use cairo_lang_sierra::program;
+
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
@@ -214,8 +214,8 @@ mod test {
         let size = 1000;
         let mut tx = BytesMut::with_capacity(size);
         let counter = 0;
-        let mut small_r: u8 = rand::thread_rng().gen();
-        let mut r: u64 = small_r.into();
+        let small_r: u8 = rand::thread_rng().gen();
+        let _r: u64 = small_r.into();
 
         for x in 0..burst {
             if x == counter % burst {
