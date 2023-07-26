@@ -2,7 +2,7 @@
 
 In this directory is contained all the code to deploy different parts of the Startknet Stack.
 
-Currently, automation is in place to deploy a N node sequencer cluster.
+Currently, automation is in place to deploy a N node sequencer cluster. It creates a whole isolated environment inside AWS: VPC + all necessary network resources + autoscaling group + security groups allowing transaction and RPC endpoints for 0.0.0.0/0
 
 Watcher Prover terraform is also here but standalone one (still needs to be pointed to the sequencer afterwards)
 
