@@ -1,0 +1,62 @@
+# Cloud infrastructure for starknet_stack
+
+In this directory is contained all the code to deploy different parts of the Startknet Stack.
+
+Currently, automation is in place to deploy a N node sequencer cluster.
+
+Watcher Prover terraform is also here but standalone one (still needs to be pointed to the sequencer afterwards)
+
+Madara Explorer is still not automated.
+
+## Deploy N Sequencer Nodes in AWS
+
+Currently deploying in us-west-2a Availability Zone
+
+### Prerequisites
+
+1. AWS account
+2. [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) configured, or AWS keys environment vars (region: us-west-2)
+  * either run `aws configure` and set your access keys, or
+  * export [AWS environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+3. [Terraform v1.4+](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
+4. [Ansible v2.12+](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
+5. Terraform module instantiation
+  * see [example](./terraform/example_sequencer_nodes/main.tf#L10-L27)
+    * you can reuse this example as you don't have it in your terraform state
+
+6. Makefile env vars:
+
+They are set at the start of the [Makefile](./Makefile), modify them to fit your needs:
+
+* `NODE_COUNT`
+  * number of nodes to deploy
+* `CLUSTER_NAME`
+  * logical name of the cluster for AWS resources
+  * must be the same as the terraform module name
+* `SSH_KEY_NAME`
+  * SSH key name (previously created/uploaded to AWS us-west-2/Oregon region)
+* `INSTANCE_TYPE`
+  * AWS instance type to use for the nodes (must be amd64/x86_64 architecture)
+* `AWS_AMI_ID`
+  * AWS AMI to use as base (currently supported: debian 11 and precompiled sequencer with debian 11)
+* `SSH_KEY_DIR`
+  * local directory where your SSH private key is stored (the one that corresponds with `SSH_KEY_NAME`)
+* `S3_BUCKET`
+  * S3 bucket in which to store terraform state
+* `S3_DIR`
+  * S3 directory (inside S3_BUCKET) to store the terraform state
+
+### Execute deployment
+
+* To deploy from scratch, from latest commit of `main` branch of this repo, execute (in this directory):
+
+```shell
+make sequencer
+```
+
+* To deploy from a precompiled version (from commit `3e2a28f` of this repo), execute:
+
+```shell
+make sequencer-precompiled
+```
