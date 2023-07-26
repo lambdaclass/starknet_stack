@@ -75,3 +75,5 @@ install-cairo-native-linux:
 				libmlir-16-dev \
 				mlir-16-tools \
 				libpolly-16-dev
+	cp -r starkware-cairo/corelib .
+	rm -rf starkware-cairo/
