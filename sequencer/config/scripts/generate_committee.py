@@ -6,9 +6,9 @@ from config import RemoteCommittee, Key
 
 def parse_ip_string(ip_string):
     if ',' in ip_string:
-	ip_list = [ip.strip() for ip in ip_string.split(',')]
+        ip_list = [ip.strip() for ip in ip_string.split(',')]
     else:
-	ip_list = [ip.strip() for ip in ip_string.split(' ')]
+        ip_list = [ip.strip() for ip in ip_string.split(' ')]
     for ip in ip_list:
         try:
             ipaddress.ip_address(ip)
