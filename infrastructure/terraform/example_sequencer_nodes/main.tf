@@ -22,6 +22,4 @@ variable "cluster_name" {}
 variable "ssh_key_name" {}
 variable "node_count" {}
 variable "instance_type" {}
-variable "aws_ami_id" {
-  default = "ami-0acfc42b227d0b719"
-}
+variable "aws_ami_id" {}
