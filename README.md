@@ -38,7 +38,7 @@ Additionally, you can also explore the blockchain with [Starknet Stack Explorer]
 
 ## Quick start
 
-To run this locally through Docker, do:
+To run this locally through Docker, clone this repo and then do:
 
 ```
 make run-local
@@ -47,6 +47,8 @@ make run-local
 This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. Before finishing, a client that sends a bunch of transactions is executed. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints appropriately. You can also access the Madara explorer at http://localhost:4000/ and check out the blockchain. 
 
 When finished, don't forget to stop the containers by doing `make stop`.
+
+
 
 ### Send transactions
 
@@ -61,6 +63,20 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 - Proofs get saved either on the file system or on S3 (by default, the filesystem)
 - On the explorer, you can browse blocks and see the transactions they include, along with the status of its proof:
 	- The `Local verification` field indicates whether the proof is available and if it has been verified on the browser. If, after waiting a few seconds, the field says `Verified`, it means the explorer has retrieved the proof and it has been verified on the browser. If it's `Pending`, the proof has not been made available by the watcher prover
+
+### Save proofs on S3
+
+As mentioned, the proofs are saved by default on the file system, but the option exists to save proofs on S3. In order to set this up, the following env variables need to be set in docker-compose.yml for the `watcher-prover` container
+
+PROVER_STORAGE:
+local for storing the proof in the local filesystem (files will be stored in proofs/ directory) or
+s3 for storing the proof in an AWS S3 bucket
+For AWS S3 bucket (used to upload the generated proofs):
+
+AWS_ACCESS_KEY_ID: AWS access key id
+AWS_SECRET_ACCESS_KEY: AWS secret access key
+AWS_REGION: AWS region
+
 
 ## Trust assumptions
 
