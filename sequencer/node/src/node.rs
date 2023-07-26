@@ -51,11 +51,11 @@ struct CairoNativeExecutionProgram {
 }
 
 impl CairoNativeExecutionProgram {
-    fn execute_fibonacci(&self, a: Vec<u32>, b: Vec<u32>, n: Vec<u32>) {
+    fn execute_fibonacci(&self, n: Vec<u32>) {
         let ret: u64 = execute_cairo_native_program(
             &self.fib_program,
             "fib_contract::fib_contract::Fibonacci::fib",
-            vec![a, b, n],
+            vec![get_input_value_cairo_native(0), get_input_value_cairo_native(1), n],
         );
         info!("Output Fib Cairo Native: ret is {:?}", ret)
     }
@@ -96,12 +96,10 @@ enum ExecutionEngine {
 }
 
 impl ExecutionEngine {
-    fn execute_fibonacci(&self, a: usize, b: usize, n: usize) {
+    fn execute_fibonacci(&self, n: usize) {
         match self {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
             ExecutionEngine::Sierra(execution_program) => execution_program.execute_fibonacci(
-                get_input_value_cairo_native(a),
-                get_input_value_cairo_native(b),
                 get_input_value_cairo_native(n),
             ),
         }
@@ -311,7 +309,7 @@ impl Node {
                                         program_input.to_le_digits()[0].try_into().unwrap();
 
                                     if is_fib {
-                                        self.execution_program.execute_fibonacci(0, 1, n);
+                                        self.execution_program.execute_fibonacci(n);
                                     } else {
                                         self.execution_program.execute_factorial(n);
                                     }
