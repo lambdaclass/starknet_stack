@@ -29,3 +29,9 @@ variable "releases_s3_bucket_name" {
   description = "Name of the S3 bucket to push and pull the appliation binary"
   default = ""
 }
+
+variable "aws_ami_id" {
+  type = string
+  description = "AWS AMI for the nodes: default value is debian 11 amd64"
+  default = "ami-0acfc42b227d0b719"
+}

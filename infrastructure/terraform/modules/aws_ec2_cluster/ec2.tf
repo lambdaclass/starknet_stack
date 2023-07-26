@@ -1,14 +1,3 @@
-data "aws_ami" "debian_11_latest" {
-  most_recent = true
-
-  owners = ["136693071363"]
-
-  filter {
-    name = "name"
-    values = ["debian-11-amd64-*"]
-  }
-}
-
 resource "aws_launch_template" "nodes" {
   name = "${var.cluster_name}_nodes_lt"
 
@@ -27,7 +16,7 @@ resource "aws_launch_template" "nodes" {
   }
 
   instance_type = var.instance_type
-  image_id = data.aws_ami.debian_11_latest.id
+  image_id = var.aws_ami_id
 
   key_name = var.ssh_key_name
 
