@@ -53,7 +53,7 @@ They are set at the start of the [Makefile](./Makefile), modify them to fit your
 make sequencer
 ```
 
-* To deploy from a precompiled version (from commit `3e2a28f` of this repo), execute:
+* To deploy from a precompiled version (from commit [`3e2a28f`](https://github.com/lambdaclass/starknet_stack/tree/3e2a28f/sequencer) of this repo), execute:
 
 ```shell
 make sequencer-precompiled
