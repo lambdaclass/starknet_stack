@@ -44,11 +44,9 @@ To run this locally through Docker, clone this repo and then do:
 make run-local
 ```
 
-This will deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. Before finishing, a client that sends a bunch of transactions is executed. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints appropriately. You can also access the Madara explorer at http://localhost:4000/ and check out the blockchain. 
+This will compile the containers and, through Docker, deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. Before finishing, a client that sends a bunch of transactions is executed. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints appropriately. You can also access the Madara explorer at http://localhost:4000/ and check out the blockchain. 
 
-When finished, don't forget to stop the containers by doing `make stop`.
-
-
+When finished, don't forget to stop the containers by running `make stop`.
 
 ### Send transactions
 
