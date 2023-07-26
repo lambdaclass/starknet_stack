@@ -40,9 +40,8 @@ const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1500;
 
 struct CairoVMExecutionProgram {
     // TODO: change this to a reference to a program and the casm contract class
-    // Vec<u8> is the bytes of the file of the cairo program
-    fib_program: Vec<u8>,
-    fact_program: Vec<u8>,
+    fib_program: CasmContractClass,
+    fact_program: CasmContractClass,
 }
 
 struct CairoNativeExecutionProgram {
@@ -65,7 +64,7 @@ impl CairoNativeExecutionProgram {
 impl CairoVMExecutionProgram {
     fn execute_fibonacci(&self, n: usize) {
         let ret = run_cairo_1_entrypoint(
-            self.fib_program.as_slice(),
+            &self.fib_program,
             0,
             &[0_usize.into(), 1_usize.into(), n.into()],
         );
@@ -74,7 +73,7 @@ impl CairoVMExecutionProgram {
 
     fn execute_factorial(&self, n: usize) {
         let ret = run_cairo_1_entrypoint(
-            self.fact_program.as_slice(),
+            &self.fact_program,
             0,
             &[0_usize.into(), 1_usize.into(), n.into()],
         );
@@ -151,8 +150,8 @@ impl Node {
                 let fact_casm_program: Vec<u8> =
                     include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
                 ExecutionEngine::Cairo(CairoVMExecutionProgram {
-                    fib_program: fib_casm_program,
-                    fact_program: fact_casm_program,
+                    fib_program: serde_json::from_slice(&fib_casm_program).unwrap(),
+                    fact_program: serde_json::from_slice(&fact_casm_program).unwrap(),
                 })
             }
             ExecutionParameters::CairoNative => {
@@ -410,11 +409,11 @@ impl Node {
 
 // TODO: Move this to a separate library file
 fn run_cairo_1_entrypoint(
-    program_content: &[u8],
+    program_content: &CasmContractClass,
     entrypoint_offset: usize,
     args: &[MaybeRelocatable],
 ) -> Vec<cairo_vm::felt::Felt252> {
-    let contract_class: CasmContractClass = serde_json::from_slice(program_content).unwrap();
+    let contract_class = program_content;
     let mut hint_processor =
         Cairo1HintProcessor::new(&contract_class.hints, RunResources::default());
     let aux_program: Program = contract_class.clone().try_into().unwrap();
@@ -619,10 +618,11 @@ mod test {
 
     #[test]
     fn fib_1_cairovm() {
-        let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+        let program_bytes = include_bytes!("../../cairo_programs/fib_contract.casm");
+        let program = serde_json::from_slice::<super::CasmContractClass>(program_bytes).unwrap();
         let n = 1_usize;
         let ret = super::run_cairo_1_entrypoint(
-            program.as_slice(),
+            &program,
             0,
             &[1_usize.into(), 1_usize.into(), n.into()],
         );
@@ -631,10 +631,11 @@ mod test {
 
     #[test]
     fn fib_10_cairovm() {
-        let program = include_bytes!("../../cairo_programs/fib_contract.casm");
+        let program_bytes = include_bytes!("../../cairo_programs/fib_contract.casm");
+        let program = serde_json::from_slice::<super::CasmContractClass>(program_bytes).unwrap();
         let n = 10_usize;
         let ret = super::run_cairo_1_entrypoint(
-            program.as_slice(),
+            &program,
             0,
             &[0_usize.into(), 1_usize.into(), n.into()],
         );
