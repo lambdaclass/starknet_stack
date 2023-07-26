@@ -55,3 +55,15 @@ make sequencer
 ```shell
 make sequencer-precompiled
 ```
+
+* To destroy all sequencer AWS resources
+
+```shell
+make destroy-sequencer
+```
+
+You can see the sequencer logs by logging in via SSH (admin user) to a node and executing
+
+```shell
+journalctl --user -xefu sequencer
+```
