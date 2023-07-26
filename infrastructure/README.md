@@ -1,4 +1,4 @@
-# Cloud infrastructure for starknet_stack
+# Cloud infrastructure for Starknet Stack
 
 In this directory is contained all the code to deploy different parts of the Startknet Stack.
 
