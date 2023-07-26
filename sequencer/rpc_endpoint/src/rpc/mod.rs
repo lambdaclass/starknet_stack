@@ -7,7 +7,6 @@ use cairo_felt::Felt252;
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 
-pub mod types;
 pub use types::*;
 
 use self::serializable_types::FeltParam;

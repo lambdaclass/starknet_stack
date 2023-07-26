@@ -281,8 +281,6 @@ impl Node {
                                 p, starknet_tx
                             );
 
-                            let starknet_tx_string = serde_json::to_string(&starknet_tx).unwrap();
-
                             match &starknet_tx {
                                 Transaction::Invoke(InvokeTransaction::V1(tx)) => {
                                     info!(
@@ -298,16 +296,21 @@ impl Node {
                                             .calldata
                                             .last()
                                             .expect("calldata was not correctly set");
+                                    let program_input = tx
+                                        .calldata
+                                        .first()
+                                        .expect("calldata was not correctly set");
+                                    let n: usize =
+                                        program_input.to_le_digits()[0].try_into().unwrap();
+
                                     if is_fib {
                                         self.execution_program.execute_fibonacci(0, 1, n);
                                     } else {
                                         self.execution_program.execute_factorial(n);
                                     }
 
-                                    let _ = self.external_store.add_transaction(
-                                        tx.transaction_hash.to_bytes_be(),
-                                        starknet_tx_string.into_bytes(),
-                                    );
+                                    let _ =
+                                        self.external_store.add_transaction(starknet_tx.clone());
                                 }
                                 _ => todo!(),
                             }
@@ -339,18 +342,13 @@ impl Node {
 
         let status = rpc_endpoint::rpc::BlockStatus::AcceptedOnL2;
         // TODO: store deserialization should be managed in store logic.
-        let parent_block =
-            self.external_store
-                .get_block_by_height(height - 1)
-                .map(|serialized_block| {
-                    serde_json::from_str::<rpc::MaybePendingBlockWithTxs>(
-                        &String::from_utf8(serialized_block).unwrap(),
-                    )
-                });
+        let parent_block = self.external_store.get_block_by_height(height - 1);
 
-        let parent_hash = parent_block.map_or(Felt252::new(0), |block| match block.unwrap() {
-            rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
-            _ => Felt252::new(0),
+        let parent_hash = parent_block.map_or(Felt252::new(0), |maybe_block| {
+            maybe_block.map_or(Felt252::new(0), |block| match block {
+                rpc::MaybePendingBlockWithTxs::Block(block) => block.block_hash,
+                _ => Felt252::new(0),
+            })
         });
         let new_root = Felt252::new(938938281);
 
@@ -376,7 +374,7 @@ impl Node {
         });
         let block_hash = Felt252::new(state.finish());
 
-        let block_with_txs = rpc::BlockWithTxs {
+        let block_with_txs = rpc::MaybePendingBlockWithTxs::Block(rpc::BlockWithTxs {
             status,
             block_hash: block_hash.clone(),
             parent_hash,
@@ -385,22 +383,15 @@ impl Node {
             timestamp,
             sequencer_address,
             transactions: transactions.clone(),
-        };
-
-        let block_serialized: Vec<u8> =
-            serde_json::to_string(&rpc::MaybePendingBlockWithTxs::Block(block_with_txs))
-                .unwrap()
-                .as_bytes()
-                .to_vec();
-
-        info!("Storing block: {} at height {}", &block_hash, height);
+        });
 
         _ = self.external_store.add_block(
             block_hash.to_bytes_be(),
             height.to_be_bytes().to_vec(),
             block_serialized,
         );
-        _ = self.external_store.set_height(height);
+
+      _ = self.external_store.set_height(height);
 
         transactions.iter().for_each(|tx| match tx {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {
@@ -415,13 +406,7 @@ impl Node {
                 };
 
                 _ = self.external_store.add_transaction_receipt(
-                    invoke_tx.transaction_hash.to_bytes_be(),
-                    serde_json::to_string(&MaybePendingTransactionReceipt::Receipt(
-                        TransactionReceipt::Invoke(tx_receipt),
-                    ))
-                    .expect("Error serializing tx receipt")
-                    .as_bytes()
-                    .to_vec(),
+                    MaybePendingTransactionReceipt::Receipt(TransactionReceipt::Invoke(tx_receipt)),
                 );
             }
             _ => todo!(),

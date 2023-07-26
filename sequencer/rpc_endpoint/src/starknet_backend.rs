@@ -2,7 +2,7 @@ use crate::rpc::{
     serializable_types::FeltParam, BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
-    EventsPage, FeeEstimate, FunctionCall, InvokeTransaction, InvokeTransactionResult,
+    EventsPage, FeeEstimate, FunctionCall, InvokeTransactionResult,
     MaybePendingBlockWithTxHashes, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt,
     StarknetRpcApiServer, StateUpdate, SyncStatusType, Transaction,
 };
@@ -102,23 +102,23 @@ impl StarknetRpcApiServer for StarknetBackend {
     /// Get block information with full transactions given the block id
     fn get_block_with_txs(&self, block_id: BlockId) -> RpcResult<MaybePendingBlockWithTxs> {
         let block_bytes = match block_id {
-            BlockId::Number(0) => self.store.get_block_by_height(1).unwrap(),
+            BlockId::Number(0) => self.store.get_block_by_height(1),
             BlockId::Number(height) => {
                 info!("block number requested is {}", &height);
-                self.store.get_block_by_height(height).unwrap()
+                self.store.get_block_by_height(height)
             }
-            BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()).unwrap(),
+            BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()),
             BlockId::Latest => self
                 .store
-                .get_block_by_height(self.store.get_height().expect("Height not found"))
-                .unwrap(),
+                .get_block_by_height(self.store.get_height().expect("Height not found")),
             _ => todo!(),
         };
-        let serialized_block = String::from_utf8(block_bytes).unwrap();
-        serde_json::from_str(&serialized_block).map_err(|e| {
-            error!("error {}", e);
-            ErrorObject::from(ErrorCode::ParseError)
-        })
+        block_bytes
+            .map(|option| option.expect("Block not found"))
+            .map_err(|e| {
+                error!("error {}", e);
+                ErrorObject::from(ErrorCode::InternalError)
+            })
     }
 
     /// Returns the chain id.
@@ -227,25 +227,13 @@ impl StarknetRpcApiServer for StarknetBackend {
     ///
     /// * `transaction_hash` - Transaction hash corresponding to the transaction.
     fn get_transaction_by_hash(&self, transaction_hash: FeltParam) -> RpcResult<Transaction> {
-        // necessary destructuring so that we can use a hex felt as a param
-        let transaction_hash = transaction_hash.0;
-
-        match &self.store.get_transaction(transaction_hash.to_bytes_be()) {
-            Some(tx) => {
-                let deserialized_tx: Transaction =
-                    serde_json::from_str(&String::from_utf8(tx.to_vec()).unwrap()).unwrap();
-                info!("tx json: {:?}", deserialized_tx);
-                match &deserialized_tx {
-                    Transaction::Invoke(InvokeTransaction::V1(t)) => {
-                        info!("tx_hash {}", t.transaction_hash);
-                    }
-                    _ => todo!(),
-                }
-
-                Ok(deserialized_tx)
-            }
-            None => todo!(),
-        }
+        self.store
+            .get_transaction(transaction_hash.0)
+            .map(|option| option.expect("Transaction not found"))
+            .map_err(|e| {
+                error!("error {}", e);
+                ErrorObject::from(ErrorCode::InternalError)
+            })
     }
 
     /// Returns the receipt of a transaction by transaction hash.
@@ -257,20 +245,12 @@ impl StarknetRpcApiServer for StarknetBackend {
         &self,
         transaction_hash: FeltParam,
     ) -> RpcResult<MaybePendingTransactionReceipt> {
-        // necessary destructuring so that we can use a hex felt as a param
-        let transaction_hash = transaction_hash.0;
-
-        let invoke_tx_receipt: MaybePendingTransactionReceipt = match &self
-            .store
-            .get_transaction_receipt(transaction_hash.to_bytes_be())
-        {
-            Some(tx_receipt) => {
-                let tx_receipt = String::from_utf8(tx_receipt.to_vec()).unwrap();
-                serde_json::from_str(&tx_receipt).unwrap()
-            }
-            None => todo!(),
-        };
-
-        Ok(invoke_tx_receipt)
+        self.store
+            .get_transaction_receipt(transaction_hash.0)
+            .map(|option| option.expect("Transaction not found"))
+            .map_err(|e| {
+                error!("error {}", e);
+                ErrorObject::from(ErrorCode::InternalError)
+            })
     }
 }

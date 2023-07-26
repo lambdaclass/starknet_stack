@@ -2,6 +2,7 @@ use anyhow::bail;
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
+use cairo_lang_sierra::program;
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
@@ -101,7 +102,7 @@ impl Client {
         let burst = self.rate / PRECISION;
         let mut tx = BytesMut::with_capacity(self.size);
         let mut counter = 0;
-        let mut r = rand::thread_rng().gen();
+        let mut r: u64 = rand::thread_rng().gen();
         let mut transport = Framed::new(stream, LengthDelimitedCodec::new());
         let interval = interval(Duration::from_millis(BURST_DURATION));
         tokio::pin!(interval);
@@ -118,8 +119,20 @@ impl Client {
 
             for x in 0..burst {
                 let execute_fib: bool = rand::random();
-                let invoke_transaction =
-                    Transaction::new_invoke(counter + internal_counter, r, execute_fib);
+                let rand_program_input: u16 = rand::thread_rng().gen();
+                // This is done to avoid error while executing big numbers in the contract.
+                // It should change in the future
+                let program_input: u16 = if execute_fib {
+                    rand_program_input % 10000 + 1
+                } else {
+                    rand_program_input % 2000 + 1
+                };
+
+                let invoke_transaction = Transaction::new_invoke(
+                    counter + internal_counter,
+                    program_input.into(),
+                    execute_fib,
+                );
                 if let Transaction::Invoke(InvokeTransaction::V1(transaction)) = &invoke_transaction
                 {
                     if x == counter % burst {
@@ -146,11 +159,6 @@ impl Client {
                     bail!("Expected transaction to be InvokeTransaction::V1");
                 };
 
-                if self.size < tx.len() {
-                    warn!("Transaction size too big");
-                    break 'main;
-                }
-                tx.resize(self.size, 0u8);
                 let bytes = tx.split().freeze();
 
                 if let Err(e) = transport.send(bytes).await {
@@ -206,17 +214,14 @@ mod test {
         let size = 1000;
         let mut tx = BytesMut::with_capacity(size);
         let counter = 0;
-        let mut r: u64 = rand::thread_rng().gen();
+        let mut small_r: u8 = rand::thread_rng().gen();
+        let mut r: u64 = small_r.into();
 
         for x in 0..burst {
             if x == counter % burst {
                 tx.put_u8(0u8); // Sample txs start with 0.
-                tx.put_u64(counter); // This counter identifies the tx.
             } else {
-                r += 1;
-
                 tx.put_u8(1u8); // Standard txs start with 1.
-                tx.put_u64(r); // Ensures all clients send different txs.
             };
             let starknet_tx = Transaction::new_invoke(762716321, 8126371, true);
             for b in starknet_tx.as_bytes() {
