@@ -282,7 +282,6 @@ impl Node {
 
                 let list_of_tx: MempoolMessage =
                     bincode::deserialize(&tx_batch).expect("Error trying to deserialize batch");
-                //info!("There are {} transactions in {:?} ", list_of_tx.len(), p);
 
                 match list_of_tx {
                     MempoolMessage::Batch(batch_txs) => {
