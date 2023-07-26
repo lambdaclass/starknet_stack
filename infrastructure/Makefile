@@ -2,19 +2,27 @@ NODE_COUNT:=6
 CLUSTER_NAME:=sequencer_cluster_2
 SSH_KEY_NAME:=klaus
 INSTANCE_TYPE:=c6a.xlarge
-AWS_AMI_ID:=ami-0892d553b4b65e371
-SSH_KEY_DIR=/Users/klaus/Downloads/klaus_oregon.pem
+SSH_KEY_DIR:=/Users/klaus/Downloads/klaus_oregon.pem
+S3_BUCKET:=terraform-lambdaclass
+S3_DIR:=kraken_sequencer
+
 infrastructure:
 	terraform -chdir=terraform/example_sequencer_nodes/ init -target module.$(CLUSTER_NAME) \
 								 -var node_count=$(NODE_COUNT) \
 								 -var ssh_key_name=$(SSH_KEY_NAME) \
 								 -var instance_type=$(INSTANCE_TYPE) \
-								 -var cluster_name=$(CLUSTER_NAME)
+								 -var cluster_name=$(CLUSTER_NAME) \
+								 -var aws_ami_id=$(AWS_AMI_ID) \
+								 -var terraform_aws_s3_bucket=$(S3_BUCKET) \
+								 -var terraform_aws_s3_directory=$(S3_DIR)
 	terraform -chdir=terraform/example_sequencer_nodes/ apply -target module.$(CLUSTER_NAME) \
 								  -var node_count=$(NODE_COUNT) \
 								  -var ssh_key_name=$(SSH_KEY_NAME) \
 								  -var instance_type=$(INSTANCE_TYPE) \
-								  -var cluster_name=$(CLUSTER_NAME)
+								  -var cluster_name=$(CLUSTER_NAME) \
+								  -var aws_ami_id=$(AWS_AMI_ID) \
+								  -var terraform_aws_s3_bucket=$(S3_BUCKET) \
+								  -var terraform_aws_s3_directory=$(S3_DIR)
 	@echo "Waiting for instances to be ready"
 	@sleep 30
 
@@ -50,8 +58,10 @@ setup-nodes-from-ami:
 	export ANSIBLE_SSH_PKEY=$(SSH_KEY_DIR) && \
 	ansible-playbook -v -i inventory.yaml playbooks/from_ami_sequencer_node.yaml
 
+sequencer-precompiled: AWS_AMI_ID=ami-0892d553b4b65e371
 sequencer-precompiled: infrastructure ansible-inventory nodes-configs setup-nodes-from-ami
 
+sequencer: AWS_AMI_ID=ami-0acfc42b227d0b719
 sequencer: infrastructure ansible-inventory nodes-configs setup-nodes
 
 destroy:
