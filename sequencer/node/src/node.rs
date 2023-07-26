@@ -3,6 +3,7 @@ use crate::config::{ExecutionParameters, Export as _};
 use cairo_felt::Felt252;
 use cairo_lang_compiler::CompilerConfig;
 use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
+use cairo_lang_sierra::program::Program as SierraProgram;
 use cairo_lang_starknet::casm_contract_class::CasmContractClass;
 use cairo_native::easy::compile_and_execute;
 use cairo_vm::hint_processor::cairo_1_hint_processor::hint_processor::Cairo1HintProcessor;
@@ -45,8 +46,8 @@ struct CairoVMExecutionProgram {
 }
 
 struct CairoNativeExecutionProgram {
-    fib_program: Arc<cairo_lang_sierra::program::Program>,
-    fact_program: Arc<cairo_lang_sierra::program::Program>,
+    fib_program: Arc<SierraProgram>,
+    fact_program: Arc<SierraProgram>,
 }
 
 impl CairoNativeExecutionProgram {
@@ -155,7 +156,7 @@ impl Node {
                 })
             }
             ExecutionParameters::CairoNative => {
-                let fact_sierra_program: Arc<cairo_lang_sierra::program::Program> =
+                let fact_sierra_program: Arc<SierraProgram> =
                     cairo_lang_compiler::compile_cairo_project_at_path(
                         Path::new("../cairo_programs/fact_contract.cairo"),
                         CompilerConfig {
@@ -165,7 +166,7 @@ impl Node {
                     )
                     .unwrap();
                 // Compile fibonacci to Sierra
-                let fib_sierra_program: Arc<cairo_lang_sierra::program::Program> =
+                let fib_sierra_program: Arc<SierraProgram> =
                     cairo_lang_compiler::compile_cairo_project_at_path(
                         Path::new("../cairo_programs/fib_contract.cairo"),
                         CompilerConfig {
@@ -548,7 +549,7 @@ fn get_input_value_cairo_native(n: u32) -> Vec<u32> {
 }
 
 fn execute_fibonacci_cairo_native(
-    sierra_program: &Arc<cairo_lang_sierra::program::Program>,
+    sierra_program: &Arc<SierraProgram>,
     a: Vec<u32>,
     b: Vec<u32>,
     n: Vec<u32>,
@@ -580,7 +581,7 @@ fn execute_fibonacci_cairo_native(
 }
 
 fn execute_fact_cairo_native(
-    sierra_program: &Arc<cairo_lang_sierra::program::Program>,
+    sierra_program: &Arc<SierraProgram>,
     n: Vec<u32>,
 ) -> u64 {
     let program = sierra_program;
