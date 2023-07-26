@@ -22,28 +22,25 @@ Currently deploying in us-west-2a Availability Zone
 4. [Ansible v2.12+](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 5. Terraform module instantiation
     * see [example](./terraform/example_sequencer_nodes/main.tf#L10-L27)
-        * you can reuse this example as you don't have it in your terraform state
-6. Makefile env vars:
-
-They are set at the start of the [Makefile](./Makefile), modify them to fit your needs:
-
-* `NODE_COUNT`
-  * number of nodes to deploy
-* `CLUSTER_NAME`
-  * logical name of the cluster for AWS resources
-  * must be the same as the terraform module name
-* `SSH_KEY_NAME`
-  * SSH key name (previously created/uploaded to AWS us-west-2/Oregon region)
-* `INSTANCE_TYPE`
-  * AWS instance type to use for the nodes (must be amd64/x86_64 architecture)
-* `SSH_KEY_DIR`
-  * local directory where your SSH private key is stored (the one that corresponds with `SSH_KEY_NAME`)
-* `S3_BUCKET`
-  * S3 bucket in which to store terraform state
-* `S3_DIR`
-  * S3 directory (inside `S3_BUCKET`) to store the terraform state
-* `S3_REGION`
-  * region for the `S3_BUCKET`
+      * you can reuse this example as you don't have it in your terraform state
+6. Makefile environment variables: They are set at the start of the [Makefile](./Makefile), modify them to fit your needs:
+    * `NODE_COUNT`
+      * number of nodes to deploy
+    * `CLUSTER_NAME`
+      * logical name of the cluster for AWS resources
+      * must be the same as the terraform module name
+    * `SSH_KEY_NAME`
+      * SSH key name (previously created/uploaded to AWS us-west-2/Oregon region)
+    * `INSTANCE_TYPE`
+      * AWS instance type to use for the nodes (must be amd64/x86_64 architecture)
+    * `SSH_KEY_DIR`
+      * local directory where your SSH private key is stored (the one that corresponds with `SSH_KEY_NAME`)
+    * `S3_BUCKET`
+      * S3 bucket in which to store terraform state
+    * `S3_DIR`
+      * S3 directory (inside `S3_BUCKET`) to store the terraform state
+    * `S3_REGION`
+      * region for the `S3_BUCKET`
 
 ### Execute deployment
 
