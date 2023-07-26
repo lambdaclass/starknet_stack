@@ -23,7 +23,7 @@ Currently deploying in us-west-2a Availability Zone
 5. Terraform module instantiation
     * see [example](./terraform/example_sequencer_nodes/main.tf#L10-L27)
       * you can reuse this example as you don't have it in your terraform state
-6. Makefile environment variables: They are set at the start of the [Makefile](./Makefile), modify them to fit your needs:
+6. Makefile environment variables: They are set at the start of the [Makefile](./Makefile), modify them to fit your needs (the values in the current Makefile are sample, you MUST change them):
     * `NODE_COUNT`
       * number of nodes to deploy
     * `CLUSTER_NAME`
