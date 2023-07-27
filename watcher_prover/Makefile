@@ -3,6 +3,6 @@ run:
 	mix assets.build
 	iex -S mix phx.server
 rust:
-	cd ./native/watcher_prover && cargo check\
+	cd ./native/watcher_prover && cargo check
 format:
 	mix format && cd ./native/watcher_prover && cargo fmt
