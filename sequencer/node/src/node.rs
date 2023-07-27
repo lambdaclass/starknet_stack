@@ -57,7 +57,11 @@ impl CairoNativeExecutionProgram {
         let ret: u64 = execute_cairo_native_program(
             &self.fib_program,
             "fib_contract::fib_contract::Fibonacci::fib",
-            vec![get_input_value_cairo_native(0), get_input_value_cairo_native(1), n],
+            vec![
+                get_input_value_cairo_native(0),
+                get_input_value_cairo_native(1),
+                n,
+            ],
         );
         info!("Output Fib Cairo Native: ret is {:?}", ret)
     }
@@ -79,7 +83,6 @@ impl CairoVMExecutionProgram {
             &self.fib_builtins,
             0,
             &[0_usize.into(), 1_usize.into(), n.into()],
-            
         );
         info!("Output Fib CairoVM: ret is {:?}", ret)
     }
@@ -104,9 +107,9 @@ impl ExecutionEngine {
     fn execute_fibonacci(&self, n: usize) {
         match self {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
-            ExecutionEngine::Sierra(execution_program) => execution_program.execute_fibonacci(
-                get_input_value_cairo_native(n),
-            ),
+            ExecutionEngine::Sierra(execution_program) => {
+                execution_program.execute_fibonacci(get_input_value_cairo_native(n))
+            }
         }
     }
 
@@ -164,7 +167,7 @@ impl Node {
                     include_bytes!("../../cairo_programs/fib_contract.casm").to_vec();
                 let fact_casm_program: Vec<u8> =
                     include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
-                
+
                 let fib_program: CasmContractClass =
                     serde_json::from_slice(&fib_casm_program).unwrap();
 
@@ -172,9 +175,9 @@ impl Node {
 
                 let fact_program: CasmContractClass =
                     serde_json::from_slice(&fact_casm_program).unwrap();
-                
+
                 let fact_builtins: Vec<BuiltinName> = get_casm_contract_builtins(&fact_program, 0);
-                
+
                 // Read casm program bytes as CasmContractClass
                 ExecutionEngine::Cairo(CairoVMExecutionProgram {
                     fib_program,
@@ -620,8 +623,12 @@ mod test {
         let program = serde_json::from_slice::<super::CasmContractClass>(program_bytes).unwrap();
         let program_builtins = super::get_casm_contract_builtins(&program, 0);
         let n = 1_usize;
-        let ret =
-            super::run_cairo_1_entrypoint(&program, &program_builtins,0, &[1_usize.into(), 1_usize.into(), n.into()]);
+        let ret = super::run_cairo_1_entrypoint(
+            &program,
+            &program_builtins,
+            0,
+            &[1_usize.into(), 1_usize.into(), n.into()],
+        );
         assert_eq!(ret, vec![1_usize.into()]);
     }
 
@@ -631,8 +638,12 @@ mod test {
         let program = serde_json::from_slice::<super::CasmContractClass>(program_bytes).unwrap();
         let program_builtins = super::get_casm_contract_builtins(&program, 0);
         let n = 10_usize;
-        let ret =
-            super::run_cairo_1_entrypoint(&program, &program_builtins,0, &[0_usize.into(), 1_usize.into(), n.into()]);
+        let ret = super::run_cairo_1_entrypoint(
+            &program,
+            &program_builtins,
+            0,
+            &[0_usize.into(), 1_usize.into(), n.into()],
+        );
         assert_eq!(ret, vec![55_usize.into()]);
     }
 
