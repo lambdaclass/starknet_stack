@@ -99,7 +99,7 @@ impl CairoVMExecutionProgram {
 }
 
 enum ExecutionEngine {
-    Cairo(CairoVMExecutionProgram),
+    Cairo(Box<CairoVMExecutionProgram>),
     Sierra(CairoNativeExecutionProgram),
 }
 
@@ -179,12 +179,12 @@ impl Node {
                 let fact_builtins: Vec<BuiltinName> = get_casm_contract_builtins(&fact_program, 0);
 
                 // Read casm program bytes as CasmContractClass
-                ExecutionEngine::Cairo(CairoVMExecutionProgram {
+                ExecutionEngine::Cairo(Box::new(CairoVMExecutionProgram {
                     fib_program,
                     fact_program,
                     fib_builtins,
                     fact_builtins,
-                })
+                }))
             }
             ExecutionParameters::CairoNative => {
                 // Compile Cairo programs to Sierra
