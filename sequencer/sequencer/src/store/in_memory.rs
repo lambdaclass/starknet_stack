@@ -6,7 +6,7 @@ use types::{
     InvokeTransaction, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transaction,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Store {
     programs: HashMap<Key, Value>,
     transactions: HashMap<Felt252, Transaction>,

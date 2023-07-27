@@ -75,10 +75,9 @@ impl StoreEngine for Store {
                     block_with_txs.block_hash.to_bytes_be(),
                     block_serialized.clone(),
                 );
-                let _ = self.blocks_by_height.insert(
-                    block_with_txs.block_number.to_be_bytes().to_vec(),
-                    block_serialized,
-                );
+                let _ = self
+                    .blocks_by_height
+                    .insert(block_with_txs.block_number.to_be_bytes(), block_serialized);
                 Ok(())
             }
             MaybePendingBlockWithTxs::PendingBlock(_) => todo!(),

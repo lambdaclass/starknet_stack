@@ -301,6 +301,7 @@ impl Node {
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
+                            #[allow(clippy::needless_borrow)]
                             let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
 
                             info!(
@@ -413,6 +414,7 @@ impl Node {
         });
 
         _ = self.external_store.add_block(block_with_txs);
+
         _ = self.external_store.set_height(height);
 
         transactions.iter().for_each(|tx| match tx {
@@ -586,7 +588,7 @@ fn execute_cairo_native_program(
         params.as_array_mut().unwrap().push(arg.into());
     }
     compile_and_execute::<CoreType, CoreLibfunc, _, _>(
-        &program,
+        program,
         &program
             .funcs
             .iter()

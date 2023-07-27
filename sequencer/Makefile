@@ -1,4 +1,4 @@
-.PHONY: init node install-cairo-native run-fibonacci
+.PHONY: init node install-cairo-native run-fibonacci install-cairo-native-linux
 
 init: install-cairo-native
 	rustup override set nightly-2023-06-19-aarch64-apple-darwin
@@ -33,7 +33,13 @@ build:
 	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo build --all --release
 
 test:
-	export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16 && cargo test
+	@if [ $(shell uname -s) = 'Darwin' ]; then \
+		export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16; \
+	elif [ $(shell uname -s) = 'Linux' ]; then \
+		export MLIR_SYS_160_PREFIX=/usr/lib/llvm-16; \
+	fi; \
+	echo "+ cargo test"; \
+	cargo test
 
 generate-nodes-keys:
 	@if [ -d ./config/committee.json ]; then \
@@ -50,3 +56,21 @@ generate-nodes-keys:
 generate-committee-for-docker: generate-nodes-keys
 	@echo "Generating sequencer committee: sequencer/config/committee.json"
 	@cd config/scripts && ./generate_committee.py "172.27.0.10, 172.27.0.11, 172.27.0.12, 172.27.0.13"
+
+clippy:
+	@if [ $(shell uname -s) = 'Darwin' ]; then \
+		export MLIR_SYS_160_PREFIX=/opt/homebrew/opt/llvm@16; \
+	elif [ $(shell uname -s) = 'Linux' ]; then \
+		export MLIR_SYS_160_PREFIX=/usr/lib/llvm-16; \
+	fi; \
+	cargo clippy --all-targets --all-features -- -D warnings
+.PHONY: clippy
+
+install-corelibs:
+	git clone \
+		--depth 1 \
+		--branch v2.0.1 \
+		https://github.com/starkware-libs/cairo.git \
+		starkware-cairo
+	cp -r starkware-cairo/corelib .
+	rm -rf starkware-cairo/
