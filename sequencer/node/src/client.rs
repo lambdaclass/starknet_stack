@@ -2,7 +2,7 @@ use anyhow::bail;
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
-use cairo_lang_sierra::program;
+
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
@@ -208,16 +208,14 @@ mod test {
     use rand::Rng;
     use rpc_endpoint::rpc::Transaction;
 
-    use crate::Client;
-
     #[test]
     fn test_serialize_transaction() {
         let burst = 12;
         let size = 1000;
         let mut tx = BytesMut::with_capacity(size);
         let counter = 0;
-        let mut small_r: u8 = rand::thread_rng().gen();
-        let mut r: u64 = small_r.into();
+        let small_r: u8 = rand::thread_rng().gen();
+        let _r: u64 = small_r.into();
 
         for x in 0..burst {
             if x == counter % burst {
@@ -225,8 +223,8 @@ mod test {
             } else {
                 tx.put_u8(1u8); // Standard txs start with 1.
             };
-            let bytes = Transaction::new_invoke_as_bytes(762716321, 8126371, true);
-            for b in bytes {
+            let starknet_tx = Transaction::new_invoke(762716321, 8126371, true);
+            for b in starknet_tx.as_bytes() {
                 tx.put_u8(b);
             }
             tx.resize(size, 0u8);

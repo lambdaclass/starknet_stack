@@ -105,7 +105,7 @@ impl Proposer {
         // Control system: Wait for 2f+1 nodes to acknowledge our block before continuing.
         let mut wait_for_quorum: FuturesUnordered<_> = names
             .into_iter()
-            .zip(handles.into_iter())
+            .zip(handles)
             .map(|(name, handler)| {
                 let stake = self.committee.stake(&name);
                 Self::waiter(handler, stake)

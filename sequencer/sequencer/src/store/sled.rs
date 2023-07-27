@@ -75,10 +75,9 @@ impl StoreEngine for Store {
                     block_with_txs.block_hash.to_bytes_be(),
                     block_serialized.clone(),
                 );
-                let _ = self.blocks_by_height.insert(
-                    block_with_txs.block_number.to_be_bytes().to_vec(),
-                    block_serialized,
-                );
+                let _ = self
+                    .blocks_by_height
+                    .insert(block_with_txs.block_number.to_be_bytes(), block_serialized);
                 Ok(())
             }
             MaybePendingBlockWithTxs::PendingBlock(_) => todo!(),
@@ -134,13 +133,18 @@ impl StoreEngine for Store {
         }
     }
 
-    fn get_transaction_receipt(&self, tx_hash: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
+    fn get_transaction_receipt(
+        &self,
+        tx_hash: Felt252,
+    ) -> Result<Option<MaybePendingTransactionReceipt>> {
         self.transaction_receipts
             .get(tx_hash.to_bytes_be())?
             .map_or(Ok(None), |value| {
-                Ok(Some(serde_json::from_str::<MaybePendingTransactionReceipt>(
-                    &String::from_utf8(value.to_vec())?,
-                )?))
+                Ok(Some(
+                    serde_json::from_str::<MaybePendingTransactionReceipt>(&String::from_utf8(
+                        value.to_vec(),
+                    )?)?,
+                ))
             })
     }
 }

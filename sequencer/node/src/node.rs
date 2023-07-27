@@ -273,6 +273,7 @@ impl Node {
                             #[cfg(feature = "benchmark")]
                             let tx_bytes = &tx_bytes[9..];
 
+                            #[allow(clippy::needless_borrow)]
                             let starknet_tx = rpc::Transaction::from_bytes(&tx_bytes);
 
                             info!(
@@ -385,6 +386,7 @@ impl Node {
         });
 
         _ = self.external_store.add_block(block_with_txs);
+
         _ = self.external_store.set_height(height);
 
         transactions.iter().for_each(|tx| match tx {
@@ -558,7 +560,7 @@ fn execute_fibonacci_cairo_native(
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);
     compile_and_execute::<CoreType, CoreLibfunc, _, _>(
-        &program,
+        program,
         &program
             .funcs
             .iter()
@@ -588,7 +590,7 @@ fn execute_fact_cairo_native(
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);
     compile_and_execute::<CoreType, CoreLibfunc, _, _>(
-        &program,
+        program,
         &program
             .funcs
             .iter()
@@ -612,7 +614,6 @@ fn execute_fact_cairo_native(
 
 #[cfg(test)]
 mod test {
-    use serde::{Deserialize, Serialize};
     use std::path::Path;
 
     use cairo_lang_compiler::CompilerConfig;
@@ -664,10 +665,6 @@ mod test {
 
     #[test]
     fn fact_10_cairo_native() {
-        let a = super::get_input_value_cairo_native(0_u32);
-
-        let b = super::get_input_value_cairo_native(1_u32);
-
         let n = super::get_input_value_cairo_native(10_u32);
 
         let sierra_program = cairo_lang_compiler::compile_cairo_project_at_path(
