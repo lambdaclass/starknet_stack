@@ -33,6 +33,7 @@ store = { path = "../store" }
 consensus = { path = "../consensus" }
 mempool = { path = "../mempool" }
 sequencer = { path = "../sequencer" }
+execution_engine = {path = "../execution_engine" }
 
 [features]
 benchmark = ["consensus/benchmark", "mempool/benchmark"]

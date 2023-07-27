@@ -4,16 +4,10 @@ use cairo_felt::Felt252;
 use cairo_lang_compiler::CompilerConfig;
 use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
 use cairo_lang_sierra::program::Program as SierraProgram;
-use cairo_lang_starknet::casm_contract_class::CasmContractClass;
 use cairo_native::easy::compile_and_execute;
-use cairo_vm::hint_processor::cairo_1_hint_processor::hint_processor::Cairo1HintProcessor;
-use cairo_vm::serde::deserialize_program::BuiltinName;
-use cairo_vm::types::program::Program;
-use cairo_vm::types::relocatable::MaybeRelocatable;
-use cairo_vm::vm::runners::cairo_runner::{CairoArg, CairoRunner, RunResources};
-use cairo_vm::vm::vm_core::VirtualMachine;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
+use execution_engine::cairovm_engine::CairoVMEngine;
 use log::info;
 use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
@@ -39,21 +33,13 @@ pub const CHANNEL_CAPACITY: usize = 1_000;
 const RPC_PORT_OFFSET: u16 = 1000;
 const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1500;
 
-struct CairoVMExecutionProgram {
-    // TODO: change this to a reference to a program and the casm contract class
-    fib_program: CasmContractClass,
-    fact_program: CasmContractClass,
-    fib_builtins: Vec<BuiltinName>,
-    fact_builtins: Vec<BuiltinName>,
-}
-
 struct CairoNativeExecutionProgram {
     fib_program: Arc<SierraProgram>,
     fact_program: Arc<SierraProgram>,
 }
 
 impl CairoNativeExecutionProgram {
-    fn execute_fibonacci(&self, n: Vec<u32>) {
+    fn execute_fibonacci(&self, n: Vec<u32>) -> String {
         let ret: u64 = execute_cairo_native_program(
             &self.fib_program,
             "fib_contract::fib_contract::Fibonacci::fib",
@@ -63,63 +49,43 @@ impl CairoNativeExecutionProgram {
                 n,
             ],
         );
-        info!("Output Fib Cairo Native: ret is {:?}", ret)
+        format!("Output Fib Cairo Native: {:?}", ret)
     }
 
-    fn execute_factorial(&self, n: Vec<u32>) {
+    fn execute_factorial(&self, n: Vec<u32>) -> String {
         let ret: u64 = execute_cairo_native_program(
             &self.fact_program,
             "fact_contract::fact_contract::Factorial::fact",
             vec![n],
         );
-        info!("Output Fact Cairo Native: ret is {:?}", ret)
-    }
-}
-
-impl CairoVMExecutionProgram {
-    fn execute_fibonacci(&self, n: usize) {
-        let ret = run_cairo_1_entrypoint(
-            &self.fib_program,
-            &self.fib_builtins,
-            0,
-            &[0_usize.into(), 1_usize.into(), n.into()],
-        );
-        info!("Output Fib CairoVM: ret is {:?}", ret)
-    }
-
-    fn execute_factorial(&self, n: usize) {
-        let ret = run_cairo_1_entrypoint(
-            &self.fact_program,
-            &self.fact_builtins,
-            0,
-            &[0_usize.into(), 1_usize.into(), n.into()],
-        );
-        info!("Output Fact CairoVM: ret is {:?}", ret)
+        format!("Output Fact Cairo Native: {:?}", ret)
     }
 }
 
 enum ExecutionEngine {
-    Cairo(Box<CairoVMExecutionProgram>),
+    Cairo(Box<CairoVMEngine>),
     Sierra(CairoNativeExecutionProgram),
 }
 
 impl ExecutionEngine {
     fn execute_fibonacci(&self, n: usize) {
-        match self {
+        let ret_msg = match self {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
             ExecutionEngine::Sierra(execution_program) => {
                 execution_program.execute_fibonacci(get_input_value_cairo_native(n))
             }
-        }
+        };
+        info!("{}", ret_msg)
     }
 
     fn execute_factorial(&self, n: usize) {
-        match self {
+        let ret_msg = match self {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_factorial(n),
             ExecutionEngine::Sierra(execution_program) => {
                 execution_program.execute_factorial(get_input_value_cairo_native(n))
             }
-        }
+        };
+        info!("{}", ret_msg)
     }
 }
 
@@ -168,23 +134,10 @@ impl Node {
                 let fact_casm_program: Vec<u8> =
                     include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
 
-                let fib_program: CasmContractClass =
-                    serde_json::from_slice(&fib_casm_program).unwrap();
-
-                let fib_builtins: Vec<BuiltinName> = get_casm_contract_builtins(&fib_program, 0);
-
-                let fact_program: CasmContractClass =
-                    serde_json::from_slice(&fact_casm_program).unwrap();
-
-                let fact_builtins: Vec<BuiltinName> = get_casm_contract_builtins(&fact_program, 0);
+                let cairovm_engine = CairoVMEngine::new(fib_casm_program, fact_casm_program);
 
                 // Read casm program bytes as CasmContractClass
-                ExecutionEngine::Cairo(Box::new(CairoVMExecutionProgram {
-                    fib_program,
-                    fact_program,
-                    fib_builtins,
-                    fact_builtins,
-                }))
+                ExecutionEngine::Cairo(Box::new(cairovm_engine))
             }
             ExecutionParameters::CairoNative => {
                 // Compile Cairo programs to Sierra
@@ -441,136 +394,6 @@ impl Node {
     }
 }
 
-// TODO: Move this to a separate library file
-fn run_cairo_1_entrypoint(
-    program_content: &CasmContractClass,
-    program_builtins: &[BuiltinName],
-    entrypoint_offset: usize,
-    args: &[MaybeRelocatable],
-) -> Vec<cairo_vm::felt::Felt252> {
-    let contract_class = program_content;
-    let mut hint_processor =
-        Cairo1HintProcessor::new(&contract_class.hints, RunResources::default());
-    let aux_program: Program = contract_class.clone().try_into().unwrap();
-    let mut runner = CairoRunner::new(
-        &(contract_class.clone().try_into().unwrap()),
-        "all_cairo",
-        false,
-    )
-    .unwrap();
-    let mut vm = VirtualMachine::new(false);
-
-    runner
-        .initialize_function_runner_cairo_1(&mut vm, program_builtins)
-        .unwrap();
-
-    // Implicit Args
-    let syscall_segment = MaybeRelocatable::from(vm.add_memory_segment());
-
-    let builtins: Vec<&'static str> = runner
-        .get_program_builtins()
-        .iter()
-        .map(|b| b.name())
-        .collect();
-
-    let builtin_segment: Vec<MaybeRelocatable> = vm
-        .get_builtin_runners()
-        .iter()
-        .filter(|b| builtins.contains(&b.name()))
-        .flat_map(|b| b.initial_stack())
-        .collect();
-
-    let initial_gas = MaybeRelocatable::from(usize::MAX);
-
-    let mut implicit_args = builtin_segment;
-    implicit_args.extend([initial_gas]);
-    implicit_args.extend([syscall_segment]);
-
-    // Load builtin costs
-    let builtin_costs: Vec<MaybeRelocatable> =
-        vec![0.into(), 0.into(), 0.into(), 0.into(), 0.into()];
-    let builtin_costs_ptr = vm.add_memory_segment();
-    vm.load_data(builtin_costs_ptr, &builtin_costs).unwrap();
-
-    // Load extra data
-    let core_program_end_ptr = (runner.program_base.unwrap() + aux_program.data_len()).unwrap();
-    let program_extra_data: Vec<MaybeRelocatable> =
-        vec![0x208B7FFF7FFF7FFE.into(), builtin_costs_ptr.into()];
-    vm.load_data(core_program_end_ptr, &program_extra_data)
-        .unwrap();
-
-    // Load calldata
-    let calldata_start = vm.add_memory_segment();
-    let calldata_end = vm.load_data(calldata_start, &args.to_vec()).unwrap();
-
-    // Create entrypoint_args
-    let mut entrypoint_args: Vec<CairoArg> = implicit_args
-        .iter()
-        .map(|m| CairoArg::from(m.clone()))
-        .collect();
-    entrypoint_args.extend([
-        MaybeRelocatable::from(calldata_start).into(),
-        MaybeRelocatable::from(calldata_end).into(),
-    ]);
-    let entrypoint_args: Vec<&CairoArg> = entrypoint_args.iter().collect();
-
-    // Run contract entrypoint
-    runner
-        .run_from_entrypoint(
-            entrypoint_offset,
-            &entrypoint_args,
-            true,
-            Some(aux_program.data_len() + program_extra_data.len()),
-            &mut vm,
-            &mut hint_processor,
-        )
-        .unwrap();
-
-    // Check return values
-    let return_values = vm.get_return_values(5).unwrap();
-    let retdata_start = return_values[3].get_relocatable().unwrap();
-    let retdata_end = return_values[4].get_relocatable().unwrap();
-    let retdata: Vec<cairo_vm::felt::Felt252> = vm
-        .get_integer_range(retdata_start, (retdata_end - retdata_start).unwrap())
-        .unwrap()
-        .iter()
-        .map(|c| c.clone().into_owned())
-        .collect();
-    retdata
-}
-
-fn get_casm_contract_builtins(
-    contract_class: &CasmContractClass,
-    entrypoint_offset: usize,
-) -> Vec<BuiltinName> {
-    contract_class
-        .entry_points_by_type
-        .external
-        .iter()
-        .find(|e| e.offset == entrypoint_offset)
-        .unwrap()
-        .builtins
-        .iter()
-        .map(|n| format!("{}_builtin", n))
-        .map(|s| match &*s {
-            cairo_vm::vm::runners::builtin_runner::OUTPUT_BUILTIN_NAME => BuiltinName::output,
-            cairo_vm::vm::runners::builtin_runner::RANGE_CHECK_BUILTIN_NAME => {
-                BuiltinName::range_check
-            }
-            cairo_vm::vm::runners::builtin_runner::HASH_BUILTIN_NAME => BuiltinName::pedersen,
-            cairo_vm::vm::runners::builtin_runner::SIGNATURE_BUILTIN_NAME => BuiltinName::ecdsa,
-            cairo_vm::vm::runners::builtin_runner::KECCAK_BUILTIN_NAME => BuiltinName::keccak,
-            cairo_vm::vm::runners::builtin_runner::BITWISE_BUILTIN_NAME => BuiltinName::bitwise,
-            cairo_vm::vm::runners::builtin_runner::EC_OP_BUILTIN_NAME => BuiltinName::ec_op,
-            cairo_vm::vm::runners::builtin_runner::POSEIDON_BUILTIN_NAME => BuiltinName::poseidon,
-            cairo_vm::vm::runners::builtin_runner::SEGMENT_ARENA_BUILTIN_NAME => {
-                BuiltinName::segment_arena
-            }
-            _ => panic!("Invalid builtin {}", s),
-        })
-        .collect()
-}
-
 fn get_input_value_cairo_native(n: usize) -> Vec<u32> {
     let mut digits = BigUint::from(n).to_u32_digits();
     digits.resize(8, 0);
@@ -616,36 +439,6 @@ mod test {
     use std::path::Path;
 
     use cairo_lang_compiler::CompilerConfig;
-
-    #[test]
-    fn fib_1_cairovm() {
-        let program_bytes = include_bytes!("../../cairo_programs/fib_contract.casm");
-        let program = serde_json::from_slice::<super::CasmContractClass>(program_bytes).unwrap();
-        let program_builtins = super::get_casm_contract_builtins(&program, 0);
-        let n = 1_usize;
-        let ret = super::run_cairo_1_entrypoint(
-            &program,
-            &program_builtins,
-            0,
-            &[1_usize.into(), 1_usize.into(), n.into()],
-        );
-        assert_eq!(ret, vec![1_usize.into()]);
-    }
-
-    #[test]
-    fn fib_10_cairovm() {
-        let program_bytes = include_bytes!("../../cairo_programs/fib_contract.casm");
-        let program = serde_json::from_slice::<super::CasmContractClass>(program_bytes).unwrap();
-        let program_builtins = super::get_casm_contract_builtins(&program, 0);
-        let n = 10_usize;
-        let ret = super::run_cairo_1_entrypoint(
-            &program,
-            &program_builtins,
-            0,
-            &[0_usize.into(), 1_usize.into(), n.into()],
-        );
-        assert_eq!(ret, vec![55_usize.into()]);
-    }
 
     #[test]
     fn fib_10_cairo_native() {
