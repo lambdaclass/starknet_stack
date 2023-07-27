@@ -124,9 +124,13 @@ services:
       - "4000:4000"
     environment:
       - RPC_API_HOST=http://sequencer_node0:10008
+      - TESTNET_RPC_API_HOST=http://sequencer_node0:10008
+      - TESTNET_2_RPC_API_HOST=http://sequencer_node0:10008
+      - ENABLE_BLOCK_VERIFICATION=true
       - DATABASE_URL=ecto://postgres:postgres@172.27.0.30:5432/starknet_explorer_dev
       - SECRET_KEY_BASE=IVx1FJb5Fg34MApqVRoSOFx/2PdNTnJRU5w1X/2A1G3E8qJKhLMGI5GJGPYglP1e
       - PHX_HOST=localhost
+      - PROVER_STORAGE=local
     depends_on:
       - postgres_madara_explorer
     networks:

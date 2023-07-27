@@ -302,6 +302,8 @@ impl Node {
                                         .expect("calldata was not correctly set");
                                     let n: usize =
                                         program_input.to_le_digits()[0].try_into().unwrap();
+                                    
+                                    info!("N for this transaction is: {}", n);
 
                                     if is_fib {
                                         self.execution_program.execute_fibonacci(0, 1, n);
