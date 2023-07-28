@@ -70,6 +70,8 @@ As mentioned, the proofs are saved by default on the file system, but the option
 - `AWS_SECRET_ACCESS_KEY` needs to be set to your AWS secret access key
 - `AWS_REGION` should be set to the desired AWS region
 
+If S3 is chosen as the storage backend, the explorer needs to also know about the AWS bucket in order to retrieve proofs and verify them on the browser, so the same variables described above need to be set for the [explorer container].(https://github.com/lambdaclass/starknet_stack/blob/8ff555d2dfb5bd3631f9bf6c81a602b63a35f5b4/docker-compose.yml#L125)
+
 ## Trust assumptions
 
 - There is currently no way to validate whether a proof of an execution is related to a specific transaction. This is planned for the future
