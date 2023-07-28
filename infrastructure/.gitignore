@@ -35,3 +35,8 @@ terraform.rc
 
 **tfplan
 **.terraform.lock.hcl
+
+# Ignore node's keys and committee file
+ansible/sequencer/playbooks/files/committee.json
+ansible/sequencer/playbooks/files/sequencer_node*.json
+ansible/sequencer/inventory.yaml

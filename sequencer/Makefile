@@ -53,7 +53,7 @@ generate-nodes-keys:
 		rm -r ./config/committee.json; \
 	fi
 
-generate-committee-for-docker: generate-nodes-keys
+generate-committee: generate-nodes-keys
 	@echo "Generating sequencer committee: sequencer/config/committee.json"
 	@cd config/scripts && ./generate_committee.py "172.27.0.10, 172.27.0.11, 172.27.0.12, 172.27.0.13"
 
