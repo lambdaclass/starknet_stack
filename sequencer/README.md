@@ -78,6 +78,8 @@ To run a node, you need to have a valid committee file and valid parameters (`ma
 
 Consensus will start when nodes can communicate with each other, which means you need to run all nodes. This in turn means all nodes need to share the same config and no nodes can be added to the network afteward.
 
+In order to change the execution engine from `cairo_native` to `cairovm` you will need to modify the function `local` in `fabfile.py`, change the `execution` parameter to `cairovm`.
+
 ### Querying a node
 
 A node prvides an RPC endpoint that can be used to query it's state.
