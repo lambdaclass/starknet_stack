@@ -27,14 +27,13 @@ flowchart LR
 
 Starknet stack is a set of technologies to launch and run high-performance decentralized validity blockchains based on Starknet and Cairo. It encompasses the whole cycle: Sequencing user transactions into blocks, executing them, and generating validity proofs, in order to settle state transitions while maintaining high throughput and transparency.
 
-There are two main components to the cycle:
+There are three main components to the cycle:
 
 - [Sequencer](/sequencer): The sequencing side of the flow written in Rust, which includes user transaction settlement and execution through [Cairo Native](https://github.com/lambdaclass/cairo_native).
 - [Watcher-Prover](/watcher_prover): A service that can be deployed independently which is in charge of requesting blocks with transactions to the sequencer nodes, in order to get transactions and generate traces with [Cairo VM](https://github.com/lambdaclass/cairo-vm/) which are later proved by our [Lambdaworks Starknet Prover](https://github.com/lambdaclass/starknet_stack_prover_lambdaworks). The proofs are later stored for users to query them accordingly.
+- [Madara explorer](https://github.com/lambdaclass/madara_explorer): Lastly, you can also explore the blockchain and verify proofs in the browser using our Madara Explorer.
 
 There is further information for each component in their respective subdirectories.
-
-Additionally, you can also explore the blockchain with [Starknet Stack Explorer](https://github.com/lambdaclass/starknet_stack_explorer).
 
 ## Quick start
 
