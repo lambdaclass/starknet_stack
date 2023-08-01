@@ -2,7 +2,6 @@ use anyhow::bail;
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
-
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
