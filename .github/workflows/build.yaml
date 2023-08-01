@@ -20,13 +20,6 @@ jobs:
       - name: Install LLVM
         run: make install-corelibs
         working-directory: sequencer
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
         
       - name: Run tests
         run: make test
