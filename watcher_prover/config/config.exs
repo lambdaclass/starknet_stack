@@ -12,7 +12,7 @@ import Config
 
 # Configures the endpoint
 config :watcher_prover, WatcherProverWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: "localhost", port: 16119],
   render_errors: [
     formats: [html: WatcherProverWeb.ErrorHTML, json: WatcherProverWeb.ErrorJSON],
     layout: false
