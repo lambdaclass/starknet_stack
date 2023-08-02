@@ -50,6 +50,14 @@ Currently deploying in us-west-2a Availability Zone
 make sequencer
 ```
 
+This command generates all the needed metadata for the nodes based o the environment variables specified. Specifically, these are the items we need:
+
+- committee.json: Contains all the info that all the nodes need to know about each other in terms of the application (public keys, endpoints, etc.)
+- Sequencer nodes keys: (One file per node) Contains the secret key alongside its public key 
+- Ansible inventory
+
+After this is done, the ansible playbook is executed accordingly in order to replicate the desired configuration.
+
 * To deploy from a precompiled version (from commit [`3e2a28f`](https://github.com/lambdaclass/starknet_stack/tree/3e2a28f/sequencer) of this repo), execute:
 
 ```shell
