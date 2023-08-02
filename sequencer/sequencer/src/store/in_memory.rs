@@ -4,33 +4,31 @@ use cairo_felt::Felt252;
 use std::{collections::HashMap, fmt::Debug};
 use types::{
     InvokeTransaction, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transaction,
+    TransactionReceipt,
 };
 
 #[derive(Clone, Default)]
 pub struct Store {
-    programs: HashMap<Key, Value>,
     transactions: HashMap<Felt252, Transaction>,
+    blocks_by_hash: HashMap<Felt252, MaybePendingBlockWithTxs>,
+    blocks_by_height: HashMap<u64, MaybePendingBlockWithTxs>,
+    transaction_receipts: HashMap<Felt252, MaybePendingTransactionReceipt>,
+    values: HashMap<Key, Value>,
 }
 
 impl Store {
     pub fn new() -> Self {
         Self {
-            programs: HashMap::new(),
             transactions: HashMap::new(),
+            blocks_by_hash: HashMap::new(),
+            blocks_by_height: HashMap::new(),
+            transaction_receipts: HashMap::new(),
+            values: HashMap::new(),
         }
     }
 }
 
 impl StoreEngine for Store {
-    fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
-        self.programs.insert(program_id, program);
-        Ok(())
-    }
-
-    fn get_program(&self, program_id: Key) -> Option<Value> {
-        self.programs.get(&program_id).cloned()
-    }
-
     fn add_transaction(&mut self, tx: Transaction) -> Result<()> {
         match tx.clone() {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {
@@ -49,20 +47,21 @@ impl StoreEngine for Store {
         todo!()
     }
 
-    fn get_block_by_hash(&self, _block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
-        todo!()
+    fn get_block_by_hash(&self, block_hash: Felt252) -> Result<Option<MaybePendingBlockWithTxs>> {
+        Ok(self.blocks_by_hash.get(&block_hash).cloned())
     }
 
-    fn get_block_by_height(&self, _block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
-        todo!()
+    fn get_block_by_height(&self, block_height: u64) -> Result<Option<MaybePendingBlockWithTxs>> {
+        Ok(self.blocks_by_height.get(&block_height).cloned())
     }
 
-    fn set_value(&mut self, _key: Key, _value: Value) -> Result<()> {
-        todo!()
+    fn set_value(&mut self, key: Key, value: Value) -> Result<()> {
+        let _ = self.values.insert(key, value);
+        Ok(())
     }
 
-    fn get_value(&self, _key: Key) -> Option<Value> {
-        todo!()
+    fn get_value(&self, key: Key) -> Option<Value> {
+        self.values.get(&key).cloned()
     }
 
     fn add_transaction_receipt(
@@ -74,9 +73,9 @@ impl StoreEngine for Store {
 
     fn get_transaction_receipt(
         &self,
-        _transaction_id: Felt252,
+        tx_hash: Felt252,
     ) -> Result<Option<MaybePendingTransactionReceipt>> {
-        todo!()
+        Ok(self.transaction_receipts.get(&tx_hash).cloned())
     }
 }
 

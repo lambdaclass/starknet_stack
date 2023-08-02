@@ -10,22 +10,17 @@ use types::{MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transactio
 pub mod in_memory;
 pub mod rocksdb;
 pub mod sled;
-//pub mod store;
 
 pub(crate) type Key = Vec<u8>;
 pub(crate) type Value = Vec<u8>;
 
-// TODO: add tests
-
 const BLOCK_HEIGHT: &str = "height";
 pub trait StoreEngine: Debug + Send {
-    fn add_program(&mut self, program_id: Key, program: Value) -> Result<()>;
-    fn get_program(&self, program_id: Key) -> Option<Value>;
     fn add_transaction(&mut self, transaction: Transaction) -> Result<()>;
     fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>>;
     fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()>;
-    fn get_block_by_hash(&self, block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>>;
-    fn get_block_by_height(&self, block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>>;
+    fn get_block_by_hash(&self, block_hash: Felt252) -> Result<Option<MaybePendingBlockWithTxs>>;
+    fn get_block_by_height(&self, block_height: u64) -> Result<Option<MaybePendingBlockWithTxs>>;
     fn set_value(&mut self, key: Key, value: Value) -> Result<()>;
     fn get_value(&self, key: Key) -> Option<Value>;
     fn add_transaction_receipt(
@@ -75,19 +70,6 @@ impl Store {
         }
     }
 
-    // TODO: we might want this API to return types objects instead of bytes
-    pub fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
-        self.engine
-            .clone()
-            .lock()
-            .unwrap()
-            .add_program(program_id, program)
-    }
-
-    pub fn get_program(&self, program_id: Key) -> Option<Value> {
-        self.engine.clone().lock().unwrap().get_program(program_id)
-    }
-
     pub fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
         self.engine
             .clone()
@@ -112,10 +94,13 @@ impl Store {
             .clone()
             .lock()
             .unwrap()
-            .get_block_by_height(block_height.to_be_bytes().to_vec())
+            .get_block_by_height(block_height)
     }
 
-    pub fn get_block_by_hash(&self, block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
+    pub fn get_block_by_hash(
+        &self,
+        block_hash: Felt252,
+    ) -> Result<Option<MaybePendingBlockWithTxs>> {
         self.engine
             .clone()
             .lock()

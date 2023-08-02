@@ -10,7 +10,6 @@ use types::{
 
 #[derive(Clone)]
 pub struct Store {
-    programs: Db,
     transactions: Db,
     blocks_by_hash: Db,
     blocks_by_height: Db,
@@ -21,7 +20,6 @@ pub struct Store {
 impl Store {
     pub fn new(path: &str) -> Self {
         Self {
-            programs: sled::open(format!("{path}.programs.db")).unwrap(),
             transactions: sled::open(format!("{path}.transactions.db")).unwrap(),
             blocks_by_hash: sled::open(format!("{path}.blocks1.db")).unwrap(),
             blocks_by_height: sled::open(format!("{path}.blocks2.db")).unwrap(),
@@ -32,18 +30,6 @@ impl Store {
 }
 
 impl StoreEngine for Store {
-    fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
-        let _ = self.programs.insert(program_id, program);
-        Ok(())
-    }
-
-    fn get_program(&self, program_id: Key) -> Option<Value> {
-        self.programs
-            .get(program_id)
-            .unwrap()
-            .map(|value| value.to_vec())
-    }
-
     fn add_transaction(&mut self, tx: Transaction) -> Result<()> {
         let tx_serialized: Vec<u8> = serde_json::to_string(&tx).unwrap().as_bytes().to_vec();
         match tx {
@@ -53,6 +39,7 @@ impl StoreEngine for Store {
                     .insert(invoke_tx.transaction_hash.to_bytes_be(), tx_serialized);
                 Ok(())
             }
+            // Currently only InvokeTransactionV1 are supported
             _ => todo!(),
         }
     }
@@ -84,9 +71,9 @@ impl StoreEngine for Store {
         }
     }
 
-    fn get_block_by_hash(&self, block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
+    fn get_block_by_hash(&self, block_hash: Felt252) -> Result<Option<MaybePendingBlockWithTxs>> {
         self.blocks_by_hash
-            .get(block_hash)?
+            .get(block_hash.to_bytes_be())?
             .map_or(Ok(None), |value| {
                 Ok(Some(serde_json::from_str::<MaybePendingBlockWithTxs>(
                     &String::from_utf8(value.to_vec())?,
@@ -94,9 +81,9 @@ impl StoreEngine for Store {
             })
     }
 
-    fn get_block_by_height(&self, block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
+    fn get_block_by_height(&self, block_height: u64) -> Result<Option<MaybePendingBlockWithTxs>> {
         self.blocks_by_height
-            .get(block_height)?
+            .get(block_height.to_be_bytes().to_vec())?
             .map_or(Ok(None), |value| {
                 Ok(Some(serde_json::from_str::<MaybePendingBlockWithTxs>(
                     &String::from_utf8(value.to_vec())?,
@@ -129,6 +116,7 @@ impl StoreEngine for Store {
                 );
                 Ok(())
             }
+            // Currently only InvokeTransactionReceipts are supported
             _ => todo!(),
         }
     }
