@@ -43,7 +43,7 @@ To run this locally through Docker, clone this repo and then do:
 make run-local
 ```
 
-This will compile the containers and, through Docker, deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. Before finishing, a client that sends a bunch of transactions is executed. The consensus nodes implement the Starknet RPC (partially for now), so you can curl the endpoints appropriately. You can also access the Madara explorer at http://localhost:4000/ and check out the blockchain. 
+This will compile the containers and, through Docker, deploy 4 consensus nodes, the watcher-prover, and the blockchain Explorer. Before finishing, a client that sends a bunch of transactions is executed. The consensus nodes implement the Starknet RPC (partially for now), so you can cURL the endpoints appropriately. You can also access the Madara explorer at http://localhost:4000/ and check out the blockchain alongside the proof status. 
 
 When finished, don't forget to stop the containers by running `make stop`.
 
@@ -57,16 +57,16 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 - Consensus nodes vote on blocks and commit them accordingly. If no transactions are sent, empty blocks are created regularly
 - In parallel, the watcher-prover is querying the RPC endpoints and checking transactions on blocks
 - When the watcher-prover gets a new block/transaction, it proves the execution through the CairoVM and the LambdaWorks prover
-- Proofs get saved either on the file system or on S3 (by default, the filesystem)
+- Proofs get saved either on the file system or on S3 (by default, the filesystem under `./proofs`)
 - On the explorer, you can browse blocks and see the transactions they include, along with the status of its proof:
-	- The `Local verification` field indicates whether the proof is available and if it has been verified on the browser. If, after waiting a few seconds, the field says `Verified`, it means the explorer has retrieved the proof and it has been verified on the browser. If it's `Pending`, the proof has not been made available by the watcher prover
+	- The `Local verification` field indicates whether the proof is available and if it has been verified on the browser. If, after waiting a few seconds, the field says `Verified`, it means the explorer has retrieved the proof and it has been verified on the browser. If it's `Pending`, the proof has not yet been made available by the watcher prover.
 
 ### How to store proofs on S3
 
 As mentioned, the proofs are saved by default on the file system, but the option exists to save them on S3 buckets. In order to set this up, the following environment variables need to be set in docker-compose.yml for the [`watcher_prover` container](https://github.com/lambdaclass/starknet_stack/blob/8ff555d2dfb5bd3631f9bf6c81a602b63a35f5b4/docker-compose.yml#L93C11-L93C29):
 
 - `PROVER_STORAGE=s3`
-- `AWS_ACCESS_KEY_ID` needs to be set to AWS access key id
+- `AWS_ACCESS_KEY_ID` needs to be set to your AWS access key id
 - `AWS_SECRET_ACCESS_KEY` needs to be set to your AWS secret access key
 - `AWS_REGION` should be set to the desired AWS region
 
