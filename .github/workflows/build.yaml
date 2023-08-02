@@ -44,6 +44,7 @@ jobs:
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
+        working-directory: sequencer
         with:
           profile: minimal
           toolchain: nightly
@@ -59,6 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
+        working-directory: sequencer
         with:
             toolchain: nightly
             components: clippy
