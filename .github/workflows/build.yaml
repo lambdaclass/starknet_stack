@@ -21,6 +21,10 @@ jobs:
         run: make install-corelibs
         working-directory: sequencer
 
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
+
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -39,6 +43,10 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
 
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
+
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -55,6 +63,11 @@ jobs:
     runs-on: [self-hosted, hetzner]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
+
       - uses: actions-rs/toolchain@v1
         with:
             toolchain: nightly
