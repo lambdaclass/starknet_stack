@@ -1,0 +1,77 @@
+name: Starknet stack build checks
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ '*' ]
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Test
+    runs-on: [self-hosted, hetzner]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        
+      - name: Install LLVM
+        run: make install-corelibs
+        working-directory: sequencer
+
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+        
+      - name: Run tests
+        run: make test
+        working-directory: sequencer
+
+  fmt:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cargo fmt
+        run: cargo fmt --all -- --check
+        working-directory: sequencer
+
+  clippy:
+    runs-on: [self-hosted, hetzner]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
+
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            components: clippy
+      
+      - run: make clippy
+        working-directory: sequencer

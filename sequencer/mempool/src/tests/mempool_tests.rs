@@ -31,6 +31,7 @@ async fn handle_clients_transactions() {
 
     // Spawn enough mempools' listeners to acknowledge our batches.
     for (_, address) in committee.broadcast_addresses(&name) {
+        #[allow(clippy::let_underscore_future)]
         let _ = listener(address, /* expected */ None);
     }
 

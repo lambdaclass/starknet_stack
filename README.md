@@ -48,6 +48,8 @@ This will compile the containers and, through Docker, deploy 4 consensus nodes, 
 
 When finished, don't forget to stop the containers by running `make stop`.
 
+By default the execution in the Sequencer is done with Cairo Native. If you wish to use CairoVM then you will need to change `cairo_native` for `cairovm` in the `config/parameters.json` file in the Sequencer.
+
 ### Send transactions
 
 A mentioned above, as part of `make run-local`, a client that sends random transactions to the sequencer will run for a short while in order to populate the blockchain. You can also run the client on demand (`make run-client`).

@@ -2,9 +2,11 @@ use super::{Key, StoreEngine, Value};
 use anyhow::Result;
 use cairo_felt::Felt252;
 use std::{collections::HashMap, fmt::Debug};
-use types::{InvokeTransaction, MaybePendingBlockWithTxs, Transaction, MaybePendingTransactionReceipt};
+use types::{
+    InvokeTransaction, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transaction,
+};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Store {
     programs: HashMap<Key, Value>,
     transactions: HashMap<Felt252, Transaction>,
@@ -70,7 +72,10 @@ impl StoreEngine for Store {
         todo!()
     }
 
-    fn get_transaction_receipt(&self, _transaction_id: Felt252) -> Result<Option<MaybePendingTransactionReceipt>> {
+    fn get_transaction_receipt(
+        &self,
+        _transaction_id: Felt252,
+    ) -> Result<Option<MaybePendingTransactionReceipt>> {
         todo!()
     }
 }
