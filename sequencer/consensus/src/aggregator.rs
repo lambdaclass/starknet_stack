@@ -32,7 +32,7 @@ impl Aggregator {
         // Add the new vote to our aggregator and see if we have a QC.
         self.votes_aggregators
             .entry(vote.round)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(vote.digest())
             .or_insert_with(|| Box::new(QCMaker::new()))
             .append(vote, &self.committee)
