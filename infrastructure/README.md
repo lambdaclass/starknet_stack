@@ -52,7 +52,7 @@ make sequencer
 
 This command generates all the needed metadata for the nodes based o the environment variables specified. Specifically, these are the items we need:
 
-- committee.json: Contains all the info that all the nodes need to know about each other in terms of the application (public keys, endpoints, etc.)
+- `committee.json`: Contains all the info that all the nodes need to know about each other in terms of the application (public keys, endpoints, etc.)
 - Sequencer nodes keys: (One file per node) Contains the secret key alongside its public key 
 - Ansible inventory
 
