@@ -9,9 +9,6 @@ concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-env:
-  RUSTUP_HOME: .cargo
-
 jobs:
   check:
     name: Test
@@ -23,6 +20,10 @@ jobs:
       - name: Install LLVM
         run: make install-corelibs
         working-directory: sequencer
+
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -42,9 +43,12 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
 
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
+
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
-        working-directory: sequencer
         with:
           profile: minimal
           toolchain: nightly
@@ -59,8 +63,12 @@ jobs:
     runs-on: [self-hosted, hetzner]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set RUSTUP_HOME
+        run: |
+          echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
+
       - uses: actions-rs/toolchain@v1
-        working-directory: sequencer
         with:
             toolchain: nightly
             components: clippy
