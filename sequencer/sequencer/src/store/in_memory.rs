@@ -30,11 +30,14 @@ impl Store {
 
 impl StoreEngine for Store {
     fn add_transaction(&mut self, tx: Transaction) -> Result<()> {
-        match tx.clone() {
+        match &tx {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {
-                let _ = self.transactions.insert(invoke_tx.transaction_hash, tx);
+                let _ = self
+                    .transactions
+                    .insert(invoke_tx.transaction_hash.clone(), tx);
                 Ok(())
             }
+            // Currently only InvokeTransactionV1 are supported
             _ => todo!(),
         }
     }
@@ -43,8 +46,23 @@ impl StoreEngine for Store {
         Ok(self.transactions.get(&tx_hash).cloned())
     }
 
-    fn add_block(&mut self, _block: MaybePendingBlockWithTxs) -> Result<()> {
-        todo!()
+    fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()> {
+        match &block {
+            MaybePendingBlockWithTxs::Block(block_with_txs) => {
+                let _ = self
+                    .blocks_by_hash
+                    .insert(block_with_txs.block_hash.clone(), block.clone());
+                let _ = self
+                    .blocks_by_height
+                    .insert(block_with_txs.block_number, block);
+                Ok(())
+            }
+            MaybePendingBlockWithTxs::PendingBlock(_) =>
+            // Currently only MaybePendingBlockWithTxs::Block is supported
+            {
+                todo!()
+            }
+        }
     }
 
     fn get_block_by_hash(&self, block_hash: Felt252) -> Result<Option<MaybePendingBlockWithTxs>> {
@@ -66,9 +84,18 @@ impl StoreEngine for Store {
 
     fn add_transaction_receipt(
         &mut self,
-        _transaction_receipt: MaybePendingTransactionReceipt,
+        transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
-        todo!()
+        match &transaction_receipt {
+            MaybePendingTransactionReceipt::Receipt(TransactionReceipt::Invoke(tx_receipt)) => {
+                let _ = self
+                    .transaction_receipts
+                    .insert(tx_receipt.transaction_hash.clone(), transaction_receipt);
+                Ok(())
+            }
+            // Currently only InvokeTransactionReceipts are supported
+            _ => todo!(),
+        }
     }
 
     fn get_transaction_receipt(

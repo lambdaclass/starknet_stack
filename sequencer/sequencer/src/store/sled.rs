@@ -67,7 +67,11 @@ impl StoreEngine for Store {
                     .insert(block_with_txs.block_number.to_be_bytes(), block_serialized);
                 Ok(())
             }
-            MaybePendingBlockWithTxs::PendingBlock(_) => todo!(),
+            MaybePendingBlockWithTxs::PendingBlock(_) =>
+            // Currently only MaybePendingBlockWithTxs::Block is supported
+            {
+                todo!()
+            }
         }
     }
 

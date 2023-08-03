@@ -99,6 +99,7 @@ impl StoreEngine for Store {
                 ))?;
                 reply_receiver.recv()?
             }
+            // Currently only InvokeTransactionV1 are supported
             _ => todo!(),
         }
     }
@@ -145,7 +146,11 @@ impl StoreEngine for Store {
                     .recv()
                     .and(reply_receiver_by_height.recv())?
             }
-            MaybePendingBlockWithTxs::PendingBlock(_) => todo!(),
+            MaybePendingBlockWithTxs::PendingBlock(_) =>
+            // Currently only MaybePendingBlockWithTxs::Block is supported
+            {
+                todo!()
+            }
         }
     }
 
