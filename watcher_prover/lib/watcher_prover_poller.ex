@@ -73,9 +73,13 @@ defmodule WatcherProver.Poller do
           Logger.info("Uploaded proof of block with id #{block_hash}")
 
         _ ->
-          file_path = "./proofs/#{block_hash}.proof"
+          file_path = "./proofs/#{block_hash}-proof"
+          inputs_path = "./proofs/#{block_hash}-public_inputs"
+
           :ok = File.write(file_path, proof, [:write])
-          Logger.info("Saved block with id #{block_hash} to file ./proofs/#{block_hash}.proof")
+          :ok = File.write(inputs_path, public_inputs, [:write])
+
+          Logger.info("Saved block with id #{block_hash} to file ./proofs/#{block_hash}-proof")
       end
 
       {:noreply,
