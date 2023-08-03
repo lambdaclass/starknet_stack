@@ -31,7 +31,7 @@ There are three main components to the cycle:
 
 - [Sequencer](/sequencer): The sequencing side of the flow written in Rust, which includes user transaction settlement and execution through [Cairo Native](https://github.com/lambdaclass/cairo_native).
 - [Watcher-Prover](/watcher_prover): A service that can be deployed independently which is in charge of requesting blocks with transactions to the sequencer nodes, in order to get transactions and generate traces with [Cairo VM](https://github.com/lambdaclass/cairo-vm/) which are later proved by our [Lambdaworks Starknet Prover](https://github.com/lambdaclass/starknet_stack_prover_lambdaworks). The proofs are later stored for users to query them accordingly.
-- [Madara explorer](https://github.com/lambdaclass/madara_explorer): Lastly, you can also explore the blockchain and verify proofs in the browser using our Madara Explorer.
+- [Explorer](https://github.com/lambdaclass/madara_explorer): Lastly, you can also explore the blockchain and verify proofs in the browser using our blockchain-agnostic Madara Explorer.
 
 There is further information for each component in their respective subdirectories.
 
@@ -63,6 +63,8 @@ A mentioned above, as part of `make run-local`, a client that sends random trans
 - On the explorer, you can browse blocks and see the transactions they include, along with the status of its proof:
 	- The `Local verification` field indicates whether the proof is available and if it has been verified on the browser. If, after waiting a few seconds, the field says `Verified`, it means the explorer has retrieved the proof and it has been verified on the browser. If it's `Pending`, the proof has not yet been made available by the watcher prover.
 
+> You can enable or disable block verification on the browser by setting `ENABLE_BLOCK_VERIFICATION` to `true` or `false` respectively in the environment that runs the explorer. If it is not set, it will default to disabling it. The included [`docker-compose.yaml`](https://github.com/lambdaclass/kraken_zk_stack/blob/5006cc367b3dffe1a6fb5158fe72181e3e7c3c69/docker-compose.yml#L131) deploys the explorer configured to retrieve proofs locally and with block verification enabled
+
 ### How to store proofs on S3
 
 As mentioned, the proofs are saved by default on the file system, but the option exists to save them on S3 buckets. In order to set this up, the following environment variables need to be set in docker-compose.yml for the [`watcher_prover` container](https://github.com/lambdaclass/starknet_stack/blob/8ff555d2dfb5bd3631f9bf6c81a602b63a35f5b4/docker-compose.yml#L93C11-L93C29):
@@ -71,8 +73,9 @@ As mentioned, the proofs are saved by default on the file system, but the option
 - `AWS_ACCESS_KEY_ID` needs to be set to your AWS access key id
 - `AWS_SECRET_ACCESS_KEY` needs to be set to your AWS secret access key
 - `AWS_REGION` should be set to the desired AWS region
+- `S3_BUCKET_NAME` needs to be set to the S3 bucket in which to store the proofs
 
-If S3 is chosen as the storage backend, the explorer needs to also know about the AWS bucket in order to retrieve proofs and verify them on the browser, so the same variables described above need to be set for the [explorer container].(https://github.com/lambdaclass/starknet_stack/blob/8ff555d2dfb5bd3631f9bf6c81a602b63a35f5b4/docker-compose.yml#L125)
+If S3 is chosen as the storage backend, the explorer needs to also know about the AWS bucket in order to retrieve proofs and verify them on the browser, so the same variables described above need to be set for the [explorer container](https://github.com/lambdaclass/starknet_stack/blob/8ff555d2dfb5bd3631f9bf6c81a602b63a35f5b4/docker-compose.yml#L125).
 
 ## Trust assumptions
 
