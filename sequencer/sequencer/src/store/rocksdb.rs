@@ -1,5 +1,5 @@
 use super::{Key, StoreEngine, Value};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use cairo_felt::Felt252;
 use std::fmt::Debug;
 use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
@@ -51,16 +51,9 @@ impl Store {
                             DbSelector::Values => &values,
                             DbSelector::TransactionReceipts => &transaction_receipts,
                         };
-                        let result = if db.get(id.clone()).unwrap_or(None).is_some() {
-                            Err(anyhow!(
-                                "Id {} already exists in the store",
-                                String::from_utf8_lossy(&id),
-                            ))
-                        } else {
-                            Ok(db
-                                .put(id, value)
-                                .unwrap_or_else(|e| error!("failed to write to db {}", e)))
-                        };
+                        let result = Ok(db
+                            .put(id, value)
+                            .unwrap_or_else(|e| error!("failed to write to db {}", e)));
 
                         reply_to.send(result).unwrap_or_else(|e| error!("{}", e));
                     }
@@ -203,15 +196,14 @@ impl StoreEngine for Store {
         reply_receiver.recv()?
     }
 
-    fn get_value(&self, key: Key) -> Option<Value> {
+    fn get_value(&self, key: Key) -> Result<Option<Vec<u8>>> {
         let (reply_sender, reply_receiver) = sync_channel(0);
 
         self.command_sender
             .send(StoreCommand::Get(DbSelector::Values, key, reply_sender))
             .unwrap();
 
-        // TODO: properly handle errors
-        reply_receiver.recv().unwrap().unwrap()
+        reply_receiver.recv()?
     }
 
     fn add_transaction_receipt(

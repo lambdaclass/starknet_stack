@@ -100,8 +100,8 @@ impl StoreEngine for Store {
         Ok(())
     }
 
-    fn get_value(&self, key: Key) -> Option<Value> {
-        self.values.get(key).unwrap().map(|value| value.to_vec())
+    fn get_value(&self, key: Key) -> Result<Option<Vec<u8>>> {
+        Ok(self.values.get(key)?.map(|value| value.to_vec()))
     }
 
     fn add_transaction_receipt(

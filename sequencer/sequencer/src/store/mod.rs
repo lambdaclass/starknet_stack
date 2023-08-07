@@ -22,7 +22,7 @@ pub trait StoreEngine: Debug + Send {
     fn get_block_by_hash(&self, block_hash: Felt252) -> Result<Option<MaybePendingBlockWithTxs>>;
     fn get_block_by_height(&self, block_height: u64) -> Result<Option<MaybePendingBlockWithTxs>>;
     fn set_value(&mut self, key: Key, value: Value) -> Result<()>;
-    fn get_value(&self, key: Key) -> Option<Value>;
+    fn get_value(&self, key: Key) -> Result<Option<Value>>;
     fn add_transaction_receipt(
         &mut self,
         transaction_receipt: MaybePendingTransactionReceipt,
@@ -123,7 +123,9 @@ impl Store {
             .lock()
             .unwrap()
             .get_value(BLOCK_HEIGHT.into())
-            .map(|value| u64::from_be_bytes(value.as_slice()[..8].try_into().unwrap()))
+            .map_or(None, |result| {
+                result.map(|value| u64::from_be_bytes(value.as_slice()[..8].try_into().unwrap()))
+            })
     }
 
     pub fn add_transaction_receipt(
@@ -182,23 +184,38 @@ mod tests {
 
     #[test]
     fn test_in_memory_store() {
-        test_store(EngineType::InMemory)
+        let store = Store::new("test", EngineType::InMemory);
+        test_store_tx(store.clone());
+        test_store_height(store);
     }
 
     #[test_context(DbTestContext)]
     #[test]
     fn test_sled_store(_ctx: &mut DbTestContext) {
-        test_store(EngineType::Sled)
+        let store = Store::new("test", EngineType::Sled);
+        test_store_tx(store.clone());
+        test_store_height(store);
     }
 
     #[test]
     fn test_rocksdb_store() {
-        test_store(EngineType::RocksDB)
+        let store = Store::new("test", EngineType::RocksDB);
+        test_store_tx(store.clone());
+        test_store_height(store);
     }
 
-    fn test_store(engine_type: EngineType) {
-        let mut store = Store::new("test", engine_type);
+    fn test_store_height(mut store: Store) {
+        // Test height starts in 0
+        assert_eq!(Some(0u64), store.get_height());
 
+        // Set height to an arbitrary number
+        let _ = store.set_height(25u64).unwrap();
+
+        // Test value has been persisted
+        assert_eq!(Some(25u64), store.get_height());
+    }
+
+    fn test_store_tx(mut store: Store) {
         let tx_hash = Felt252::new(123123);
         let tx_fee = Felt252::new(89853483);
         let tx_signature = vec![Felt252::new(183728913)];

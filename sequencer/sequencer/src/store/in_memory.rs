@@ -78,8 +78,8 @@ impl StoreEngine for Store {
         Ok(())
     }
 
-    fn get_value(&self, key: Key) -> Option<Value> {
-        self.values.get(&key).cloned()
+    fn get_value(&self, key: Key) -> Result<Option<Vec<u8>>, anyhow::Error> {
+        Ok(self.values.get(&key).cloned())
     }
 
     fn add_transaction_receipt(
