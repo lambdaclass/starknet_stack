@@ -87,7 +87,7 @@ impl StoreEngine for Store {
 
     fn get_block_by_height(&self, block_height: u64) -> Result<Option<MaybePendingBlockWithTxs>> {
         self.blocks_by_height
-            .get(block_height.to_be_bytes().to_vec())?
+            .get(block_height.to_be_bytes())?
             .map_or(Ok(None), |value| {
                 Ok(Some(serde_json::from_str::<MaybePendingBlockWithTxs>(
                     &String::from_utf8(value.to_vec())?,

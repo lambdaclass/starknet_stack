@@ -139,7 +139,7 @@ impl StoreEngine for Store {
                 self.command_sender.send(StoreCommand::Put(
                     DbSelector::BlocksByHeight,
                     block_with_txs.block_number.to_be_bytes().to_vec(),
-                    block_serialized.clone(),
+                    block_serialized,
                     reply_sender_by_height,
                 ))?;
                 reply_receiver_by_hash
