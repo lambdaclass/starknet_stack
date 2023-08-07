@@ -71,7 +71,6 @@ fn execute_cairo_native_program(
 
     // The output expected as a string will be a json that looks like this:
     // [null,9000,[0,[[55,0,0,0,0,0,0,0]]]]
-    // [543646067,1948282726,20341,0,0,0,0,0]
     let deserialized_result: String = String::from_utf8(writer).unwrap();
     let deserialized_value = serde_json::from_str::<serde_json::Value>(&deserialized_result)
         .expect("Failed to deserialize result");
@@ -354,7 +353,6 @@ mod test {
 
     #[test]
     fn fib_10_cairo_native() {
-        std::env::set_var("MLIR_SYS_160_PREFIX","/opt/homebrew/opt/llvm@16");
 
         let a = super::get_input_value_cairo_native(0_usize);
 
