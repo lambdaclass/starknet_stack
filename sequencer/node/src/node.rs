@@ -18,7 +18,7 @@ use rpc_endpoint::rpc::{
 use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use store::Store;
@@ -131,8 +131,8 @@ impl Node {
                     .unwrap();
 
                 ExecutionEngine::Sierra(CairoNativeEngine::new(
-                    fib_sierra_program,
-                    fact_sierra_program,
+                     PathBuf::from("../cairo_programs/fib_contract.cairo"),
+                     PathBuf::from("../cairo_programs/fact_contract.cairo")
                 ))
             }
         };

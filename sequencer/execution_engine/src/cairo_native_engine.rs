@@ -1,22 +1,19 @@
-use cairo_felt::Felt252;
-use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
-use cairo_lang_sierra::program::Program as SierraProgram;
-use cairo_lang_sierra::ProgramParser;
+use cairo_vm::felt::Felt252;
 use cairo_native::easy::compile_and_execute;
 use cairo_native::starknet::{
     BlockInfo, ExecutionInfo, StarkNetSyscallHandler, SyscallResult, TxInfo, U256,
 };
 use num_bigint::BigUint;
 use serde_json::json;
-use std::sync::Arc;
+use std::path::{Path, PathBuf};
 
 pub struct CairoNativeEngine {
-    fib_program: Arc<SierraProgram>,
-    fact_program: Arc<SierraProgram>,
+    fib_program: PathBuf,
+    fact_program: PathBuf,
 }
 
 impl CairoNativeEngine {
-    pub fn new(fib_program: Arc<SierraProgram>, fact_program: Arc<SierraProgram>) -> Self {
+    pub fn new(fib_program: PathBuf, fact_program: PathBuf) -> Self {
         Self {
             fib_program,
             fact_program,
@@ -53,11 +50,10 @@ fn get_input_value_cairo_native(n: usize) -> Vec<u32> {
 }
 
 fn execute_cairo_native_program(
-    sierra_program: &Arc<SierraProgram>,
-    entrypoint: &str,
+    cairo_program_path: &Path,
+    entry_point: &str,
     args: Vec<Vec<u32>>,
 ) -> u64 {
-    let program = sierra_program;
     let mut writer: Vec<u8> = Vec::new();
     let mut res = serde_json::Serializer::new(&mut writer);
     // use params variable that is a deserializable variable
@@ -65,32 +61,29 @@ fn execute_cairo_native_program(
     for arg in args {
         params.as_array_mut().unwrap().push(arg.into());
     }
-    compile_and_execute::<CoreType, CoreLibfunc, _, _>(
-        program,
-        &program
-            .funcs
-            .iter()
-            .find(|x| x.id.debug_name.as_deref() == Some(entrypoint))
-            .unwrap()
-            .id,
+
+    let _ = compile_and_execute(
+        cairo_program_path,
+        entry_point,
         params,
         &mut res,
-    )
-    .unwrap();
+    ).unwrap();
 
     // The output expected as a string will be a json that looks like this:
     // [null,9000,[0,[[55,0,0,0,0,0,0,0]]]]
+    // [543646067,1948282726,20341,0,0,0,0,0]
     let deserialized_result: String = String::from_utf8(writer).unwrap();
     let deserialized_value = serde_json::from_str::<serde_json::Value>(&deserialized_result)
         .expect("Failed to deserialize result");
-    deserialized_value[2][1][0][0].as_u64().unwrap()
+    println!("{}", deserialized_value);
+    deserialized_value[2][1][1][0].as_u64().unwrap()
 }
 
 #[derive(Debug)]
 struct SyscallHandler;
 
 impl StarkNetSyscallHandler for SyscallHandler {
-    fn get_block_hash(&self, block_number: u64) -> SyscallResult<cairo_felt::Felt252> {
+    fn get_block_hash(&self, block_number: u64) -> SyscallResult<Felt252> {
         println!("Called `get_block_hash({block_number})` from MLIR.");
         Ok(Felt252::from_bytes_be(b"get_block_hash ok"))
     }
@@ -120,11 +113,11 @@ impl StarkNetSyscallHandler for SyscallHandler {
 
     fn deploy(
         &self,
-        class_hash: cairo_felt::Felt252,
-        contract_address_salt: cairo_felt::Felt252,
-        calldata: &[cairo_felt::Felt252],
+        class_hash: Felt252,
+        contract_address_salt: Felt252,
+        calldata: &[Felt252],
         deploy_from_zero: bool,
-    ) -> SyscallResult<(cairo_felt::Felt252, Vec<cairo_felt::Felt252>)> {
+    ) -> SyscallResult<(Felt252, Vec<Felt252>)> {
         println!("Called `deploy({class_hash}, {contract_address_salt}, {calldata:?}, {deploy_from_zero})` from MLIR.");
         Ok((
             class_hash + contract_address_salt,
@@ -132,17 +125,17 @@ impl StarkNetSyscallHandler for SyscallHandler {
         ))
     }
 
-    fn replace_class(&self, class_hash: cairo_felt::Felt252) -> SyscallResult<()> {
+    fn replace_class(&self, class_hash: Felt252) -> SyscallResult<()> {
         println!("Called `replace_class({class_hash})` from MLIR.");
         Ok(())
     }
 
     fn library_call(
         &self,
-        class_hash: cairo_felt::Felt252,
-        function_selector: cairo_felt::Felt252,
-        calldata: &[cairo_felt::Felt252],
-    ) -> SyscallResult<Vec<cairo_felt::Felt252>> {
+        class_hash: Felt252,
+        function_selector: Felt252,
+        calldata: &[Felt252],
+    ) -> SyscallResult<Vec<Felt252>> {
         println!(
             "Called `library_call({class_hash}, {function_selector}, {calldata:?})` from MLIR."
         );
@@ -151,10 +144,10 @@ impl StarkNetSyscallHandler for SyscallHandler {
 
     fn call_contract(
         &self,
-        address: cairo_felt::Felt252,
-        entry_point_selector: cairo_felt::Felt252,
-        calldata: &[cairo_felt::Felt252],
-    ) -> SyscallResult<Vec<cairo_felt::Felt252>> {
+        address: Felt252,
+        entry_point_selector: Felt252,
+        calldata: &[Felt252],
+    ) -> SyscallResult<Vec<Felt252>> {
         println!(
             "Called `call_contract({address}, {entry_point_selector}, {calldata:?})` from MLIR."
         );
@@ -164,8 +157,8 @@ impl StarkNetSyscallHandler for SyscallHandler {
     fn storage_read(
         &self,
         address_domain: u32,
-        address: cairo_felt::Felt252,
-    ) -> SyscallResult<cairo_felt::Felt252> {
+        address: Felt252,
+    ) -> SyscallResult<Felt252> {
         println!("Called `storage_read({address_domain}, {address})` from MLIR.");
         Ok(address * &Felt252::new(3))
     }
@@ -173,8 +166,8 @@ impl StarkNetSyscallHandler for SyscallHandler {
     fn storage_write(
         &self,
         address_domain: u32,
-        address: cairo_felt::Felt252,
-        value: cairo_felt::Felt252,
+        address: Felt252,
+        value: Felt252,
     ) -> SyscallResult<()> {
         println!("Called `storage_write({address_domain}, {address}, {value})` from MLIR.");
         Ok(())
@@ -182,8 +175,8 @@ impl StarkNetSyscallHandler for SyscallHandler {
 
     fn emit_event(
         &self,
-        keys: &[cairo_felt::Felt252],
-        data: &[cairo_felt::Felt252],
+        keys: &[Felt252],
+        data: &[Felt252],
     ) -> SyscallResult<()> {
         println!("Called `emit_event({keys:?}, {data:?})` from MLIR.");
         Ok(())
@@ -191,8 +184,8 @@ impl StarkNetSyscallHandler for SyscallHandler {
 
     fn send_message_to_l1(
         &self,
-        to_address: cairo_felt::Felt252,
-        payload: &[cairo_felt::Felt252],
+        to_address: Felt252,
+        payload: &[Felt252],
     ) -> SyscallResult<()> {
         println!("Called `send_message_to_l1({to_address}, {payload:?})` from MLIR.");
         Ok(())
@@ -285,7 +278,7 @@ impl StarkNetSyscallHandler for SyscallHandler {
         todo!()
     }
 
-    fn set_account_contract_address(&self, _contract_address: cairo_felt::Felt252) {
+    fn set_account_contract_address(&self, _contract_address: Felt252) {
         todo!()
     }
 
@@ -297,15 +290,15 @@ impl StarkNetSyscallHandler for SyscallHandler {
         todo!()
     }
 
-    fn set_caller_address(&self, _address: cairo_felt::Felt252) {
+    fn set_caller_address(&self, _address: Felt252) {
         todo!()
     }
 
-    fn set_chain_id(&self, _chain_id: cairo_felt::Felt252) {
+    fn set_chain_id(&self, _chain_id: Felt252) {
         todo!()
     }
 
-    fn set_contract_address(&self, _address: cairo_felt::Felt252) {
+    fn set_contract_address(&self, _address: Felt252) {
         todo!()
     }
 
@@ -313,32 +306,31 @@ impl StarkNetSyscallHandler for SyscallHandler {
         todo!()
     }
 
-    fn set_nonce(&self, _nonce: cairo_felt::Felt252) {
+    fn set_nonce(&self, _nonce: Felt252) {
         todo!()
     }
 
-    fn set_sequencer_address(&self, _address: cairo_felt::Felt252) {
+    fn set_sequencer_address(&self, _address: Felt252) {
         todo!()
     }
 
-    fn set_signature(&self, _signature: &[cairo_felt::Felt252]) {
+    fn set_signature(&self, _signature: &[Felt252]) {
         todo!()
     }
 
-    fn set_transaction_hash(&self, _transaction_hash: cairo_felt::Felt252) {
+    fn set_transaction_hash(&self, _transaction_hash: Felt252) {
         todo!()
     }
 
-    fn set_version(&self, _version: cairo_felt::Felt252) {
+    fn set_version(&self, _version: Felt252) {
         todo!()
     }
 }
 
 #[cfg(test)]
 mod test {
-    use std::{fs, path::Path, sync::Arc, io};
+    use std::{fs, path::Path, sync::Arc};
 
-    use cairo_lang_compiler::{compile_cairo_project_at_path, CompilerConfig};
     use cairo_lang_sierra::{
         extensions::core::{CoreLibfunc, CoreType},
         program::Program,
@@ -347,8 +339,7 @@ mod test {
     };
     use cairo_native::{metadata::{
         runtime_bindings::RuntimeBindingsMeta, syscall_handler::SyscallHandlerMeta, MetadataStorage,
-    }, utils::register_runtime_symbols};
-    use serde_json::json;
+    }};
 
     use crate::cairo_native_engine::{execute_cairo_native_program, get_input_value_cairo_native};
 
@@ -363,23 +354,19 @@ mod test {
 
     #[test]
     fn fib_10_cairo_native() {
+        std::env::set_var("MLIR_SYS_160_PREFIX","/opt/homebrew/opt/llvm@16");
+
         let a = super::get_input_value_cairo_native(0_usize);
 
         let b = super::get_input_value_cairo_native(1_usize);
 
         let n = super::get_input_value_cairo_native(10_usize);
 
-        let sierra_program = compile_cairo_project_at_path(
-            Path::new("../cairo_programs/fib_contract.cairo"),
-            CompilerConfig {
-                replace_ids: true,
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        let fib_program = 
+            Path::new("../cairo_programs/fib_contract.cairo");
 
         let fib_10 = execute_cairo_native_program(
-            &sierra_program,
+            &fib_program,
             "fib_contract::fib_contract::Fibonacci::fib",
             vec![a, b, n],
         );
@@ -391,7 +378,7 @@ mod test {
         let program_src = fs::read_to_string("../cairo_programs/erc20.sierra").unwrap();
         let program_parser = ProgramParser::new();
         let program: Arc<Program> = Arc::new(program_parser.parse(&program_src).unwrap());
-        let entry_point = match program
+        let _entry_point = match program
             .funcs
             .iter()
             .find(|x| x.id.debug_name.as_deref() == Some("erc20::erc20::erc_20::constructor"))
@@ -485,14 +472,8 @@ mod test {
     fn fact_10_cairo_native() {
         let n = super::get_input_value_cairo_native(10_usize);
 
-        let sierra_program = compile_cairo_project_at_path(
-            Path::new("../cairo_programs/fact_contract.cairo"),
-            CompilerConfig {
-                replace_ids: true,
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        let sierra_program = 
+            Path::new("../cairo_programs/fact_contract.cairo");
 
         let fact_10 = execute_cairo_native_program(
             &sierra_program,

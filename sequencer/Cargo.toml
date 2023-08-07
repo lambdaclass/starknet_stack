@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "execution_engine",
     "rpc_endpoint",
+    "execution_engine",
     "store", 
     "crypto", 
     "network", 
