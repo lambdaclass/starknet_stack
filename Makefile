@@ -2,7 +2,7 @@
 
 clone-madara-explorer:
 	if [ ! -d "madara_explorer" ]; then \
-		git clone --recurse-submodules https://github.com/lambdaclass/madara_explorer.git --branch main && git submodule update; \
+		git clone --recurse-submodules https://github.com/lambdaclass/madara_explorer.git --branch main && git submodule update && cd madara_explorer && git checkout cf0857d3ff5ee2bfdd3ffdd57bb208f0b0260003; \
 	fi
 
 docker-build-sequencer:
@@ -27,7 +27,7 @@ run-local: clone-madara-explorer docker-build-all
 	@echo "Access Madara Explorer in http://localhost:4000/"
 
 run-client:
-	docker run --network="starknet_stack_frontend" starknet_stack-sequencer_node1 /sequencer/client 172.27.0.10:9004 --size 256 --rate 250 --timeout 1000 --running-time 10
+	docker run --network="starknet_stack_frontend" starknet_stack-sequencer_node0 /sequencer/client 172.27.0.10:9004 --size 256 --rate 250 --timeout 1000 --running-time 10
 
 client-remote:
 	ifndef MEMPOOL_IP

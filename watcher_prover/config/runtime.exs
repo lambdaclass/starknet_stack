@@ -26,7 +26,7 @@ config :ex_aws,
   region: System.get_env("AWS_REGION")
 
 config :watcher_prover,
-  s3_bucket_name: "kraken-proofs",
+  s3_bucket_name: System.get_env("S3_BUCKET_NAME"),
   rpc_port: System.get_env("RPC_PORT"),
   rpc_host: System.get_env("RPC_HOST"),
   prover_storage: System.get_env("PROVER_STORAGE")
