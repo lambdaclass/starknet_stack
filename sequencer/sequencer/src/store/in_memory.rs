@@ -17,14 +17,14 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn new() -> Self {
-        Self {
+    pub fn new() -> Result<Self> {
+        Ok(Self {
             transactions: HashMap::new(),
             blocks_by_hash: HashMap::new(),
             blocks_by_height: HashMap::new(),
             transaction_receipts: HashMap::new(),
             values: HashMap::new(),
-        }
+        })
     }
 }
 

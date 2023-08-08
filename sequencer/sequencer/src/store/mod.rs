@@ -46,7 +46,7 @@ pub enum EngineType {
 }
 
 impl Store {
-    pub fn new(path: &str, engine_type: EngineType) -> Self {
+    pub fn new(path: &str, engine_type: EngineType) -> Result<Self> {
         let mut store = match engine_type {
             EngineType::RocksDB => Self {
                 engine: Arc::new(Mutex::new(
@@ -55,14 +55,14 @@ impl Store {
                 )),
             },
             EngineType::Sled => Self {
-                engine: Arc::new(Mutex::new(SledStore::new(&format!("{path}.sled")))),
+                engine: Arc::new(Mutex::new(SledStore::new(&format!("{path}.sled"))?)),
             },
             EngineType::InMemory => Self {
-                engine: Arc::new(Mutex::new(InMemoryStore::new())),
+                engine: Arc::new(Mutex::new(InMemoryStore::new()?)),
             },
         };
         store.init();
-        store
+        Ok(store)
     }
 
     fn init(&mut self) {
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_in_memory_store() {
-        let store = Store::new("test", EngineType::InMemory);
+        let store = Store::new("test", EngineType::InMemory).unwrap();
         test_store_tx(store.clone());
         test_store_height(store);
     }
@@ -192,14 +192,14 @@ mod tests {
     #[test_context(DbTestContext)]
     #[test]
     fn test_sled_store(_ctx: &mut DbTestContext) {
-        let store = Store::new("test", EngineType::Sled);
+        let store = Store::new("test", EngineType::Sled).unwrap();
         test_store_tx(store.clone());
         test_store_height(store);
     }
 
     #[test]
     fn test_rocksdb_store() {
-        let store = Store::new("test", EngineType::RocksDB);
+        let store = Store::new("test", EngineType::RocksDB).unwrap();
         test_store_tx(store.clone());
         test_store_height(store);
     }

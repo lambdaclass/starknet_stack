@@ -92,7 +92,7 @@ impl Node {
         // Make the data store.
         let store = Store::new(store_path).expect("Failed to create store");
         let external_store =
-            sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled);
+            sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled).expect("Failed to create sequencer store");
 
         // Init the execution engine according to the parameters sent
         let execution_engine = match parameters.execution {

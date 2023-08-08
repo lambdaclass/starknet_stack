@@ -18,20 +18,20 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn new(path: &str) -> Self {
-        Self {
-            transactions: sled::open(format!("{path}.transactions.db")).unwrap(),
-            blocks_by_hash: sled::open(format!("{path}.blocks1.db")).unwrap(),
-            blocks_by_height: sled::open(format!("{path}.blocks2.db")).unwrap(),
-            values: sled::open(format!("{path}.values.db")).unwrap(),
-            transaction_receipts: sled::open(format!("{path}.transaction_receipts.db")).unwrap(),
-        }
+    pub fn new(path: &str) -> Result<Self> {
+        Ok(Self {
+            transactions: sled::open(format!("{path}.transactions.db"))?,
+            blocks_by_hash: sled::open(format!("{path}.blocks1.db"))?,
+            blocks_by_height: sled::open(format!("{path}.blocks2.db"))?,
+            values: sled::open(format!("{path}.values.db"))?,
+            transaction_receipts: sled::open(format!("{path}.transaction_receipts.db"))?,
+        })
     }
 }
 
 impl StoreEngine for Store {
     fn add_transaction(&mut self, tx: Transaction) -> Result<()> {
-        let tx_serialized: Vec<u8> = serde_json::to_string(&tx).unwrap().as_bytes().to_vec();
+        let tx_serialized: Vec<u8> = serde_json::to_string(&tx)?.as_bytes().to_vec();
         match tx {
             Transaction::Invoke(InvokeTransaction::V1(invoke_tx)) => {
                 let _ = self
@@ -55,7 +55,7 @@ impl StoreEngine for Store {
     }
 
     fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()> {
-        let block_serialized: Vec<u8> = serde_json::to_string(&block).unwrap().as_bytes().to_vec();
+        let block_serialized: Vec<u8> = serde_json::to_string(&block)?.as_bytes().to_vec();
         match block {
             MaybePendingBlockWithTxs::Block(block_with_txs) => {
                 let _ = self.blocks_by_hash.insert(
@@ -108,8 +108,7 @@ impl StoreEngine for Store {
         &mut self,
         transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
-        let tx_receipt_serialized = serde_json::to_string(&transaction_receipt)
-            .expect("Error serializing tx receipt")
+        let tx_receipt_serialized = serde_json::to_string(&transaction_receipt)?
             .as_bytes()
             .to_vec();
         match transaction_receipt {
