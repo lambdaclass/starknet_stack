@@ -39,7 +39,7 @@ test:
 		export MLIR_SYS_160_PREFIX=/usr/lib/llvm-16; \
 	fi; \
 	echo "+ cargo test"; \
-	cargo test
+	cargo test 
 
 generate-nodes-keys:
 	@if [ -d ./config/committee.json ]; then \
