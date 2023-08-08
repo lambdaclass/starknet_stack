@@ -12,19 +12,19 @@ pub mod syscall_handler;
 pub struct CairoNativeEngine {
     fib_program: Arc<Program>,
     fact_program: Arc<Program>,
-    erc20_program: Arc<Program>,
+    _erc20_program: Arc<Program>,
 }
 
 impl CairoNativeEngine {
     pub fn new(
         fib_program: Arc<Program>,
         fact_program: Arc<Program>,
-        erc20_program: Arc<Program>,
+        _erc20_program: Arc<Program>,
     ) -> Self {
         Self {
             fib_program,
             fact_program,
-            erc20_program,
+            _erc20_program,
         }
     }
 
@@ -81,7 +81,7 @@ fn execute_cairo_native_program(
 
     // Compile the program.
     let (context, mut module, registry, mut metadata) =
-        cairo_native::easy::create_compiler(&program).unwrap();
+        cairo_native::easy::create_compiler(program).unwrap();
 
     // Make the Starknet syscall handler available.
     metadata
@@ -89,12 +89,12 @@ fn execute_cairo_native_program(
         .unwrap();
 
     let required_initial_gas =
-        cairo_native::easy::get_required_initial_gas(&program, &mut metadata, entry_point);
+        cairo_native::easy::get_required_initial_gas(program, &mut metadata, entry_point);
 
     cairo_native::compile::<CoreType, CoreLibfunc>(
         &context,
         &module,
-        &program,
+        program,
         &registry,
         &mut metadata,
         None,
@@ -124,7 +124,7 @@ fn execute_cairo_native_program(
         params
     };
 
-    let _ = cairo_native::execute(
+    cairo_native::execute(
         &engine,
         &registry,
         &entry_point.id,
@@ -279,7 +279,7 @@ mod test {
                 cairo_native::easy::felt252_short_str("name").to_vec(), // name
                 cairo_native::easy::felt252_short_str("symbol").to_vec(), // symbol
                 cairo_native::easy::felt252_bigint(0).to_vec(),         // decimals
-                cairo_native::easy::felt252_bigint(1024).to_vec(),  // initial supply
+                cairo_native::easy::felt252_bigint(1024).to_vec(),      // initial supply
                 cairo_native::easy::felt252_bigint(4).to_vec(),         // contract address
                 cairo_native::easy::felt252_bigint(6).to_vec(),         // ??
             ],
