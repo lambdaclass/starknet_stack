@@ -19,8 +19,10 @@ impl CairoVMEngine {
     pub fn new(raw_fib_program: Vec<u8>, raw_fact_program: Vec<u8>) -> Self {
         let fib_program: CasmContractClass = serde_json::from_slice(&raw_fib_program).unwrap();
         let fact_program: CasmContractClass = serde_json::from_slice(&raw_fact_program).unwrap();
+
         let fib_builtins = get_casm_contract_builtins(&fib_program, 0);
         let fact_builtins = get_casm_contract_builtins(&fact_program, 0);
+
         Self {
             fib_program,
             fact_program,
