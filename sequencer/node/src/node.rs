@@ -3,6 +3,7 @@ use crate::config::{ExecutionParameters, Export as _};
 use cairo_felt::Felt252;
 use cairo_lang_compiler::CompilerConfig;
 use cairo_lang_sierra::program::Program as SierraProgram;
+use cairo_lang_sierra::ProgramParser;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
 use execution_engine::cairo_native_engine::CairoNativeEngine;
@@ -17,6 +18,7 @@ use rpc_endpoint::rpc::{
 };
 use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
+use std::fs;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
 use std::sync::Arc;
@@ -130,9 +132,14 @@ impl Node {
                     )
                     .unwrap();
 
+                let program_src = fs::read_to_string("../cairo_programs/erc20.sierra").unwrap();
+                let program_parser = ProgramParser::new();
+                let erc20_sierra_program = Arc::new(program_parser.parse(&program_src).unwrap());
+
                 ExecutionEngine::Sierra(CairoNativeEngine::new(
                     fib_sierra_program,
                     fact_sierra_program,
+                    erc20_sierra_program,
                 ))
             }
         };
