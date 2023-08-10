@@ -179,7 +179,6 @@ mod tests {
         test_store_height(store);
     }
 
-
     #[test_context(DbTestContext)]
     #[test]
     fn test_sled_store(_ctx: &mut DbTestContext) {
