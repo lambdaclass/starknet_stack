@@ -162,13 +162,13 @@ mod tests {
 
     impl TestContext for DbTestContext {
         fn setup() -> DbTestContext {
-            // remove_test_dbs("test.rocksdb.");
+            remove_test_dbs("test.rocksdb.");
             DbTestContext {}
         }
 
         fn teardown(self) {
             // Removes all test databases from filesystem
-            // remove_test_dbs("test.rocksdb.");
+            remove_test_dbs("test.rocksdb.");
         }
     }
 
@@ -193,6 +193,7 @@ mod tests {
         let store = Store::new("test", EngineType::RocksDB).unwrap();
         test_store_tx(store.clone());
         test_store_height(store);
+        std::thread::sleep(std::time::Duration::from_secs(5));
     }
 
     fn test_store_height(mut store: Store) {
