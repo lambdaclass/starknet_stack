@@ -155,7 +155,22 @@ impl Store {
 mod tests {
     use super::*;
     use std::{env, fs};
+    use test_context::{test_context, TestContext};
     use types::{InvokeTransaction, InvokeTransactionV1};
+
+    struct DbTestContext {}
+
+    impl TestContext for DbTestContext {
+        fn setup() -> DbTestContext {
+            remove_test_dbs("test.sled.");
+            DbTestContext {}
+        }
+
+        fn teardown(self) {
+            // Removes all test databases from filesystem
+            remove_test_dbs("test.sled.");
+        }
+    }
 
     #[test]
     fn test_in_memory_store() {
@@ -164,14 +179,13 @@ mod tests {
         test_store_height(store);
     }
 
+
+    #[test_context(DbTestContext)]
     #[test]
-    fn test_sled_store() {
-        // Removing preexistent DBs in case of a failed previous test
-        remove_test_dbs("test.sled.");
+    fn test_sled_store(_ctx: &mut DbTestContext) {
         let store = Store::new("test", EngineType::Sled).unwrap();
         test_store_tx(store.clone());
         test_store_height(store);
-        remove_test_dbs("test.sled.");
     }
 
     // #[test]
