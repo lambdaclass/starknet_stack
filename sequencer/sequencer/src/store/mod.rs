@@ -162,13 +162,13 @@ mod tests {
 
     impl TestContext for DbTestContext {
         fn setup() -> DbTestContext {
-            remove_test_dbs("test.sled.");
+            remove_test_dbs("test.rocksdb.");
             DbTestContext {}
         }
 
         fn teardown(self) {
             // Removes all test databases from filesystem
-            remove_test_dbs("test.sled.");
+            remove_test_dbs("test.rocksdb.");
         }
     }
 
@@ -179,23 +179,20 @@ mod tests {
         test_store_height(store);
     }
 
-    #[test_context(DbTestContext)]
+    // #[test_context(DbTestContext)]
+    // #[test]
+    // fn test_sled_store(_ctx: &mut DbTestContext) {
+    //     let store = Store::new("test", EngineType::Sled).unwrap();
+    //     test_store_tx(store.clone());
+    //     test_store_height(store);
+    // }
+
     #[test]
-    fn test_sled_store(_ctx: &mut DbTestContext) {
-        let store = Store::new("test", EngineType::Sled).unwrap();
+    fn test_rocksdb_store() {
+        let store = Store::new("test", EngineType::RocksDB).unwrap();
         test_store_tx(store.clone());
         test_store_height(store);
     }
-
-    // #[test]
-    // fn test_rocksdb_store() {
-    //     // Removing preexistent DBs in case of a failed previous test
-    //     remove_test_dbs("test.rocksdb.");
-    //     let store = Store::new("test", EngineType::RocksDB).unwrap();
-    //     test_store_tx(store.clone());
-    //     test_store_height(store);
-    //     remove_test_dbs("test.rocksdb.");
-    // }
 
     fn test_store_height(mut store: Store) {
         // Test height starts in 0
