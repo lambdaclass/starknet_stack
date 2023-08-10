@@ -180,10 +180,10 @@ mod tests {
         remove_test_dbs("test.rocksdb.");
         let store = Store::new("test", EngineType::RocksDB).unwrap();
         test_store_tx(store.clone());
-        test_store_height(store);
+        test_store_height(store.clone());
 
-        // Waiting 500 ms to ensure DB has finished its txs
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        // FIXME patching rocksdb weird behavior
+        std::mem::forget(store);
         remove_test_dbs("test.rocksdb.");
     }
 
