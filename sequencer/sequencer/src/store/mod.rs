@@ -155,22 +155,7 @@ impl Store {
 mod tests {
     use super::*;
     use std::{env, fs};
-    use test_context::{test_context, TestContext};
     use types::{InvokeTransaction, InvokeTransactionV1};
-
-    struct DbTestContext {}
-
-    impl TestContext for DbTestContext {
-        fn setup() -> DbTestContext {
-            remove_test_dbs("test.rocksdb.");
-            DbTestContext {}
-        }
-
-        fn teardown(self) {
-            // Removes all test databases from filesystem
-            remove_test_dbs("test.rocksdb.");
-        }
-    }
 
     #[test]
     fn test_in_memory_store() {
@@ -179,21 +164,27 @@ mod tests {
         test_store_height(store);
     }
 
-    // #[test_context(DbTestContext)]
-    // #[test]
-    // fn test_sled_store(_ctx: &mut DbTestContext) {
-    //     let store = Store::new("test", EngineType::Sled).unwrap();
-    //     test_store_tx(store.clone());
-    //     test_store_height(store);
-    // }
-
-    #[test_context(DbTestContext)]
     #[test]
-    fn test_rocksdb_store(_ctx: &mut DbTestContext) {
+    fn test_sled_store() {
+        // Removing preexistent DBs in case of a failed previous test
+        remove_test_dbs("test.sled.");
+        let store = Store::new("test", EngineType::Sled).unwrap();
+        test_store_tx(store.clone());
+        test_store_height(store);
+        remove_test_dbs("test.sled.");
+    }
+
+    #[test]
+    fn test_rocksdb_store() {
+        // Removing preexistent DBs in case of a failed previous test
+        remove_test_dbs("test.rocksdb.");
         let store = Store::new("test", EngineType::RocksDB).unwrap();
         test_store_tx(store.clone());
         test_store_height(store);
-        std::thread::sleep(std::time::Duration::from_secs(5));
+
+        // Waiting 500 ms to ensure DB has finished its txs
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        remove_test_dbs("test.rocksdb.");
     }
 
     fn test_store_height(mut store: Store) {
