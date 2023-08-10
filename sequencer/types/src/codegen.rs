@@ -646,13 +646,7 @@ impl Transaction {
     ///
     /// A vector of bytes representing the transaction.
     /// if `send_fib` is true, then the execution represents fib(), otherwise it represents fact()
-    pub fn new_invoke(nonce: u64, arbitrary_calldata: u64, send_fib: bool) -> Transaction {
-        let send_fib_felt = if send_fib {
-            Felt252::new(0)
-        } else {
-            Felt252::new(1)
-        };
-
+    pub fn new_invoke(nonce: u64, calldata: Vec<Felt252>) -> Transaction {
         // TODO: these are default values, need to be changed
         let mut invoke_tx_v1 = InvokeTransactionV1 {
             transaction_hash: Felt252::new(0), //Temporary hash
@@ -660,7 +654,7 @@ impl Transaction {
             signature: vec![Felt252::new(183728913)],
             nonce: Felt252::new(nonce),
             sender_address: Felt252::new(91232018),
-            calldata: vec![Felt252::new(arbitrary_calldata), send_fib_felt],
+            calldata,
         };
         invoke_tx_v1.transaction_hash = Felt252::new(invoke_tx_v1.calculate_hash());
         Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1))

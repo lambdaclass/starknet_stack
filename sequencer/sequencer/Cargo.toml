@@ -14,7 +14,7 @@ jsonrpsee = { version="0.18.2", features = ["server", "macros"] }
 serde_json = { version = "1.0.96", default-features = false }
 types = { path = "../types" }
 serde = "1.0.164"
-cairo-felt = "0.5.2"
+cairo-felt = "0.6.1"
 serde_with = "3.0.0"
 thiserror = "1.0.40"
 base64 = "0.21.2"

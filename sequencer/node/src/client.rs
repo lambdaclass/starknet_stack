@@ -2,11 +2,13 @@ use anyhow::bail;
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
+use cairo_felt::{Felt252};
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
 use futures::sink::SinkExt as _;
 use log::{info, warn};
+use rand::seq::SliceRandom;
 use rand::Rng;
 use rpc_endpoint::rpc::InvokeTransaction;
 use rpc_endpoint::rpc::Transaction;
@@ -117,21 +119,11 @@ impl Client {
             internal_counter = 0;
 
             for x in 0..burst {
-                let execute_fib: bool = rand::random();
-                let rand_program_input: u16 = rand::thread_rng().gen();
-                // This is done to avoid error while executing big numbers in the contract.
-                // It should change in the future
-                let program_input: u16 = if execute_fib {
-                    rand_program_input % 10000 + 1
-                } else {
-                    rand_program_input % 2000 + 1
-                };
-
                 let invoke_transaction = Transaction::new_invoke(
                     counter + internal_counter,
-                    program_input.into(),
-                    execute_fib,
+                    Self::create_execution_call_data(),
                 );
+
                 if let Transaction::Invoke(InvokeTransaction::V1(transaction)) = &invoke_transaction
                 {
                     if x == counter % burst {
@@ -198,6 +190,43 @@ impl Client {
         info!("Waiting for all nodes to be synchronized...");
         sleep(Duration::from_millis(2 * self.timeout)).await;
     }
+
+    pub fn create_execution_call_data() -> Vec<Felt252> {
+        pub enum ExecutionType {
+            Fibonacci,
+            Factorial,
+            ERC20,
+        }
+
+        let options = [
+            ExecutionType::Fibonacci,
+            ExecutionType::Factorial,
+            ExecutionType::ERC20,
+        ];
+
+        let n: u16 = rand::thread_rng().gen();
+        //let rand_program_input: u16 = rand::thread_rng();
+        match options.choose(&mut rand::thread_rng()).unwrap() {
+            ExecutionType::Fibonacci => {
+                vec![Felt252::new(0), Felt252::new((n % 10000) + 1)]
+            }
+            ExecutionType::Factorial => {
+                vec![Felt252::new(1), Felt252::new((n % 2000) + 1)]
+            }
+            ExecutionType::ERC20 => {
+                let initial_supply = Felt252::new((n % 5000) + 1);
+                let token_symbol = Felt252::new(512);
+                let contract_address = Felt252::new(rand::thread_rng().gen::<u128>());
+                // execution type felt, initial_supply, token symbol, contract address
+                vec![
+                    Felt252::new(2),
+                    initial_supply,
+                    token_symbol,
+                    contract_address,
+                ]
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -206,6 +235,8 @@ mod test {
     use bytes::BytesMut;
     use rand::Rng;
     use rpc_endpoint::rpc::Transaction;
+
+    use crate::Client;
 
     #[test]
     fn test_serialize_transaction() {
@@ -222,7 +253,8 @@ mod test {
             } else {
                 tx.put_u8(1u8); // Standard txs start with 1.
             };
-            let starknet_tx = Transaction::new_invoke(762716321, 8126371, true);
+            let starknet_tx =
+                Transaction::new_invoke(762716321, Client::create_execution_call_data());
             for b in starknet_tx.as_bytes() {
                 tx.put_u8(b);
             }
