@@ -162,13 +162,13 @@ mod tests {
 
     impl TestContext for DbTestContext {
         fn setup() -> DbTestContext {
-            remove_test_dbs("test.rocksdb.");
+            // remove_test_dbs("test.rocksdb.");
             DbTestContext {}
         }
 
         fn teardown(self) {
             // Removes all test databases from filesystem
-            remove_test_dbs("test.rocksdb.");
+            // remove_test_dbs("test.rocksdb.");
         }
     }
 
@@ -187,8 +187,9 @@ mod tests {
     //     test_store_height(store);
     // }
 
+    #[test_context(DbTestContext)]
     #[test]
-    fn test_rocksdb_store() {
+    fn test_rocksdb_store(_ctx: &mut DbTestContext) {
         let store = Store::new("test", EngineType::RocksDB).unwrap();
         test_store_tx(store.clone());
         test_store_height(store);
