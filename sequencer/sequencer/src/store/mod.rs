@@ -189,7 +189,7 @@ mod tests {
         assert_eq!(Some(0u64), store.get_height());
 
         // Set height to an arbitrary number
-        let _ = store.set_height(25u64).unwrap();
+        store.set_height(25u64).unwrap();
 
         // Test value has been persisted
         assert_eq!(Some(25u64), store.get_height());
