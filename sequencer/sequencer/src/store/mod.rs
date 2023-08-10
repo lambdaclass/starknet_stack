@@ -167,18 +167,18 @@ mod tests {
 
         fn teardown(self) {
             // Removes all test databases from filesystem
-            for entry in fs::read_dir(env::current_dir().unwrap()).unwrap() {
-                if entry
-                    .as_ref()
-                    .unwrap()
-                    .file_name()
-                    .to_str()
-                    .unwrap()
-                    .starts_with("test.")
-                {
-                    fs::remove_dir_all(entry.unwrap().path()).unwrap();
-                }
-            }
+            // for entry in fs::read_dir(env::current_dir().unwrap()).unwrap() {
+            //     if entry
+            //         .as_ref()
+            //         .unwrap()
+            //         .file_name()
+            //         .to_str()
+            //         .unwrap()
+            //         .starts_with("test.")
+            //     {
+            //         fs::remove_dir_all(entry.unwrap().path()).unwrap();
+            //     }
+            // }
         }
     }
 
