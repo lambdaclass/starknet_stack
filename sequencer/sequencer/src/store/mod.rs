@@ -151,144 +151,141 @@ impl Store {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use std::{env, fs};
-//     use test_context::{test_context, TestContext};
-//     use types::{InvokeTransaction, InvokeTransactionV1};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{env, fs};
+    use types::{InvokeTransaction, InvokeTransactionV1};
 
-//     struct DbTestContext {}
+    #[test]
+    fn test_in_memory_store() {
+        let store = Store::new("test", EngineType::InMemory).unwrap();
+        test_store_tx(store.clone());
+        test_store_height(store);
+    }
 
-//     impl TestContext for DbTestContext {
-//         fn setup() -> DbTestContext {
-//             DbTestContext {}
-//         }
+    #[test]
+    fn test_sled_store() {
+        // Removing preexistent DBs in case of a failed previous test
+        remove_test_dbs("test.sled.");
+        let store = Store::new("test", EngineType::Sled).unwrap();
+        test_store_tx(store.clone());
+        test_store_height(store);
+        remove_test_dbs("test.sled.");
+    }
 
-//         fn teardown(self) {
-//             // Removes all test databases from filesystem
-//             for entry in fs::read_dir(env::current_dir().unwrap()).unwrap() {
-//                 if entry
-//                     .as_ref()
-//                     .unwrap()
-//                     .file_name()
-//                     .to_str()
-//                     .unwrap()
-//                     .starts_with("test.")
-//                 {
-//                     fs::remove_dir_all(entry.unwrap().path()).unwrap();
-//                 }
-//             }
-//         }
-//     }
+    #[test]
+    fn test_rocksdb_store() {
+        // Removing preexistent DBs in case of a failed previous test
+        remove_test_dbs("test.rocksdb.");
+        let store = Store::new("test", EngineType::RocksDB).unwrap();
+        test_store_tx(store.clone());
+        test_store_height(store);
+        remove_test_dbs("test.rocksdb.");
+    }
 
-//     #[test]
-//     fn test_in_memory_store() {
-//         let store = Store::new("test", EngineType::InMemory).unwrap();
-//         test_store_tx(store.clone());
-//         test_store_height(store);
-//     }
+    fn test_store_height(mut store: Store) {
+        // Test height starts in 0
+        assert_eq!(Some(0u64), store.get_height());
 
-//     #[test_context(DbTestContext)]
-//     #[test]
-//     fn test_sled_store(_ctx: &mut DbTestContext) {
-//         let store = Store::new("test", EngineType::Sled).unwrap();
-//         test_store_tx(store.clone());
-//         test_store_height(store);
-//     }
+        // Set height to an arbitrary number
+        let _ = store.set_height(25u64).unwrap();
 
-//     #[test]
-//     fn test_rocksdb_store() {
-//         let store = Store::new("test", EngineType::RocksDB).unwrap();
-//         test_store_tx(store.clone());
-//         test_store_height(store);
-//     }
+        // Test value has been persisted
+        assert_eq!(Some(25u64), store.get_height());
+    }
 
-//     fn test_store_height(mut store: Store) {
-//         // Test height starts in 0
-//         assert_eq!(Some(0u64), store.get_height());
+    fn test_store_tx(mut store: Store) {
+        let tx_hash = Felt252::new(123123);
+        let tx_fee = Felt252::new(89853483);
+        let tx_signature = vec![Felt252::new(183728913)];
+        let tx_nonce = Felt252::new(5);
+        let tx_sender_address = Felt252::new(91232018);
+        let tx_calldata = vec![Felt252::new(10), Felt252::new(0)];
 
-//         // Set height to an arbitrary number
-//         let _ = store.set_height(25u64).unwrap();
+        let tx = new_transaction(
+            tx_hash.clone(),
+            tx_fee.clone(),
+            tx_signature.clone(),
+            tx_nonce.clone(),
+            tx_sender_address.clone(),
+            tx_calldata.clone(),
+        );
+        let _ = store.add_transaction(tx);
 
-//         // Test value has been persisted
-//         assert_eq!(Some(25u64), store.get_height());
-//     }
+        let stored_tx = store.get_transaction(tx_hash.clone()).unwrap().unwrap();
+        let (
+            stored_tx_hash,
+            stored_tx_fee,
+            stored_tx_signature,
+            stored_tx_nonce,
+            stored_tx_sender_address,
+            stored_tx_calldata,
+        ) = get_tx_data(stored_tx);
+        assert_eq!(tx_hash, stored_tx_hash);
+        assert_eq!(tx_fee, stored_tx_fee);
+        assert_eq!(tx_signature, stored_tx_signature);
+        assert_eq!(tx_nonce, stored_tx_nonce);
+        assert_eq!(tx_sender_address, stored_tx_sender_address);
+        assert_eq!(tx_calldata, stored_tx_calldata);
+    }
 
-//     fn test_store_tx(mut store: Store) {
-//         let tx_hash = Felt252::new(123123);
-//         let tx_fee = Felt252::new(89853483);
-//         let tx_signature = vec![Felt252::new(183728913)];
-//         let tx_nonce = Felt252::new(5);
-//         let tx_sender_address = Felt252::new(91232018);
-//         let tx_calldata = vec![Felt252::new(10), Felt252::new(0)];
+    fn new_transaction(
+        tx_hash: Felt252,
+        tx_fee: Felt252,
+        tx_signature: Vec<Felt252>,
+        tx_nonce: Felt252,
+        tx_sender_address: Felt252,
+        tx_calldata: Vec<Felt252>,
+    ) -> Transaction {
+        let invoke_tx_v1 = InvokeTransactionV1 {
+            transaction_hash: tx_hash,
+            max_fee: tx_fee,
+            signature: tx_signature,
+            nonce: tx_nonce,
+            sender_address: tx_sender_address,
+            calldata: tx_calldata,
+        };
+        Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1))
+    }
 
-//         let tx = new_transaction(
-//             tx_hash.clone(),
-//             tx_fee.clone(),
-//             tx_signature.clone(),
-//             tx_nonce.clone(),
-//             tx_sender_address.clone(),
-//             tx_calldata.clone(),
-//         );
-//         let _ = store.add_transaction(tx);
+    fn get_tx_data(
+        tx: Transaction,
+    ) -> (
+        Felt252,
+        Felt252,
+        Vec<Felt252>,
+        Felt252,
+        Felt252,
+        Vec<Felt252>,
+    ) {
+        match tx {
+            Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1)) => (
+                invoke_tx_v1.transaction_hash,
+                invoke_tx_v1.max_fee,
+                invoke_tx_v1.signature,
+                invoke_tx_v1.nonce,
+                invoke_tx_v1.sender_address,
+                invoke_tx_v1.calldata,
+            ),
+            _ => todo!(),
+        }
+    }
 
-//         let stored_tx = store.get_transaction(tx_hash.clone()).unwrap().unwrap();
-//         let (
-//             stored_tx_hash,
-//             stored_tx_fee,
-//             stored_tx_signature,
-//             stored_tx_nonce,
-//             stored_tx_sender_address,
-//             stored_tx_calldata,
-//         ) = get_tx_data(stored_tx);
-//         assert_eq!(tx_hash, stored_tx_hash);
-//         assert_eq!(tx_fee, stored_tx_fee);
-//         assert_eq!(tx_signature, stored_tx_signature);
-//         assert_eq!(tx_nonce, stored_tx_nonce);
-//         assert_eq!(tx_sender_address, stored_tx_sender_address);
-//         assert_eq!(tx_calldata, stored_tx_calldata);
-//     }
+    fn remove_test_dbs(prefix: &str) {
+        // Removes all test databases from filesystem
+        for entry in fs::read_dir(env::current_dir().unwrap()).unwrap() {
+            if entry
+                .as_ref()
+                .unwrap()
+                .file_name()
+                .to_str()
+                .unwrap()
+                .starts_with(prefix)
+            {
+                fs::remove_dir_all(entry.unwrap().path()).unwrap();
+            }
+        }
+    }
 
-//     fn new_transaction(
-//         tx_hash: Felt252,
-//         tx_fee: Felt252,
-//         tx_signature: Vec<Felt252>,
-//         tx_nonce: Felt252,
-//         tx_sender_address: Felt252,
-//         tx_calldata: Vec<Felt252>,
-//     ) -> Transaction {
-//         let invoke_tx_v1 = InvokeTransactionV1 {
-//             transaction_hash: tx_hash,
-//             max_fee: tx_fee,
-//             signature: tx_signature,
-//             nonce: tx_nonce,
-//             sender_address: tx_sender_address,
-//             calldata: tx_calldata,
-//         };
-//         Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1))
-//     }
-
-//     fn get_tx_data(
-//         tx: Transaction,
-//     ) -> (
-//         Felt252,
-//         Felt252,
-//         Vec<Felt252>,
-//         Felt252,
-//         Felt252,
-//         Vec<Felt252>,
-//     ) {
-//         match tx {
-//             Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1)) => (
-//                 invoke_tx_v1.transaction_hash,
-//                 invoke_tx_v1.max_fee,
-//                 invoke_tx_v1.signature,
-//                 invoke_tx_v1.nonce,
-//                 invoke_tx_v1.sender_address,
-//                 invoke_tx_v1.calldata,
-//             ),
-//             _ => todo!(),
-//         }
-//     }
-// }
+}
