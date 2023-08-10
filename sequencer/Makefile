@@ -23,7 +23,7 @@ install-cairo-native:
 	set -e
 	git clone \
 		--depth 1 \
-		--branch v2.0.1 \
+		--branch v2.1.0 \
 		https://github.com/starkware-libs/cairo.git \
 		starkware-cairo
 	cp -r starkware-cairo/corelib .
@@ -39,7 +39,7 @@ test:
 		export MLIR_SYS_160_PREFIX=/usr/lib/llvm-16; \
 	fi; \
 	echo "+ cargo test"; \
-	cargo test
+	cargo test 
 
 generate-nodes-keys:
 	@if [ -d ./config/committee.json ]; then \
@@ -69,7 +69,7 @@ clippy:
 install-corelibs:
 	git clone \
 		--depth 1 \
-		--branch v2.0.1 \
+		--branch v2.1.0 \
 		https://github.com/starkware-libs/cairo.git \
 		starkware-cairo
 	cp -r starkware-cairo/corelib .

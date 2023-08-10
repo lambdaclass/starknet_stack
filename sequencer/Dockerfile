@@ -46,7 +46,7 @@ RUN apt update -y && \
 
 # Download cairo corelib
 RUN git clone --depth 1 \
-              --branch v2.0.1 \
+              --branch v2.1.0 \
               https://github.com/starkware-libs/cairo.git \
               starkware-cairo
 RUN cp -r starkware-cairo/corelib .
