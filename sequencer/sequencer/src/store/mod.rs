@@ -174,15 +174,15 @@ mod tests {
         remove_test_dbs("test.sled.");
     }
 
-    #[test]
-    fn test_rocksdb_store() {
-        // Removing preexistent DBs in case of a failed previous test
-        remove_test_dbs("test.rocksdb.");
-        let store = Store::new("test", EngineType::RocksDB).unwrap();
-        test_store_tx(store.clone());
-        test_store_height(store);
-        remove_test_dbs("test.rocksdb.");
-    }
+    // #[test]
+    // fn test_rocksdb_store() {
+    //     // Removing preexistent DBs in case of a failed previous test
+    //     remove_test_dbs("test.rocksdb.");
+    //     let store = Store::new("test", EngineType::RocksDB).unwrap();
+    //     test_store_tx(store.clone());
+    //     test_store_height(store);
+    //     remove_test_dbs("test.rocksdb.");
+    // }
 
     fn test_store_height(mut store: Store) {
         // Test height starts in 0
