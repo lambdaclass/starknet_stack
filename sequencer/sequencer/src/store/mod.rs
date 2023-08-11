@@ -10,24 +10,19 @@ use types::{MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transactio
 pub mod in_memory;
 pub mod rocksdb;
 pub mod sled;
-//pub mod store;
 
 pub(crate) type Key = Vec<u8>;
 pub(crate) type Value = Vec<u8>;
 
-// TODO: add tests
-
 const BLOCK_HEIGHT: &str = "height";
 pub trait StoreEngine: Debug + Send {
-    fn add_program(&mut self, program_id: Key, program: Value) -> Result<()>;
-    fn get_program(&self, program_id: Key) -> Option<Value>;
     fn add_transaction(&mut self, transaction: Transaction) -> Result<()>;
     fn get_transaction(&self, tx_hash: Felt252) -> Result<Option<Transaction>>;
     fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()>;
-    fn get_block_by_hash(&self, block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>>;
-    fn get_block_by_height(&self, block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>>;
+    fn get_block_by_hash(&self, block_hash: Felt252) -> Result<Option<MaybePendingBlockWithTxs>>;
+    fn get_block_by_height(&self, block_height: u64) -> Result<Option<MaybePendingBlockWithTxs>>;
     fn set_value(&mut self, key: Key, value: Value) -> Result<()>;
-    fn get_value(&self, key: Key) -> Option<Value>;
+    fn get_value(&self, key: Key) -> Result<Option<Value>>;
     fn add_transaction_receipt(
         &mut self,
         transaction_receipt: MaybePendingTransactionReceipt,
@@ -51,41 +46,29 @@ pub enum EngineType {
 }
 
 impl Store {
-    pub fn new(path: &str, engine_type: EngineType) -> Self {
+    pub fn new(path: &str, engine_type: EngineType) -> Result<Self> {
         let mut store = match engine_type {
             EngineType::RocksDB => Self {
                 engine: Arc::new(Mutex::new(
-                    RocksDBStore::new("rocks").expect("could not create rocksdb store"),
+                    RocksDBStore::new(&format!("{path}.rocksdb"))
+                        .expect("could not create rocksdb store"),
                 )),
             },
             EngineType::Sled => Self {
-                engine: Arc::new(Mutex::new(SledStore::new(&format!("{path}.sled")))),
+                engine: Arc::new(Mutex::new(SledStore::new(&format!("{path}.sled"))?)),
             },
             EngineType::InMemory => Self {
-                engine: Arc::new(Mutex::new(InMemoryStore::new())),
+                engine: Arc::new(Mutex::new(InMemoryStore::new()?)),
             },
         };
         store.init();
-        store
+        Ok(store)
     }
 
     fn init(&mut self) {
         if self.get_height().is_none() {
             _ = self.set_height(0);
         }
-    }
-
-    // TODO: we might want this API to return types objects instead of bytes
-    pub fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
-        self.engine
-            .clone()
-            .lock()
-            .unwrap()
-            .add_program(program_id, program)
-    }
-
-    pub fn get_program(&self, program_id: Key) -> Option<Value> {
-        self.engine.clone().lock().unwrap().get_program(program_id)
     }
 
     pub fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
@@ -112,10 +95,13 @@ impl Store {
             .clone()
             .lock()
             .unwrap()
-            .get_block_by_height(block_height.to_be_bytes().to_vec())
+            .get_block_by_height(block_height)
     }
 
-    pub fn get_block_by_hash(&self, block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
+    pub fn get_block_by_hash(
+        &self,
+        block_hash: Felt252,
+    ) -> Result<Option<MaybePendingBlockWithTxs>> {
         self.engine
             .clone()
             .lock()
@@ -137,7 +123,9 @@ impl Store {
             .lock()
             .unwrap()
             .get_value(BLOCK_HEIGHT.into())
-            .map(|value| u64::from_be_bytes(value.as_slice()[..8].try_into().unwrap()))
+            .map_or(None, |result| {
+                result.map(|value| u64::from_be_bytes(value.as_slice()[..8].try_into().unwrap()))
+            })
     }
 
     pub fn add_transaction_receipt(
@@ -160,5 +148,146 @@ impl Store {
             .lock()
             .unwrap()
             .get_transaction_receipt(transaction_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{env, fs};
+    use types::{InvokeTransaction, InvokeTransactionV1};
+
+    #[test]
+    fn test_in_memory_store() {
+        let store = Store::new("test", EngineType::InMemory).unwrap();
+        test_store_tx(store.clone());
+        test_store_height(store);
+    }
+
+    #[test]
+    fn test_sled_store() {
+        // Removing preexistent DBs in case of a failed previous test
+        remove_test_dbs("test.sled.");
+        let store = Store::new("test", EngineType::Sled).unwrap();
+        test_store_tx(store.clone());
+        test_store_height(store);
+        remove_test_dbs("test.sled.");
+    }
+
+    #[test]
+    fn test_rocksdb_store() {
+        // Removing preexistent DBs in case of a failed previous test
+        remove_test_dbs("test.rocksdb.");
+        let store = Store::new("test", EngineType::RocksDB).unwrap();
+        test_store_tx(store.clone());
+        test_store_height(store.clone());
+
+        // FIXME patching rocksdb weird behavior
+        std::mem::forget(store);
+        remove_test_dbs("test.rocksdb.");
+    }
+
+    fn test_store_height(mut store: Store) {
+        // Test height starts in 0
+        assert_eq!(Some(0u64), store.get_height());
+
+        // Set height to an arbitrary number
+        store.set_height(25u64).unwrap();
+
+        // Test value has been persisted
+        assert_eq!(Some(25u64), store.get_height());
+    }
+
+    fn test_store_tx(mut store: Store) {
+        let tx_hash = Felt252::new(123123);
+        let tx_fee = Felt252::new(89853483);
+        let tx_signature = vec![Felt252::new(183728913)];
+        let tx_nonce = Felt252::new(5);
+        let tx_sender_address = Felt252::new(91232018);
+        let tx_calldata = vec![Felt252::new(10), Felt252::new(0)];
+
+        let tx = new_transaction(
+            tx_hash.clone(),
+            tx_fee.clone(),
+            tx_signature.clone(),
+            tx_nonce.clone(),
+            tx_sender_address.clone(),
+            tx_calldata.clone(),
+        );
+        let _ = store.add_transaction(tx);
+
+        let stored_tx = store.get_transaction(tx_hash.clone()).unwrap().unwrap();
+        let (
+            stored_tx_hash,
+            stored_tx_fee,
+            stored_tx_signature,
+            stored_tx_nonce,
+            stored_tx_sender_address,
+            stored_tx_calldata,
+        ) = get_tx_data(stored_tx);
+        assert_eq!(tx_hash, stored_tx_hash);
+        assert_eq!(tx_fee, stored_tx_fee);
+        assert_eq!(tx_signature, stored_tx_signature);
+        assert_eq!(tx_nonce, stored_tx_nonce);
+        assert_eq!(tx_sender_address, stored_tx_sender_address);
+        assert_eq!(tx_calldata, stored_tx_calldata);
+    }
+
+    fn new_transaction(
+        tx_hash: Felt252,
+        tx_fee: Felt252,
+        tx_signature: Vec<Felt252>,
+        tx_nonce: Felt252,
+        tx_sender_address: Felt252,
+        tx_calldata: Vec<Felt252>,
+    ) -> Transaction {
+        let invoke_tx_v1 = InvokeTransactionV1 {
+            transaction_hash: tx_hash,
+            max_fee: tx_fee,
+            signature: tx_signature,
+            nonce: tx_nonce,
+            sender_address: tx_sender_address,
+            calldata: tx_calldata,
+        };
+        Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1))
+    }
+
+    fn get_tx_data(
+        tx: Transaction,
+    ) -> (
+        Felt252,
+        Felt252,
+        Vec<Felt252>,
+        Felt252,
+        Felt252,
+        Vec<Felt252>,
+    ) {
+        match tx {
+            Transaction::Invoke(InvokeTransaction::V1(invoke_tx_v1)) => (
+                invoke_tx_v1.transaction_hash,
+                invoke_tx_v1.max_fee,
+                invoke_tx_v1.signature,
+                invoke_tx_v1.nonce,
+                invoke_tx_v1.sender_address,
+                invoke_tx_v1.calldata,
+            ),
+            _ => todo!(),
+        }
+    }
+
+    fn remove_test_dbs(prefix: &str) {
+        // Removes all test databases from filesystem
+        for entry in fs::read_dir(env::current_dir().unwrap()).unwrap() {
+            if entry
+                .as_ref()
+                .unwrap()
+                .file_name()
+                .to_str()
+                .unwrap()
+                .starts_with(prefix)
+            {
+                fs::remove_dir_all(entry.unwrap().path()).unwrap();
+            }
+        }
     }
 }

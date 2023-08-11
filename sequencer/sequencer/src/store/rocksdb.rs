@@ -1,5 +1,5 @@
 use super::{Key, StoreEngine, Value};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use cairo_felt::Felt252;
 use std::fmt::Debug;
 use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
@@ -7,6 +7,7 @@ use std::thread;
 use tracing::log::error;
 use types::{
     InvokeTransaction, MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, Transaction,
+    TransactionReceipt,
 };
 
 #[derive(Debug)]
@@ -17,8 +18,11 @@ enum StoreCommand {
 
 #[derive(Debug)]
 enum DbSelector {
-    Programs,
     Transactions,
+    BlocksByHash,
+    BlocksByHeight,
+    Values,
+    TransactionReceipts,
 }
 
 #[derive(Clone)]
@@ -28,8 +32,12 @@ pub struct Store {
 
 impl Store {
     pub fn new(path: &str) -> Result<Self> {
-        let programs = rocksdb::DB::open_default(format!("{path}.programs.db"))?;
         let transactions = rocksdb::DB::open_default(format!("{path}.transactions.db"))?;
+        let blocks_by_hash = rocksdb::DB::open_default(format!("{path}.blocks1.db"))?;
+        let blocks_by_height = rocksdb::DB::open_default(format!("{path}.blocks2.db"))?;
+        let values = rocksdb::DB::open_default(format!("{path}.values.db"))?;
+        let transaction_receipts =
+            rocksdb::DB::open_default(format!("{path}.transaction_receipts.db"))?;
         let (command_sender, command_receiver): (Sender<StoreCommand>, Receiver<StoreCommand>) =
             channel();
         thread::spawn(move || {
@@ -37,26 +45,25 @@ impl Store {
                 match command {
                     StoreCommand::Put(db_selector, id, value, reply_to) => {
                         let db = match db_selector {
-                            DbSelector::Programs => &programs,
                             DbSelector::Transactions => &transactions,
+                            DbSelector::BlocksByHash => &blocks_by_hash,
+                            DbSelector::BlocksByHeight => &blocks_by_height,
+                            DbSelector::Values => &values,
+                            DbSelector::TransactionReceipts => &transaction_receipts,
                         };
-                        let result = if db.get(id.clone()).unwrap_or(None).is_some() {
-                            Err(anyhow!(
-                                "Id {} already exists in the store",
-                                String::from_utf8_lossy(&id),
-                            ))
-                        } else {
-                            Ok(db
-                                .put(id, value)
-                                .unwrap_or_else(|e| error!("failed to write to db {}", e)))
-                        };
+                        let result = Ok(db
+                            .put(id, value)
+                            .unwrap_or_else(|e| error!("failed to write to db {}", e)));
 
                         reply_to.send(result).unwrap_or_else(|e| error!("{}", e));
                     }
                     StoreCommand::Get(db_selector, id, reply_to) => {
                         let db = match db_selector {
-                            DbSelector::Programs => &programs,
                             DbSelector::Transactions => &transactions,
+                            DbSelector::BlocksByHash => &blocks_by_hash,
+                            DbSelector::BlocksByHeight => &blocks_by_height,
+                            DbSelector::Values => &values,
+                            DbSelector::TransactionReceipts => &transaction_receipts,
                         };
                         let result = db.get(id).unwrap_or(None);
 
@@ -72,34 +79,6 @@ impl Store {
 }
 
 impl StoreEngine for Store {
-    fn add_program(&mut self, program_id: Key, program: Value) -> Result<()> {
-        let (reply_sender, reply_receiver) = sync_channel(0);
-
-        self.command_sender.send(StoreCommand::Put(
-            DbSelector::Programs,
-            program_id,
-            program,
-            reply_sender,
-        ))?;
-
-        reply_receiver.recv()?
-    }
-
-    fn get_program(&self, program_id: Key) -> Option<Value> {
-        let (reply_sender, reply_receiver) = sync_channel(0);
-
-        self.command_sender
-            .send(StoreCommand::Get(
-                DbSelector::Programs,
-                program_id,
-                reply_sender,
-            ))
-            .unwrap();
-
-        // TODO: properly handle errors
-        reply_receiver.recv().expect("error").expect("Other error")
-    }
-
     fn add_transaction(&mut self, tx: Transaction) -> Result<()> {
         let (reply_sender, reply_receiver) = sync_channel(0);
         let tx_serialized: Vec<u8> = serde_json::to_string(&tx).unwrap().as_bytes().to_vec();
@@ -113,6 +92,7 @@ impl StoreEngine for Store {
                 ))?;
                 reply_receiver.recv()?
             }
+            // Currently only InvokeTransactionV1 are supported
             _ => todo!(),
         }
     }
@@ -136,38 +116,142 @@ impl StoreEngine for Store {
         })
     }
 
-    fn add_block(&mut self, _block: MaybePendingBlockWithTxs) -> Result<()> {
-        todo!()
+    fn add_block(&mut self, block: MaybePendingBlockWithTxs) -> Result<()> {
+        let (reply_sender_by_hash, reply_receiver_by_hash) = sync_channel(0);
+        let (reply_sender_by_height, reply_receiver_by_height) = sync_channel(0);
+
+        let block_serialized: Vec<u8> = serde_json::to_string(&block).unwrap().as_bytes().to_vec();
+        match block {
+            MaybePendingBlockWithTxs::Block(block_with_txs) => {
+                self.command_sender.send(StoreCommand::Put(
+                    DbSelector::BlocksByHash,
+                    block_with_txs.block_hash.to_bytes_be(),
+                    block_serialized.clone(),
+                    reply_sender_by_hash,
+                ))?;
+                self.command_sender.send(StoreCommand::Put(
+                    DbSelector::BlocksByHeight,
+                    block_with_txs.block_number.to_be_bytes().to_vec(),
+                    block_serialized,
+                    reply_sender_by_height,
+                ))?;
+                reply_receiver_by_hash
+                    .recv()
+                    .and(reply_receiver_by_height.recv())?
+            }
+            MaybePendingBlockWithTxs::PendingBlock(_) =>
+            // Currently only MaybePendingBlockWithTxs::Block is supported
+            {
+                todo!()
+            }
+        }
     }
 
-    fn get_block_by_hash(&self, _block_hash: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
-        todo!()
+    fn get_block_by_hash(&self, block_hash: Felt252) -> Result<Option<MaybePendingBlockWithTxs>> {
+        let (reply_sender, reply_receiver) = sync_channel(0);
+
+        self.command_sender
+            .send(StoreCommand::Get(
+                DbSelector::BlocksByHash,
+                block_hash.to_bytes_be(),
+                reply_sender,
+            ))
+            .unwrap();
+
+        // TODO: properly handle errors
+        reply_receiver.recv()??.map_or(Ok(None), |value| {
+            Ok(Some(serde_json::from_str::<MaybePendingBlockWithTxs>(
+                &String::from_utf8(value.to_vec())?,
+            )?))
+        })
     }
 
-    fn get_block_by_height(&self, _block_height: Key) -> Result<Option<MaybePendingBlockWithTxs>> {
-        todo!()
+    fn get_block_by_height(&self, block_height: u64) -> Result<Option<MaybePendingBlockWithTxs>> {
+        let (reply_sender, reply_receiver) = sync_channel(0);
+
+        self.command_sender
+            .send(StoreCommand::Get(
+                DbSelector::BlocksByHash,
+                block_height.to_be_bytes().to_vec(),
+                reply_sender,
+            ))
+            .unwrap();
+
+        // TODO: properly handle errors
+        reply_receiver.recv()??.map_or(Ok(None), |value| {
+            Ok(Some(serde_json::from_str::<MaybePendingBlockWithTxs>(
+                &String::from_utf8(value.to_vec())?,
+            )?))
+        })
     }
 
-    fn set_value(&mut self, _key: Key, _value: Value) -> Result<()> {
-        todo!()
+    fn set_value(&mut self, key: Key, value: Value) -> Result<()> {
+        let (reply_sender, reply_receiver) = sync_channel(0);
+        self.command_sender.send(StoreCommand::Put(
+            DbSelector::Values,
+            key,
+            value,
+            reply_sender,
+        ))?;
+        reply_receiver.recv()?
     }
 
-    fn get_value(&self, _key: Key) -> Option<Value> {
-        todo!()
+    fn get_value(&self, key: Key) -> Result<Option<Vec<u8>>> {
+        let (reply_sender, reply_receiver) = sync_channel(0);
+
+        self.command_sender
+            .send(StoreCommand::Get(DbSelector::Values, key, reply_sender))
+            .unwrap();
+
+        reply_receiver.recv()?
     }
 
     fn add_transaction_receipt(
         &mut self,
-        _transaction_receipt: MaybePendingTransactionReceipt,
+        transaction_receipt: MaybePendingTransactionReceipt,
     ) -> Result<()> {
-        todo!()
+        let (reply_sender, reply_receiver) = sync_channel(0);
+        let tx_receipt_serialized = serde_json::to_string(&transaction_receipt)
+            .expect("Error serializing tx receipt")
+            .as_bytes()
+            .to_vec();
+        match transaction_receipt {
+            MaybePendingTransactionReceipt::Receipt(TransactionReceipt::Invoke(tx_receipt)) => {
+                self.command_sender.send(StoreCommand::Put(
+                    DbSelector::TransactionReceipts,
+                    tx_receipt.transaction_hash.to_bytes_be(),
+                    tx_receipt_serialized,
+                    reply_sender,
+                ))?;
+                reply_receiver.recv()?
+            }
+            // Currently only InvokeTransactionReceipts are supported
+            _ => todo!(),
+        }
     }
 
     fn get_transaction_receipt(
         &self,
-        _transaction_id: Felt252,
+        transaction_id: Felt252,
     ) -> Result<Option<MaybePendingTransactionReceipt>> {
-        todo!()
+        let (reply_sender, reply_receiver) = sync_channel(0);
+
+        self.command_sender
+            .send(StoreCommand::Get(
+                DbSelector::TransactionReceipts,
+                transaction_id.to_bytes_be(),
+                reply_sender,
+            ))
+            .unwrap();
+
+        // TODO: properly handle errors
+        reply_receiver.recv()??.map_or(Ok(None), |value| {
+            Ok(Some(
+                serde_json::from_str::<MaybePendingTransactionReceipt>(&String::from_utf8(
+                    value.to_vec(),
+                )?)?,
+            ))
+        })
     }
 }
 

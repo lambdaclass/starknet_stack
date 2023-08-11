@@ -107,7 +107,7 @@ impl StarknetRpcApiServer for StarknetBackend {
                 info!("block number requested is {}", &height);
                 self.store.get_block_by_height(height)
             }
-            BlockId::Hash(hash) => self.store.get_block_by_hash(hash.to_bytes_be()),
+            BlockId::Hash(hash) => self.store.get_block_by_hash(hash),
             BlockId::Latest => self
                 .store
                 .get_block_by_height(self.store.get_height().expect("Height not found")),
