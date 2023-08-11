@@ -12,19 +12,19 @@ pub mod syscall_handler;
 pub struct CairoNativeEngine {
     fib_program: Arc<Program>,
     fact_program: Arc<Program>,
-    _erc20_program: Arc<Program>,
+    erc20_program: Arc<Program>,
 }
 
 impl CairoNativeEngine {
     pub fn new(
         fib_program: Arc<Program>,
         fact_program: Arc<Program>,
-        _erc20_program: Arc<Program>,
+        erc20_program: Arc<Program>,
     ) -> Self {
         Self {
             fib_program,
             fact_program,
-            _erc20_program,
+            erc20_program,
         }
     }
 
@@ -50,6 +50,28 @@ impl CairoNativeEngine {
             false,
         );
         format!("Output Fact Cairo Native: {:?}", ret)
+    }
+
+    pub fn execute_erc20(
+        &self,
+        initial_supply: cairo_felt::Felt252,
+        symbol: cairo_felt::Felt252,
+        contract_address: cairo_felt::Felt252,
+    ) -> String {
+        let ret = execute_cairo_native_program(
+            &self.erc20_program,
+            "erc20::erc20::erc_20::__constructor::constructor",
+            vec![
+                cairo_native::easy::felt252_short_str("name").to_vec(), // name
+                cairo_native::easy::felt252_bigint(symbol.to_bigint()).to_vec(), // symbol
+                cairo_native::easy::felt252_bigint(0).to_vec(),         // decimals
+                cairo_native::easy::felt252_bigint(initial_supply.to_bigint()).to_vec(), // initial supply
+                cairo_native::easy::felt252_bigint(contract_address.to_bigint()).to_vec(), // contract address
+                cairo_native::easy::felt252_bigint(6).to_vec(),                            // ??
+            ],
+            true,
+        );
+        format!("Output ERC20 Cairo Native: {:?}", ret)
     }
 }
 

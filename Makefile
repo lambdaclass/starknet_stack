@@ -37,3 +37,4 @@ client-remote:
 
 stop:
 	docker compose down
+	rm -rf ./proofs

@@ -8,7 +8,7 @@ use consensus::{Block, Consensus};
 use crypto::SignatureService;
 use execution_engine::cairo_native_engine::CairoNativeEngine;
 use execution_engine::cairovm_engine::CairoVMEngine;
-use log::info;
+use log::{error, info};
 use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
 use rpc_endpoint::new_server;
@@ -54,6 +54,18 @@ impl ExecutionEngine {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_factorial(n),
             ExecutionEngine::Sierra(execution_program) => {
                 execution_program.execute_factorial(get_input_value_cairo_native(n))
+            }
+        };
+        info!("{}", ret_msg)
+    }
+
+    fn execute_erc20(&self, n: Felt252, symbol: Felt252, contract_address: Felt252) {
+        let ret_msg = match self {
+            ExecutionEngine::Cairo(_execution_program) => {
+                todo!("Cairo VM does not support ERC20 transactions")
+            }
+            ExecutionEngine::Sierra(execution_program) => {
+                execution_program.execute_erc20(n, symbol, contract_address)
             }
         };
         info!("{}", ret_msg)
@@ -251,24 +263,43 @@ impl Node {
                                         &tx.transaction_hash.to_str_radix(16)
                                     );
 
-                                    // last call data being Felt252::new(0) means we want to execute fibonacci
-                                    let is_fib = Felt252::new(0)
-                                        == *tx
-                                            .calldata
-                                            .last()
-                                            .expect("calldata was not correctly set");
-                                    let program_input = tx
+                                    // first call data == Felt252::new(0) means we want to execute fibonacci
+                                    // first call data == Felt252::new(1) means we want to execute factorial
+                                    // first call data == Felt252::new(2) means we want to execute ERC20
+                                    let first_felt: u64 = tx
                                         .calldata
                                         .first()
-                                        .expect("calldata was not correctly set");
-                                    let n: usize =
-                                        program_input.to_le_digits()[0].try_into().unwrap();
+                                        .expect("Calldata in transaction was not correctly set")
+                                        .to_le_digits()[0];
 
-                                    if is_fib {
-                                        self.execution_program.execute_fibonacci(n);
-                                    } else {
-                                        self.execution_program.execute_factorial(n);
-                                    }
+                                    match first_felt {
+                                        0 => {
+                                            let program_input = tx
+                                                .calldata
+                                                .get(1)
+                                                .expect("calldata was not correctly set");
+                                            let n: usize =
+                                                program_input.to_le_digits()[0].try_into().unwrap();
+                                            self.execution_program.execute_fibonacci(n);
+                                        }
+                                        1 => {
+                                            let program_input = tx
+                                                .calldata
+                                                .get(1)
+                                                .expect("calldata was not correctly set");
+                                            let n: usize =
+                                                program_input.to_le_digits()[0].try_into().unwrap();
+                                            self.execution_program.execute_factorial(n);
+                                        }
+                                        2 => {
+                                            self.execution_program.execute_erc20(
+                                                tx.calldata[1].clone(),
+                                                tx.calldata[2].clone(),
+                                                tx.calldata[3].clone(),
+                                            );
+                                        }
+                                        _ => error!("Transaction contains invalid calldata"),
+                                    };
 
                                     let _ =
                                         self.external_store.add_transaction(starknet_tx.clone());
