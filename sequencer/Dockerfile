@@ -8,7 +8,7 @@ RUN apt install -y curl \
                    g++
 
 # Install rust nightly-2023-06-19 (1.70)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=nightly-2023-06-19
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=nightly-2023-08-17
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN apt install -y gnupg wget
@@ -29,8 +29,8 @@ COPY . /sequencer/
 
 # Compile sequencer
 WORKDIR /sequencer/
-RUN cargo +nightly-2023-06-19 build --features benchmark --release
-RUN cargo +nightly-2023-06-19 build --bin client --features benchmark --release
+RUN cargo +nightly-2023-08-17 build --features benchmark --release
+RUN cargo +nightly-2023-08-17 build --bin client --features benchmark --release
 
 FROM debian:bullseye-slim as sequencer
 
