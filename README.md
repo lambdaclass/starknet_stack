@@ -12,7 +12,7 @@ flowchart LR
 	watcher-prover ==>|"STARK proofs"| Db[("Proof Storage")]
 	style Db stroke-dasharray: 5
 	subgraph watcher-prover["Watcher prover"]
-		cairo-vm("Cairo VM") ==>|"trace"| prover("Lambdaworks STARK Platinum Prover")
+		cairo-vm("Cairo VM") ==>|"trace"| prover("Lambdaworks STARK<br>  Platinum Prover")
 	end
 	subgraph Sequencer
 		C("Consensus") ==x|"tx settlement"| B("Cairo Native")
