@@ -25,11 +25,11 @@ jobs:
         run: |
           echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
 
-      - name: Install stable toolchain
+      - name: Install Rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: nightly-2023-08-17
           override: true
         
       - name: Run tests
@@ -47,11 +47,11 @@ jobs:
         run: |
           echo "RUSTUP_HOME=$GITHUB_WORKSPACE/.cargo" >> $GITHUB_ENV
 
-      - name: Install stable toolchain
+      - name: Install Rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: nightly-2023-08-17
           override: true
           components: rustfmt, clippy
 
@@ -70,7 +70,7 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
+            toolchain: nightly-2023-08-17
             components: clippy
       
       - run: make clippy
