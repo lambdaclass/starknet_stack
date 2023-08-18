@@ -75,8 +75,8 @@
         set -ex
         export PATH="/home/{{ ansible_user }}/.cargo/bin:${PATH}"
         export MLIR_SYS_160_PREFIX=/usr/lib/llvm-16
-        cargo +nightly-2023-06-19 build --features benchmark --release
-        cargo +nightly-2023-06-19 build --bin client --features benchmark --release
+        cargo +nightly-2023-08-17 build --features benchmark --release
+        cargo +nightly-2023-08-17 build --bin client --features benchmark --release
 
     - name: Create config dir for {{ ansible_user }} user
       ansible.builtin.file:
@@ -108,7 +108,7 @@
         chdir: /home/{{ ansible_user }}/starknet_stack/sequencer/target
       ansible.builtin.shell: |
         git clone --depth 1 \
-                  --branch v2.1.0 \
+                  --branch v2.1.1 \
                   https://github.com/starkware-libs/cairo.git \
                   starkware-cairo && \
                   cp -r starkware-cairo/corelib . && \

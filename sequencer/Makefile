@@ -1,7 +1,7 @@
 .PHONY: init node install-cairo-native run-fibonacci install-cairo-native-linux
 
 init: install-cairo-native
-	rustup override set nightly-2023-06-19-aarch64-apple-darwin
+	rustup override set nightly-2023-08-17-aarch64-apple-darwin
 	python3.9 -m venv ~/sequencer_venv && source ~/sequencer_venv/bin/activate && cd benchmark && pip install -r requirements.txt
 
 bench:
@@ -23,7 +23,7 @@ install-cairo-native:
 	set -e
 	git clone \
 		--depth 1 \
-		--branch v2.1.0 \
+		--branch v2.1.1 \
 		https://github.com/starkware-libs/cairo.git \
 		starkware-cairo
 	cp -r starkware-cairo/corelib .
