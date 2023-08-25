@@ -2,9 +2,9 @@ use std::{collections::HashMap, sync::Arc};
 
 use cairo_felt::{felt_str, Felt252};
 use starknet_in_rust::{
-    definitions::block_context::{BlockContext},
+    definitions::block_context::BlockContext,
     state::{cached_state::CachedState, in_memory_state_reader::InMemoryStateReader},
-    transaction::{InvokeFunction},
+    transaction::InvokeFunction,
     utils::{Address, ClassHash},
     CasmContractClass,
 };
@@ -148,7 +148,12 @@ impl StarknetState {
         return_data.call_info.unwrap().retdata
     }
 
-    pub fn execute_erc20(&mut self, initial_supply: Felt252, symbol: Felt252, contract_address: Felt252) {
+    pub fn execute_erc20(
+        &mut self,
+        initial_supply: Felt252,
+        symbol: Felt252,
+        contract_address: Felt252,
+    ) {
         let name_ = Felt252::from_bytes_be(b"some-token");
         let decimals_ = Felt252::from(24);
         let erc20_salt = felt_str!("1234");
@@ -158,7 +163,7 @@ impl StarknetState {
             contract_address,
             name_,
             decimals_,
-            initial_supply, 
+            initial_supply,
             symbol,
         ];
 
@@ -201,7 +206,7 @@ mod tests {
     fn execute_erc20() {
         let mut starknet_state = StarknetState::new_for_tests();
 
-        starknet_state.execute_erc20(2.into(), Felt252::from_bytes_be(b"smbl"),10000.into());
+        starknet_state.execute_erc20(2.into(), Felt252::from_bytes_be(b"smbl"), 10000.into());
     }
 
     #[test]

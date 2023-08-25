@@ -49,12 +49,20 @@ impl ExecutionEngine {
         info!("{}", ret_msg)
     }
 
-    fn execute_erc20(&mut self, initial_supply: Felt252, symbol: Felt252, contract_address: Felt252) {
+    fn execute_erc20(
+        &mut self,
+        initial_supply: Felt252,
+        symbol: Felt252,
+        contract_address: Felt252,
+    ) {
         let _ret_msg = match self {
             ExecutionEngine::Cairo(_execution_program) => {
                 todo!("Cairo VM does not support ERC20 transactions")
             }
-            ExecutionEngine::StarknetInRust(state) => format!("{:?}", state.execute_erc20(initial_supply, symbol, contract_address)),
+            ExecutionEngine::StarknetInRust(state) => format!(
+                "{:?}",
+                state.execute_erc20(initial_supply, symbol, contract_address)
+            ),
         };
     }
 }
@@ -115,7 +123,7 @@ impl Node {
             }
             ExecutionParameters::StarknetInRust => {
                 ExecutionEngine::StarknetInRust(Box::new(StarknetState::new_for_tests()))
-            },
+            }
         };
 
         // Run the signature service.
