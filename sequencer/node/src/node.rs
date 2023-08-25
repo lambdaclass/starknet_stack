@@ -1,12 +1,8 @@
 use crate::config::{Committee, ConfigError, Parameters, Secret};
 use crate::config::{ExecutionParameters, Export as _};
 use cairo_felt::Felt252;
-use cairo_lang_compiler::CompilerConfig;
-use cairo_lang_sierra::program::Program as SierraProgram;
-use cairo_lang_sierra::ProgramParser;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
-use execution_engine::cairo_native_engine::CairoNativeEngine;
 use execution_engine::cairovm_engine::CairoVMEngine;
 use log::{error, info};
 use mempool::{Mempool, MempoolMessage};
@@ -18,10 +14,7 @@ use rpc_endpoint::rpc::{
 };
 use std::collections::hash_map::DefaultHasher;
 use std::convert::TryInto;
-use std::fs;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
-use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
@@ -35,16 +28,12 @@ const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1500;
 
 enum ExecutionEngine {
     Cairo(Box<CairoVMEngine>),
-    Sierra(CairoNativeEngine),
 }
 
 impl ExecutionEngine {
     fn execute_fibonacci(&self, n: usize) {
         let ret_msg = match self {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
-            ExecutionEngine::Sierra(execution_program) => {
-                execution_program.execute_fibonacci(get_input_value_cairo_native(n))
-            }
         };
         info!("{}", ret_msg)
     }
@@ -52,23 +41,16 @@ impl ExecutionEngine {
     fn execute_factorial(&self, n: usize) {
         let ret_msg = match self {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_factorial(n),
-            ExecutionEngine::Sierra(execution_program) => {
-                execution_program.execute_factorial(get_input_value_cairo_native(n))
-            }
         };
         info!("{}", ret_msg)
     }
 
-    fn execute_erc20(&self, n: Felt252, symbol: Felt252, contract_address: Felt252) {
-        let ret_msg = match self {
+    fn execute_erc20(&self, _n: Felt252, _symbol: Felt252, _contract_address: Felt252) {
+        let _ret_msg = match self {
             ExecutionEngine::Cairo(_execution_program) => {
                 todo!("Cairo VM does not support ERC20 transactions")
             }
-            ExecutionEngine::Sierra(execution_program) => {
-                execution_program.execute_erc20(n, symbol, contract_address)
-            }
         };
-        info!("{}", ret_msg)
     }
 }
 
@@ -124,36 +106,7 @@ impl Node {
                 ExecutionEngine::Cairo(Box::new(cairovm_engine))
             }
             ExecutionParameters::CairoNative => {
-                // Compile Cairo programs to Sierra
-                let fact_sierra_program: Arc<SierraProgram> =
-                    cairo_lang_compiler::compile_cairo_project_at_path(
-                        Path::new("../cairo_programs/fact_contract.cairo"),
-                        CompilerConfig {
-                            replace_ids: true,
-                            ..Default::default()
-                        },
-                    )
-                    .unwrap();
-
-                let fib_sierra_program: Arc<SierraProgram> =
-                    cairo_lang_compiler::compile_cairo_project_at_path(
-                        Path::new("../cairo_programs/fib_contract.cairo"),
-                        CompilerConfig {
-                            replace_ids: true,
-                            ..Default::default()
-                        },
-                    )
-                    .unwrap();
-
-                let program_src = fs::read_to_string("../cairo_programs/erc20.sierra").unwrap();
-                let program_parser = ProgramParser::new();
-                let erc20_sierra_program = Arc::new(program_parser.parse(&program_src).unwrap());
-
-                ExecutionEngine::Sierra(CairoNativeEngine::new(
-                    fib_sierra_program,
-                    fact_sierra_program,
-                    erc20_sierra_program,
-                ))
+                todo!("we have to get rid of this")
             }
         };
 
@@ -402,7 +355,7 @@ impl Node {
     }
 }
 
-fn get_input_value_cairo_native(n: usize) -> Vec<u32> {
+fn _get_input_value_cairo_native(n: usize) -> Vec<u32> {
     let mut digits = BigUint::from(n).to_u32_digits();
     digits.resize(8, 0);
     digits
