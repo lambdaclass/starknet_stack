@@ -30,7 +30,7 @@ def local(ctx):
             'batch_size': 4096,
             'max_batch_delay': 10
         },
-        'execution': "cairo_native"
+        'execution': "starknet_in_rust"
     }
     try:
         ret = LocalBench(bench_params, node_params).run(debug=True).result()

@@ -22,6 +22,7 @@ services:
     environment:
       - RUST_LOG=info,salsa=off,cairo_native=off,sled=off
     command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node0.json --committee /sequencer/config/committee.json --store /sequencer/db0 --parameters /sequencer/config/parameters.json
+    init: true
 
   sequencer_node1:
     <<: *sequencer
@@ -52,6 +53,7 @@ services:
       - ./sequencer/config/committee.json:/sequencer/config/committee.json
       - ./sequencer/config/parameters.json:/sequencer/config/parameters.json
     command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node2.json --committee /sequencer/config/committee.json --store /sequencer/db2 --parameters /sequencer/config/parameters.json
+    init: true
 
   sequencer_node3:
     <<: *sequencer
@@ -69,6 +71,7 @@ services:
     environment:
       - RUST_LOG=info,salsa=off,cairo_native=off,sled=off
     command: /sequencer/node -vv run --keys /sequencer/config/sequencer_node3.json --committee /sequencer/config/committee.json --store /sequencer/db3 --parameters /sequencer/config/parameters.json
+    init: true
 
   sequencer_client0:
     <<: *sequencer
@@ -82,6 +85,7 @@ services:
     depends_on:
       - sequencer_node0
     command: sh -c 'sleep 15 && /sequencer/client 172.27.0.10:9004 --size 256 --rate 250 --timeout 1000 --running-time 10'
+    init: true
 
   watcher_prover:
     build: ./watcher_prover
@@ -102,6 +106,7 @@ services:
       frontend:
         aliases:
           - watcher
+    init: true
 
   postgres_watcher_prover:
     container_name: watcher_prover_dev_db
