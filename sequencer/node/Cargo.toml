@@ -6,7 +6,7 @@ edition = "2018"
 publish = false
 
 [dependencies]
-cairo-felt = "0.6.1"
+cairo-felt = "0.8.6"
 cairo-lang-compiler = "2.2.0"
 cairo-lang-sierra = "2.2.0"
 num-bigint = "0.4.3"

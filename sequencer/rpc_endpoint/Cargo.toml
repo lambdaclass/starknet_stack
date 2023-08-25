@@ -15,7 +15,7 @@ sequencer = { path = "../sequencer" }
 types = { path = "../types" }
 serde_json = { version = "1.0.96", default-features = false }
 serde = "1.0.164"
-cairo-felt = "0.6.1"
+cairo-felt = "0.8.6"
 serde_with = "3.0.0"
 thiserror = "1.0.46"
 base64 = "0.21.2"

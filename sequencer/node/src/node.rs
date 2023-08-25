@@ -4,6 +4,7 @@ use cairo_felt::Felt252;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
 use execution_engine::cairovm_engine::CairoVMEngine;
+use execution_engine::starknet_in_rust_engine::StarknetState;
 use log::{error, info};
 use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
@@ -28,28 +29,32 @@ const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1500;
 
 enum ExecutionEngine {
     Cairo(Box<CairoVMEngine>),
+    StarknetInRust(Box<StarknetState>),
 }
 
 impl ExecutionEngine {
-    fn execute_fibonacci(&self, n: usize) {
+    fn execute_fibonacci(&mut self, n: usize) {
         let ret_msg = match self {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
+            ExecutionEngine::StarknetInRust(state) => format!("{:?}", state.execute_fibonacci(n)),
         };
         info!("{}", ret_msg)
     }
 
-    fn execute_factorial(&self, n: usize) {
+    fn execute_factorial(&mut self, n: usize) {
         let ret_msg = match self {
             ExecutionEngine::Cairo(execution_program) => execution_program.execute_factorial(n),
+            ExecutionEngine::StarknetInRust(state) => format!("{:?}", state.execute_factorial(n)),
         };
         info!("{}", ret_msg)
     }
 
-    fn execute_erc20(&self, _n: Felt252, _symbol: Felt252, _contract_address: Felt252) {
+    fn execute_erc20(&mut self, initial_supply: Felt252, symbol: Felt252, contract_address: Felt252) {
         let _ret_msg = match self {
             ExecutionEngine::Cairo(_execution_program) => {
                 todo!("Cairo VM does not support ERC20 transactions")
             }
+            ExecutionEngine::StarknetInRust(state) => format!("{:?}", state.execute_erc20(initial_supply, symbol, contract_address)),
         };
     }
 }
@@ -108,6 +113,9 @@ impl Node {
             ExecutionParameters::CairoNative => {
                 todo!("we have to get rid of this")
             }
+            ExecutionParameters::StarknetInRust => {
+                ExecutionEngine::StarknetInRust(Box::new(StarknetState::new_for_tests()))
+            },
         };
 
         // Run the signature service.

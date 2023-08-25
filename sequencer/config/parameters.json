@@ -10,5 +10,5 @@
         "sync_retry_delay": 5000,
         "sync_retry_nodes": 3
     },
-    "execution": "cairo_native"
+    "execution": "starknet_in_rust"
 }

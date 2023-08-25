@@ -51,9 +51,11 @@ pub trait Export: Serialize + DeserializeOwned {
 pub enum ExecutionParameters {
     #[serde(rename = "cairovm")]
     CairoVM,
-    #[default]
     #[serde(rename = "cairo_native")]
     CairoNative,
+    #[default]
+    #[serde(rename = "starknet_in_rust")]
+    StarknetInRust,
 }
 
 #[derive(Serialize, Deserialize, Default)]
