@@ -2,7 +2,7 @@ use anyhow::bail;
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
-use cairo_felt::Felt252;
+use cairo_felt::{felt_str, Felt252};
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
@@ -208,18 +208,31 @@ impl Client {
         //let rand_program_input: u16 = rand::thread_rng();
         match options.choose(&mut rand::thread_rng()).unwrap() {
             ExecutionType::Fibonacci => {
-                vec![Felt252::new(0), Felt252::new((n % 10000) + 1)]
+                let selector = felt_str!(
+                    "112e35f48499939272000bd72eb840e502ca4c3aefa8800992e8defb746e0c9",
+                    16
+                );
+                vec![Felt252::new(0), selector, Felt252::new((n % 10000) + 1)]
             }
             ExecutionType::Factorial => {
-                vec![Felt252::new(1), Felt252::new((n % 2000) + 1)]
+                let selector = felt_str!(
+                    "213cda0181d4bd6d07f2e467ddf45a1d971e14ca1bcd4c83949a6d830a15b7f",
+                    16
+                );
+                vec![Felt252::new(1), selector, Felt252::new((n % 2000) + 1)]
             }
             ExecutionType::ERC20 => {
+                let selector = felt_str!(
+                    "83afd3f4caedc6eebf44246fe54e38c95e3179a5ec9ea81740eca5b482d12e",
+                    16
+                );
                 let initial_supply = Felt252::new((n % 5000) + 1);
                 let token_symbol = Felt252::new(512);
                 let contract_address = Felt252::new(rand::thread_rng().gen::<u128>());
                 // execution type felt, initial_supply, token symbol, contract address
                 vec![
                     Felt252::new(2),
+                    selector,
                     initial_supply,
                     token_symbol,
                     contract_address,
