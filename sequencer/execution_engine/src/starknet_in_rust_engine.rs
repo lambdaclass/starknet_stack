@@ -96,9 +96,7 @@ impl StarknetState {
 
         let state = CachedState::new(Arc::new(state_reader), None, Some(contract_class_cache));
 
-        StarknetState {
-            state,
-        }
+        StarknetState { state }
     }
 
     pub fn invoke(&mut self, calldata: Vec<Felt252>) -> Result<Vec<Felt252>, TransactionError> {
@@ -137,8 +135,8 @@ impl StarknetState {
 
 #[cfg(test)]
 mod tests {
-    use cairo_felt::{felt_str, Felt252};
     use crate::starknet_in_rust_engine::StarknetState;
+    use cairo_felt::{felt_str, Felt252};
 
     #[test]
     fn test_three_contracts() {
@@ -192,7 +190,7 @@ mod tests {
             "213cda0181d4bd6d07f2e467ddf45a1d971e14ca1bcd4c83949a6d830a15b7f",
             16
         );
-        
+
         starknet_state
             .invoke(vec![Felt252::new(9999), selector, Felt252::new(2000)])
             .unwrap_err();

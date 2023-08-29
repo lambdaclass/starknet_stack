@@ -181,7 +181,10 @@ impl HotstuffNode {
                                         &tx.transaction_hash.to_str_radix(16)
                                     );
 
-                                    if self.execution_program.handle_invoke(tx.calldata.clone()).is_ok()
+                                    if self
+                                        .execution_program
+                                        .handle_invoke(tx.calldata.clone())
+                                        .is_ok()
                                     {
                                         let _ = self
                                             .external_store
