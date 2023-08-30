@@ -1,15 +1,17 @@
 use cairo_felt::{felt_str, Felt252};
 use starknet_in_rust::{
-    definitions::block_context::BlockContext,
+    definitions::{block_context::BlockContext, transaction_type::TransactionType, constants::VALIDATE_DECLARE_ENTRY_POINT_SELECTOR},
     state::{cached_state::CachedState, in_memory_state_reader::InMemoryStateReader},
-    transaction::{error::TransactionError, InvokeFunction},
+    transaction::{error::TransactionError, InvokeFunction, DeclareV2, declare, Transaction},
     utils::{Address, ClassHash},
-    CasmContractClass,
+    CasmContractClass, core::contract_address::{compute_sierra_class_hash, compute_casm_class_hash}, testing::TEST_ACCOUNT_CONTRACT_ADDRESS, execution::TransactionExecutionInfo,
 };
 use std::{collections::HashMap, sync::Arc};
+use cairo_lang_starknet::contract_class::ContractClass as SierraContractClass;
 
 pub struct StarknetState {
     state: CachedState<InMemoryStateReader>,
+    block_context: BlockContext
 }
 
 impl StarknetState {
@@ -96,7 +98,8 @@ impl StarknetState {
 
         let state = CachedState::new(Arc::new(state_reader), None, Some(contract_class_cache));
 
-        StarknetState { state }
+        StarknetState { state,
+        block_context: BlockContext::default() }
     }
 
     pub fn invoke(&mut self, calldata: Vec<Felt252>) -> Result<Vec<Felt252>, TransactionError> {
@@ -121,7 +124,7 @@ impl StarknetState {
         .and_then(|invoke_tx| {
             let return_data = invoke_tx
                 .create_for_simulation(false, false, true, true)
-                .execute(&mut self.state, &BlockContext::default(), u128::MAX)?;
+                .execute(&mut self.state, &self.block_context, u128::MAX)?;
 
             return_data
                 .call_info
@@ -130,6 +133,39 @@ impl StarknetState {
         });
 
         invoke_tx_execution
+    }
+
+    pub fn declare_v2(&mut self) -> Result<TransactionExecutionInfo, TransactionError> {
+        let program_data = &[0];
+        let sierra_contract_class: SierraContractClass = serde_json::from_slice(program_data).unwrap();
+        let sierra_class_hash = compute_sierra_class_hash(&sierra_contract_class).unwrap();
+        let casm_class =
+            CasmContractClass::from_contract_class(sierra_contract_class.clone(), true).unwrap();
+        let casm_class_hash = compute_casm_class_hash(&casm_class).unwrap();
+    
+        let declare_tx = DeclareV2 {
+            sender_address: TEST_ACCOUNT_CONTRACT_ADDRESS.clone(),
+            tx_type: TransactionType::Declare,
+            validate_entry_point_selector: VALIDATE_DECLARE_ENTRY_POINT_SELECTOR.clone(),
+            version: 1.into(),
+            max_fee: 50000000,
+            signature: vec![],
+            nonce: 0.into(),
+            hash_value: 0.into(),
+            compiled_class_hash: casm_class_hash,
+            sierra_contract_class,
+            sierra_class_hash,
+            casm_class: casm_class.into(),
+            skip_execute: false,
+            skip_fee_transfer: false,
+            skip_validate: false,
+        };
+
+        declare_tx.execute(&mut self.state, &self.block_context)
+    }
+
+    pub fn execute_transaction(&mut self, tx: Transaction) -> Result<TransactionExecutionInfo, TransactionError> {
+        tx.create_for_simulation(true, false, true, false).execute(&mut self.state, &self.block_context, u128::MAX)
     }
 }
 
