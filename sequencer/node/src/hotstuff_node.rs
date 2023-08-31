@@ -4,7 +4,7 @@ use cairo_felt::Felt252;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
 use execution_engine::starknet_in_rust_engine::StarknetState;
-use log::info;
+use log::{error, info};
 use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
 use rpc_endpoint::rpc::{
@@ -181,14 +181,22 @@ impl HotstuffNode {
                                         &tx.transaction_hash.to_str_radix(16)
                                     );
 
-                                    if self
-                                        .execution_program
-                                        .handle_invoke(tx.calldata.clone())
-                                        .is_ok()
-                                    {
+                                    let execution_result =
+                                        self.execution_program.handle_invoke(tx.calldata.clone());
+
+                                    if execution_result.is_ok() {
+                                        info!(
+                                            "Execution output is: {:?}",
+                                            execution_result.unwrap()
+                                        );
                                         let _ = self
                                             .external_store
                                             .add_transaction(starknet_tx.clone());
+                                    } else {
+                                        error!(
+                                            "Error running transaction: {}",
+                                            execution_result.unwrap_err()
+                                        );
                                     }
                                 }
                                 _ => todo!(),
