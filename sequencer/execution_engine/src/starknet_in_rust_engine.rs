@@ -197,8 +197,6 @@ mod tests {
         let _initial_supply = Felt252::new((5000) + 1);
         let name = Felt252::new(256);
         let token_symbol = Felt252::new(512);
-        let _decimals = Felt252::new(10);
-        let _contract_address_receiver = Felt252::new(10);
 
         // execution type felt, initial_supply, token symbol, contract address
         starknet_state
@@ -207,10 +205,6 @@ mod tests {
                 selector,
                 name,
                 token_symbol,
-                //decimals,
-                //initial_supply,
-                //contract_address_receiver,
-                //Felt252::new(6),
             ])
             .unwrap();
 
