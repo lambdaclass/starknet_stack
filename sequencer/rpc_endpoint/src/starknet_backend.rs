@@ -6,9 +6,11 @@ use crate::rpc::{
     MaybePendingBlockWithTxs, MaybePendingTransactionReceipt, StarknetRpcApiServer, StateUpdate,
     SyncStatusType, Transaction,
 };
+use anyhow::Result;
 use cairo_felt::Felt252;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    server::{ServerBuilder, ServerHandle},
     types::{error::ErrorCode, ErrorObject},
 };
 use log::{error, info};
@@ -16,6 +18,32 @@ use sequencer::store::Store;
 
 pub struct StarknetBackend {
     pub(crate) store: Store,
+}
+
+impl StarknetBackend {
+    pub fn spawn(external_store: Store, port: u16) {
+        let external_store_clone = external_store.clone();
+        tokio::spawn(async move {
+            let handle = StarknetBackend::new_server(port, external_store_clone).await;
+
+            match handle {
+                Ok(handle) => {
+                    info!("RPC Server started, running on port {}", port);
+                    handle.stopped().await;
+                }
+                Err(e) => println!("Error creating RPC server: {}", e),
+            };
+        });
+    }
+
+    pub async fn new_server(port: u16, store: Store) -> Result<ServerHandle> {
+        let server = ServerBuilder::default()
+            .build(format!("0.0.0.0:{}", port))
+            .await?;
+        let server_handle = server.start(StarknetBackend { store }.into_rpc())?;
+
+        Ok(server_handle)
+    }
 }
 
 #[async_trait]
