@@ -190,22 +190,20 @@ mod tests {
 
         // valid erc20 call
         let selector = felt_str!(
-            "83afd3f4caedc6eebf44246fe54e38c95e3179a5ec9ea81740eca5b482d12e",
+            "16d9d5d83f8eecc5d7450519aad7e6e649be1a6c9d6df85bd0b177cc59a926a",
             16
         );
 
         let _initial_supply = Felt252::new((5000) + 1);
-        let name = Felt252::new(256);
-        let token_symbol = Felt252::new(512);
 
         // execution type felt, initial_supply, token symbol, contract address
         starknet_state
-            .invoke(vec![Felt252::new(2), selector, name, token_symbol])
+            .invoke(vec![Felt252::new(2), selector])
             .unwrap();
 
-        // should fail due to not deployed contract
+        // should fail due to not deployed contract (wrong address)
         let selector = felt_str!(
-            "213cda0181d4bd6d07f2e467ddf45a1d971e14ca1bcd4c83949a6d830a15b7f",
+            "83afd3f4caedc6eebf44246fe54e38c95e3179a5ec9ea81740eca5b482d12e",
             16
         );
         starknet_state
