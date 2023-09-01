@@ -200,12 +200,7 @@ mod tests {
 
         // execution type felt, initial_supply, token symbol, contract address
         starknet_state
-            .invoke(vec![
-                Felt252::new(2),
-                selector,
-                name,
-                token_symbol,
-            ])
+            .invoke(vec![Felt252::new(2), selector, name, token_symbol])
             .unwrap();
 
         // should fail due to not deployed contract
