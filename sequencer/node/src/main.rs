@@ -103,7 +103,7 @@ async fn main() {
                     let rpc_port = node.mempool_transaction_endpoint.port() + RPC_PORT_OFFSET;
 
                     // Start RPC backend module
-                    StarknetBackend::spawn(external_store, rpc_port);
+                    StarknetBackend::spawn(external_store, rpc_port, node.transaction_endpoint);
 
                     tokio::spawn(async move {
                         node.analyze_block().await;
@@ -190,7 +190,7 @@ fn deploy_testbed(nodes: u16) -> Result<Vec<JoinHandle<()>>, Box<dyn std::error:
                         let rpc_port = node.mempool_transaction_endpoint.port() + RPC_PORT_OFFSET;
 
                         // Start RPC backend module
-                        StarknetBackend::spawn(external_store, rpc_port);
+                        StarknetBackend::spawn(external_store, rpc_port, node.transaction_endpoint);
                         // Sink the commit channel.
                         while node.commit.recv().await.is_some() {}
                     }
