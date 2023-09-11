@@ -229,18 +229,20 @@ impl Client {
             }
             ExecutionType::ERC20 => {
                 let selector = felt_str!(
-                    "83afd3f4caedc6eebf44246fe54e38c95e3179a5ec9ea81740eca5b482d12e",
+                    "16d9d5d83f8eecc5d7450519aad7e6e649be1a6c9d6df85bd0b177cc59a926a",
                     16
                 );
-                let initial_supply = Felt252::new((n % 5000) + 1);
-                let token_symbol = Felt252::new(512);
+
+                // TODO: create a better transaction
+                // let initial_supply = Felt252::new((n % 5000) + 1);
+                // let token_symbol = Felt252::new(512);
                 // let contract_address = Felt252::new(rand::thread_rng().gen::<u128>());
                 // execution type felt, initial_supply, token symbol, contract address
                 vec![
                     Felt252::new(2),
                     selector,
-                    initial_supply,
-                    token_symbol,
+                    //initial_supply,
+                    //token_symbol,
                     //contract_address,
                 ]
             }
