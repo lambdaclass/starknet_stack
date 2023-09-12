@@ -13,4 +13,4 @@ cairo-lang-sierra = "2.2.0"
 num-bigint = "0.4.3"
 cairo-lang-compiler = "2.2.0"
 melior = "0.9.6"
-starknet_in_rust = { git="https://github.com/lambdaclass/starknet_in_rust/", branch="add_cairo_native"}
+starknet_in_rust = { git="https://github.com/lambdaclass/starknet_in_rust/", rev="5863abb94e6ef4e6e404b74ee7ad09f1d82cfe3e", features = ["cairo-native"]}

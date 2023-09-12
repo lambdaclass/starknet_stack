@@ -2,6 +2,7 @@ use cairo_felt::Felt252;
 use starknet_in_rust::{
     definitions::block_context::BlockContext,
     execution::TransactionExecutionInfo,
+    services::api::contract_classes::compiled_class::CompiledClass,
     state::{cached_state::CachedState, in_memory_state_reader::InMemoryStateReader},
     transaction::{error::TransactionError, InvokeFunction, Transaction},
     utils::{Address, ClassHash},
@@ -18,7 +19,7 @@ impl StarknetState {
         let mut state_reader = InMemoryStateReader::default();
         // Create state reader with class hash data
 
-        let mut sierra_contract_class_cache = HashMap::new();
+        let mut contract_class_cache = HashMap::new();
 
         {
             let contract_address = Address(0.into());
@@ -28,7 +29,10 @@ impl StarknetState {
             let contract_class: cairo_lang_starknet::contract_class::ContractClass =
                 serde_json::from_slice(program_data).unwrap();
 
-            sierra_contract_class_cache.insert(class_hash, contract_class.clone());
+            contract_class_cache.insert(
+                class_hash,
+                CompiledClass::Sierra(Arc::new(contract_class.clone())),
+            );
 
             state_reader
                 .address_to_class_hash_mut()
@@ -48,7 +52,8 @@ impl StarknetState {
             let _entrypoints = contract_class.clone().entry_points_by_type;
             let contract_address = Address(1.into());
             let class_hash: ClassHash = [2; 32];
-            sierra_contract_class_cache.insert(class_hash, contract_class);
+            contract_class_cache
+                .insert(class_hash, CompiledClass::Sierra(Arc::new(contract_class)));
 
             state_reader
                 .address_to_class_hash_mut()
@@ -68,7 +73,10 @@ impl StarknetState {
                 serde_json::from_slice(include_bytes!("../../cairo_programs/cairo2/erc20.sierra"))
                     .unwrap();
 
-            sierra_contract_class_cache.insert(erc20_class_hash, sierra_contract_class);
+            contract_class_cache.insert(
+                erc20_class_hash,
+                CompiledClass::Sierra(Arc::new(sierra_contract_class)),
+            );
 
             // contract_class_cache.insert(erc20_class_hash, test_contract_class.clone());
 
@@ -86,8 +94,7 @@ impl StarknetState {
                 .insert(contract_address, nonce);
         };
 
-        let state = CachedState::new(Arc::new(state_reader))
-            .set_sierra_programs_cache(sierra_contract_class_cache);
+        let state = CachedState::new(Arc::new(state_reader), contract_class_cache);
 
         StarknetState {
             state,
