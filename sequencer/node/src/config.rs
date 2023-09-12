@@ -47,13 +47,16 @@ pub trait Export: Serialize + DeserializeOwned {
     }
 }
 
+// TODO: Remove these parameters or repurpose them to decide the execution VM for Starknet in Rust exclusively
 #[derive(Serialize, Deserialize, Default)]
 pub enum ExecutionParameters {
     #[serde(rename = "cairovm")]
     CairoVM,
-    #[default]
     #[serde(rename = "cairo_native")]
     CairoNative,
+    #[default]
+    #[serde(rename = "starknet_in_rust")]
+    StarknetInRust,
 }
 
 #[derive(Serialize, Deserialize, Default)]

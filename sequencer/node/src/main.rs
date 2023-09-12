@@ -1,17 +1,21 @@
 mod config;
-mod node;
+mod hotstuff_node;
 
 use crate::config::Export as _;
 use crate::config::{Committee, Secret};
-use crate::node::Node;
+use crate::hotstuff_node::HotstuffNode;
 use clap::{Parser, Subcommand};
 use consensus::Committee as ConsensusCommittee;
 use env_logger::Env;
 use futures::future::join_all;
 use log::error;
 use mempool::Committee as MempoolCommittee;
+use rpc_endpoint::starknet_backend::StarknetBackend;
 use std::fs;
 use tokio::task::JoinHandle;
+
+/// Default port offset for RPC endpoint
+const RPC_PORT_OFFSET: u16 = 1000;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -72,7 +76,7 @@ async fn main() {
 
     match cli.command {
         Command::Keys { filename } => {
-            if let Err(e) = Node::print_key_file(&filename) {
+            if let Err(e) = HotstuffNode::print_key_file(&filename) {
                 error!("{}", e);
             }
         }
@@ -81,16 +85,35 @@ async fn main() {
             committee,
             parameters,
             store,
-        } => match Node::new(&committee, &keys, &store, parameters).await {
-            Ok(mut node) => {
-                tokio::spawn(async move {
-                    node.analyze_block().await;
-                })
-                .await
-                .expect("Failed to analyze committed blocks");
+        } => {
+            let external_store =
+                sequencer::store::Store::new(&store, sequencer::store::EngineType::Sled)
+                    .expect("Failed to create sequencer store");
+
+            match HotstuffNode::new(
+                &committee,
+                &keys,
+                &store,
+                parameters,
+                external_store.clone(),
+            )
+            .await
+            {
+                Ok(mut node) => {
+                    let rpc_port = node.mempool_transaction_endpoint.port() + RPC_PORT_OFFSET;
+
+                    // Start RPC backend module
+                    StarknetBackend::spawn(external_store, rpc_port);
+
+                    tokio::spawn(async move {
+                        node.analyze_block().await;
+                    })
+                    .await
+                    .expect("Failed to analyze committed blocks");
+                }
+                Err(e) => error!("{}", e),
             }
-            Err(e) => error!("{}", e),
-        },
+        }
         Command::Deploy { nodes } => match deploy_testbed(nodes) {
             Ok(handles) => {
                 let _ = join_all(handles).await;
@@ -150,8 +173,24 @@ fn deploy_testbed(nodes: u16) -> Result<Vec<JoinHandle<()>>, Box<dyn std::error:
             let _ = fs::remove_dir_all(&store_path);
 
             Ok(tokio::spawn(async move {
-                match Node::new(committee_file, &key_file, &store_path, None).await {
+                let external_store =
+                    sequencer::store::Store::new(&store_path, sequencer::store::EngineType::Sled)
+                        .expect("Failed to create sequencer store");
+
+                match HotstuffNode::new(
+                    committee_file,
+                    &key_file,
+                    &store_path,
+                    None,
+                    external_store.clone(),
+                )
+                .await
+                {
                     Ok(mut node) => {
+                        let rpc_port = node.mempool_transaction_endpoint.port() + RPC_PORT_OFFSET;
+
+                        // Start RPC backend module
+                        StarknetBackend::spawn(external_store, rpc_port);
                         // Sink the commit channel.
                         while node.commit.recv().await.is_some() {}
                     }

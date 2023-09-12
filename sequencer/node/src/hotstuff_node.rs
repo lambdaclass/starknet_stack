@@ -1,27 +1,19 @@
 use crate::config::{Committee, ConfigError, Parameters, Secret};
 use crate::config::{ExecutionParameters, Export as _};
 use cairo_felt::Felt252;
-use cairo_lang_compiler::CompilerConfig;
-use cairo_lang_sierra::program::Program as SierraProgram;
-use cairo_lang_sierra::ProgramParser;
 use consensus::{Block, Consensus};
 use crypto::SignatureService;
-use execution_engine::cairo_native_engine::CairoNativeEngine;
-use execution_engine::cairovm_engine::CairoVMEngine;
+use execution_engine::starknet_in_rust_engine::StarknetState;
 use log::{error, info};
 use mempool::{Mempool, MempoolMessage};
 use num_bigint::BigUint;
-use rpc_endpoint::new_server;
 use rpc_endpoint::rpc::{
     self, InvokeTransaction, InvokeTransactionReceipt, MaybePendingTransactionReceipt, Transaction,
     TransactionReceipt,
 };
 use std::collections::hash_map::DefaultHasher;
-use std::convert::TryInto;
-use std::fs;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
-use std::sync::Arc;
+use std::net::SocketAddr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use store::Store;
 use tokio::sync::mpsc::{channel, Receiver};
@@ -29,63 +21,38 @@ use tokio::sync::mpsc::{channel, Receiver};
 /// The default channel capacity for this module.
 pub const CHANNEL_CAPACITY: usize = 1_000;
 
-/// Default port offset for RPC endpoint
-const RPC_PORT_OFFSET: u16 = 1000;
 const ROUND_TIMEOUT_FOR_EMPTY_BLOCKS: u64 = 1500;
 
 enum ExecutionEngine {
-    Cairo(Box<CairoVMEngine>),
-    Sierra(CairoNativeEngine),
+    StarknetInRust(Box<StarknetState>),
 }
 
 impl ExecutionEngine {
-    fn execute_fibonacci(&self, n: usize) {
-        let ret_msg = match self {
-            ExecutionEngine::Cairo(execution_program) => execution_program.execute_fibonacci(n),
-            ExecutionEngine::Sierra(execution_program) => {
-                execution_program.execute_fibonacci(get_input_value_cairo_native(n))
+    fn handle_invoke(&mut self, calldata: Vec<Felt252>) -> Result<Vec<Felt252>, String> {
+        match self {
+            ExecutionEngine::StarknetInRust(sir_engine) => {
+                sir_engine.invoke(calldata).map_err(|x| x.to_string())
             }
-        };
-        info!("{}", ret_msg)
-    }
-
-    fn execute_factorial(&self, n: usize) {
-        let ret_msg = match self {
-            ExecutionEngine::Cairo(execution_program) => execution_program.execute_factorial(n),
-            ExecutionEngine::Sierra(execution_program) => {
-                execution_program.execute_factorial(get_input_value_cairo_native(n))
-            }
-        };
-        info!("{}", ret_msg)
-    }
-
-    fn execute_erc20(&self, n: Felt252, symbol: Felt252, contract_address: Felt252) {
-        let ret_msg = match self {
-            ExecutionEngine::Cairo(_execution_program) => {
-                todo!("Cairo VM does not support ERC20 transactions")
-            }
-            ExecutionEngine::Sierra(execution_program) => {
-                execution_program.execute_erc20(n, symbol, contract_address)
-            }
-        };
-        info!("{}", ret_msg)
+        }
     }
 }
 
-pub struct Node {
+pub struct HotstuffNode {
     pub commit: Receiver<Block>,
     pub store: Store,
     pub external_store: sequencer::store::Store,
+    pub mempool_transaction_endpoint: SocketAddr,
     execution_program: ExecutionEngine,
     last_committed_round: u64,
 }
 
-impl Node {
+impl HotstuffNode {
     pub async fn new(
         committee_file: &str,
         key_file: &str,
         store_path: &str,
         parameters: Option<String>,
+        external_store: sequencer::store::Store,
     ) -> Result<Self, ConfigError> {
         let (tx_commit, rx_commit) = channel(CHANNEL_CAPACITY);
         let (tx_consensus_to_mempool, rx_consensus_to_mempool) = channel(CHANNEL_CAPACITY);
@@ -105,55 +72,21 @@ impl Node {
 
         // Make the data store.
         let store = Store::new(store_path).expect("Failed to create store");
-        let external_store =
-            sequencer::store::Store::new(store_path, sequencer::store::EngineType::Sled)
-                .expect("Failed to create sequencer store");
 
         // Init the execution engine according to the parameters sent
         let execution_engine = match parameters.execution {
             ExecutionParameters::CairoVM => {
-                // Load the casm programs as bytes
-                let fib_casm_program: Vec<u8> =
-                    include_bytes!("../../cairo_programs/fib_contract.casm").to_vec();
-                let fact_casm_program: Vec<u8> =
-                    include_bytes!("../../cairo_programs/fact_contract.casm").to_vec();
-
-                let cairovm_engine = CairoVMEngine::new(fib_casm_program, fact_casm_program);
-
-                // Read casm program bytes as CasmContractClass
-                ExecutionEngine::Cairo(Box::new(cairovm_engine))
+                unimplemented!(
+                    "Cairo VM was disabled in favor of deciding VMs within Starknet in Rust"
+                )
             }
             ExecutionParameters::CairoNative => {
-                // Compile Cairo programs to Sierra
-                let fact_sierra_program: Arc<SierraProgram> =
-                    cairo_lang_compiler::compile_cairo_project_at_path(
-                        Path::new("../cairo_programs/fact_contract.cairo"),
-                        CompilerConfig {
-                            replace_ids: true,
-                            ..Default::default()
-                        },
-                    )
-                    .unwrap();
-
-                let fib_sierra_program: Arc<SierraProgram> =
-                    cairo_lang_compiler::compile_cairo_project_at_path(
-                        Path::new("../cairo_programs/fib_contract.cairo"),
-                        CompilerConfig {
-                            replace_ids: true,
-                            ..Default::default()
-                        },
-                    )
-                    .unwrap();
-
-                let program_src = fs::read_to_string("../cairo_programs/erc20.sierra").unwrap();
-                let program_parser = ProgramParser::new();
-                let erc20_sierra_program = Arc::new(program_parser.parse(&program_src).unwrap());
-
-                ExecutionEngine::Sierra(CairoNativeEngine::new(
-                    fib_sierra_program,
-                    fact_sierra_program,
-                    erc20_sierra_program,
-                ))
+                unimplemented!(
+                    "Cairo Native was disabled in favor of deciding VMs within Starknet in Rust"
+                )
+            }
+            ExecutionParameters::StarknetInRust => {
+                ExecutionEngine::StarknetInRust(Box::new(StarknetState::new_for_tests()))
             }
         };
 
@@ -182,30 +115,14 @@ impl Node {
             tx_commit,
         );
 
-        let external_store_clone = external_store.clone();
-        tokio::spawn(async move {
-            let port = committee
-                .mempool
-                .mempool_address(&name)
-                .expect("Our public key is not in the committee")
-                .port()
-                + RPC_PORT_OFFSET;
-
-            let handle = new_server(port, external_store_clone).await;
-
-            match handle {
-                Ok(handle) => {
-                    info!("RPC Server started, running on port {}", port);
-                    handle.stopped().await;
-                }
-                Err(e) => println!("Error creating RPC server: {}", e),
-            };
-        });
-
-        info!("Node {} successfully booted", name);
+        info!("Hotstuff node {} successfully booted", name);
         Ok(Self {
             commit: rx_commit,
             store,
+            mempool_transaction_endpoint: committee
+                .mempool
+                .mempool_address(&name)
+                .expect("Error retrieving our own mempool parameters while initializing"),
             external_store,
             execution_program: execution_engine,
             last_committed_round: 0u64,
@@ -216,6 +133,7 @@ impl Node {
         Secret::new().write(filename)
     }
 
+    // TODO: This is application code and as such it should not depend on consensus node code, so it should be factored out to an `on_block_commit()` call
     pub async fn analyze_block(&mut self) {
         while let Some(block) = self.commit.recv().await {
             let mut transactions = vec![];
@@ -263,46 +181,23 @@ impl Node {
                                         &tx.transaction_hash.to_str_radix(16)
                                     );
 
-                                    // first call data == Felt252::new(0) means we want to execute fibonacci
-                                    // first call data == Felt252::new(1) means we want to execute factorial
-                                    // first call data == Felt252::new(2) means we want to execute ERC20
-                                    let first_felt: u64 = tx
-                                        .calldata
-                                        .first()
-                                        .expect("Calldata in transaction was not correctly set")
-                                        .to_le_digits()[0];
+                                    let execution_result =
+                                        self.execution_program.handle_invoke(tx.calldata.clone());
 
-                                    match first_felt {
-                                        0 => {
-                                            let program_input = tx
-                                                .calldata
-                                                .get(1)
-                                                .expect("calldata was not correctly set");
-                                            let n: usize =
-                                                program_input.to_le_digits()[0].try_into().unwrap();
-                                            self.execution_program.execute_fibonacci(n);
-                                        }
-                                        1 => {
-                                            let program_input = tx
-                                                .calldata
-                                                .get(1)
-                                                .expect("calldata was not correctly set");
-                                            let n: usize =
-                                                program_input.to_le_digits()[0].try_into().unwrap();
-                                            self.execution_program.execute_factorial(n);
-                                        }
-                                        2 => {
-                                            self.execution_program.execute_erc20(
-                                                tx.calldata[1].clone(),
-                                                tx.calldata[2].clone(),
-                                                tx.calldata[3].clone(),
-                                            );
-                                        }
-                                        _ => error!("Transaction contains invalid calldata"),
-                                    };
-
-                                    let _ =
-                                        self.external_store.add_transaction(starknet_tx.clone());
+                                    if execution_result.is_ok() {
+                                        info!(
+                                            "Execution output is: {:?}",
+                                            execution_result.unwrap()
+                                        );
+                                        let _ = self
+                                            .external_store
+                                            .add_transaction(starknet_tx.clone());
+                                    } else {
+                                        error!(
+                                            "Error running transaction: {}",
+                                            execution_result.unwrap_err()
+                                        );
+                                    }
                                 }
                                 _ => todo!(),
                             }
@@ -402,7 +297,7 @@ impl Node {
     }
 }
 
-fn get_input_value_cairo_native(n: usize) -> Vec<u32> {
+fn _get_input_value_cairo_native(n: usize) -> Vec<u32> {
     let mut digits = BigUint::from(n).to_u32_digits();
     digits.resize(8, 0);
     digits

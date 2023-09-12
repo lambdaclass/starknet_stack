@@ -2,7 +2,7 @@ use anyhow::bail;
 use anyhow::{Context, Result};
 use bytes::BufMut as _;
 use bytes::BytesMut;
-use cairo_felt::Felt252;
+use cairo_felt::{felt_str, Felt252};
 use clap::Parser;
 use env_logger::Env;
 use futures::future::join_all;
@@ -208,21 +208,42 @@ impl Client {
         //let rand_program_input: u16 = rand::thread_rng();
         match options.choose(&mut rand::thread_rng()).unwrap() {
             ExecutionType::Fibonacci => {
-                vec![Felt252::new(0), Felt252::new((n % 10000) + 1)]
+                let selector = felt_str!(
+                    "112e35f48499939272000bd72eb840e502ca4c3aefa8800992e8defb746e0c9",
+                    16
+                );
+                vec![
+                    Felt252::new(0),
+                    selector,
+                    1.into(),
+                    1.into(),
+                    Felt252::new((n % 10000) + 1),
+                ]
             }
             ExecutionType::Factorial => {
-                vec![Felt252::new(1), Felt252::new((n % 2000) + 1)]
+                let selector = felt_str!(
+                    "36fbc999025b89d36d31dc2f9c0a03b4377755e1f27e0e42a385aaba90f61a6",
+                    16
+                );
+                vec![Felt252::new(1), selector, Felt252::new((n % 2000) + 1)]
             }
             ExecutionType::ERC20 => {
-                let initial_supply = Felt252::new((n % 5000) + 1);
-                let token_symbol = Felt252::new(512);
-                let contract_address = Felt252::new(rand::thread_rng().gen::<u128>());
+                let selector = felt_str!(
+                    "16d9d5d83f8eecc5d7450519aad7e6e649be1a6c9d6df85bd0b177cc59a926a",
+                    16
+                );
+
+                // TODO: create a better transaction
+                // let initial_supply = Felt252::new((n % 5000) + 1);
+                // let token_symbol = Felt252::new(512);
+                // let contract_address = Felt252::new(rand::thread_rng().gen::<u128>());
                 // execution type felt, initial_supply, token symbol, contract address
                 vec![
                     Felt252::new(2),
-                    initial_supply,
-                    token_symbol,
-                    contract_address,
+                    selector,
+                    //initial_supply,
+                    //token_symbol,
+                    //contract_address,
                 ]
             }
         }
