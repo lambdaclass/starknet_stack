@@ -44,6 +44,7 @@ pub struct HotstuffNode {
     pub mempool_transaction_endpoint: SocketAddr,
     execution_program: ExecutionEngine,
     last_committed_round: u64,
+    pub transaction_endpoint: SocketAddr,
 }
 
 impl HotstuffNode {
@@ -122,6 +123,10 @@ impl HotstuffNode {
             mempool_transaction_endpoint: committee
                 .mempool
                 .mempool_address(&name)
+                .expect("Error retrieving our own mempool parameters while initializing"),
+            transaction_endpoint: committee
+                .mempool
+                .transactions_address(&name)
                 .expect("Error retrieving our own mempool parameters while initializing"),
             external_store,
             execution_program: execution_engine,

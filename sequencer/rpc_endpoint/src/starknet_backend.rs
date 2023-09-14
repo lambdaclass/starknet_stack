@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use crate::rpc::{
     serializable_types::FeltParam, BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
     BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
@@ -7,24 +9,31 @@ use crate::rpc::{
     SyncStatusType, Transaction,
 };
 use anyhow::Result;
+use bytes::{BufMut, BytesMut};
 use cairo_felt::Felt252;
+use futures::SinkExt;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     server::{ServerBuilder, ServerHandle},
     types::{error::ErrorCode, ErrorObject},
 };
-use log::{error, info};
+use log::{error, info, warn};
 use sequencer::store::Store;
+use tokio::net::TcpStream;
+use tokio_util::codec::{Framed, LengthDelimitedCodec};
+use types::{InvokeTransaction, InvokeTransactionV1};
 
 pub struct StarknetBackend {
     pub(crate) store: Store,
+    pub(crate) transaction_endpoint: SocketAddr,
 }
 
 impl StarknetBackend {
-    pub fn spawn(external_store: Store, port: u16) {
+    pub fn spawn(external_store: Store, port: u16, transaction_endpoint: SocketAddr) {
         let external_store_clone = external_store.clone();
         tokio::spawn(async move {
-            let handle = StarknetBackend::new_server(port, external_store_clone).await;
+            let handle =
+                StarknetBackend::new_server(port, external_store_clone, transaction_endpoint).await;
 
             match handle {
                 Ok(handle) => {
@@ -36,11 +45,21 @@ impl StarknetBackend {
         });
     }
 
-    pub async fn new_server(port: u16, store: Store) -> Result<ServerHandle> {
+    pub async fn new_server(
+        port: u16,
+        store: Store,
+        transaction_endpoint: SocketAddr,
+    ) -> Result<ServerHandle> {
         let server = ServerBuilder::default()
             .build(format!("0.0.0.0:{}", port))
             .await?;
-        let server_handle = server.start(StarknetBackend { store }.into_rpc())?;
+        let server_handle = server.start(
+            StarknetBackend {
+                store,
+                transaction_endpoint,
+            }
+            .into_rpc(),
+        )?;
 
         Ok(server_handle)
     }
@@ -167,7 +186,46 @@ impl StarknetRpcApiServer for StarknetBackend {
         &self,
         invoke_transaction: BroadcastedInvokeTransaction,
     ) -> RpcResult<InvokeTransactionResult> {
-        unimplemented!();
+        match invoke_transaction.clone() {
+            BroadcastedInvokeTransaction::V0(_) => todo!(),
+            BroadcastedInvokeTransaction::V1(transaction_v1) => {
+                // TODO: move this into a conversion function
+                let mut tx = InvokeTransactionV1 {
+                    transaction_hash: Felt252::new(0),
+                    max_fee: transaction_v1.max_fee,
+                    signature: transaction_v1.signature,
+                    nonce: transaction_v1.nonce,
+                    sender_address: transaction_v1.sender_address,
+                    calldata: transaction_v1.calldata,
+                };
+                tx.transaction_hash = tx.calculate_hash().into();
+
+                let stream = TcpStream::connect(self.transaction_endpoint).await.unwrap();
+
+                let mut transport = Framed::new(stream, LengthDelimitedCodec::new());
+
+                let starknet_transaction_str = serde_json::to_string(&types::Transaction::Invoke(
+                    InvokeTransaction::V1(tx.clone()),
+                ))
+                .unwrap();
+                let tx_bytes = starknet_transaction_str.as_bytes().to_owned();
+                let mut tx_clean = BytesMut::new();
+                tx_clean.put_u8(0u8); // Sample txs start with 0.
+                tx_clean.put_u64(1200u64); // This counter identifies the tx.
+                for b in tx_bytes {
+                    tx_clean.put_u8(b);
+                }
+                let bytes = tx_clean.split().freeze();
+
+                if let Err(e) = transport.send(bytes).await {
+                    warn!("Failed to send transaction: {}", e);
+                }
+
+                RpcResult::Ok(InvokeTransactionResult {
+                    transaction_hash: tx.transaction_hash,
+                })
+            }
+        }
     }
 
     /// Add an Deploy Account Transaction

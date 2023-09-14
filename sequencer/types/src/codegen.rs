@@ -624,7 +624,7 @@ pub struct InvokeTransactionV1 {
 // TODO move this code to the uppermost Transaction enum and adapt for different
 // transaction types.
 impl InvokeTransactionV1 {
-    fn calculate_hash(&self) -> u64 {
+    pub fn calculate_hash(&self) -> u64 {
         let mut s = DefaultHasher::new();
         self.hash(&mut s);
         s.finish()
